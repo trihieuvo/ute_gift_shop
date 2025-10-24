@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - UTE GiftShop</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .form-container { background-color: white; padding: 2rem 3rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        h2 { color: #1c1e21; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; color: #606770; font-weight: 600; }
+        input { width: 100%; padding: 0.8rem; border: 1px solid #dddfe2; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 0.8rem; background-color: #42b72a; color: white; border: none; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 1rem; }
+        button:hover { background-color: #36a420; }
+        .message { color: #fa383e; margin-top: 1rem; font-weight: 600; min-height: 20px; }
+        .switch-form { margin-top: 1.5rem; font-size: 0.9rem; }
+        .switch-form a { color: #1877f2; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Tạo tài khoản mới</h2>
+        <form id="signupForm">
+            <div class="form-group">
+                <label for="fullName">Họ và Tên</label>
+                <input type="text" id="fullName" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Đăng ký</button>
+        </form>
+        <p id="message" class="message"></p>
+        <div class="switch-form">
+            Bạn đã có tài khoản? <a href="/login.html">Đăng nhập</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = '';
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, email, password })
+                });
+
+                if (response.ok) {
+                    alert('Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.');
+                    window.location.href = '/login.html';
+                } else {
+                    const errorData = await response.text();
+                    if (errorData.includes("Email is already in use")) {
+                        messageEl.textContent = 'Email này đã được sử dụng.';
+                    } else {
+                        messageEl.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+                    }
+                }
+            } catch (error) {
+                messageEl.textContent = 'Lỗi mạng. Vui lòng thử lại.';
+            }
+        });
+    </script>
+</body>
+</html>

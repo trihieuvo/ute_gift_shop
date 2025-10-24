@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Chủ - UTE GiftShop</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 2rem; }
+        .container { max-width: 800px; margin: auto; text-align: center; }
+        #userInfo { margin-bottom: 2rem; font-size: 1.2rem; }
+        button { padding: 0.8rem 1.5rem; font-size: 1rem; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chào mừng đến với UTE GiftShop</h1>
+        <div id="userInfo">Đang tải thông tin người dùng...</div>
+        <button onclick="logout()">Đăng xuất</button>
+    </div>
+
+    <script>
+        // Hàm kiểm tra xem người dùng đã đăng nhập chưa
+        function checkLoginStatus() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                // Nếu không có token, chuyển về trang đăng nhập
+                window.location.href = '/login.html';
+            } else {
+                // Tùy chọn: Giải mã token để lấy thông tin user (cần thư viện jwt-decode)
+                // Hoặc gọi API /api/user/profile để lấy thông tin
+                document.getElementById('userInfo').textContent = "Bạn đã đăng nhập thành công!";
+            }
+        }
+
+        // Hàm xử lý đăng xuất
+        function logout() {
+            // 1. Xóa token khỏi localStorage
+            localStorage.removeItem('jwtToken');
+            
+            // 2. (Tùy chọn) Gọi API logout trên server để vô hiệu hóa token nếu có cơ chế blacklist
+            // fetch('/api/auth/logout', { method: 'POST' });
+
+            // 3. Thông báo và chuyển hướng về trang đăng nhập
+            alert('Bạn đã đăng xuất thành công!');
+            window.location.href = '/login.html';
+        }
+
+        // Chạy kiểm tra khi trang được tải
+        window.onload = checkLoginStatus;
+    </script>
+</body>
+</html>
