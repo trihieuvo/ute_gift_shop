@@ -44,7 +44,7 @@ public class EmailService {
     public void sendActivationOtpEmail(String toEmail, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lengonhuttan2005@gmail.com"); 
+            message.setFrom("okakuri2507@gmail.com"); 
             message.setTo(toEmail);
             message.setSubject("[UTE GiftShop] Mã OTP kích hoạt tài khoản của bạn");
             message.setText("Chào mừng bạn đến với UTE GiftShop,\n\n"
