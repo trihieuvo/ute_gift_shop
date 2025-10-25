@@ -111,7 +111,6 @@ body {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             
-            // 2. Thay thế lỗi kiểm tra mật khẩu
             if (password !== confirmPassword) {
                 Swal.fire({
                     title: 'Lỗi!',
@@ -119,7 +118,7 @@ body {
                     icon: 'warning',
                     confirmButtonText: 'OK'
                 });
-                return; // Dừng nếu không khớp
+                return;
             }
 
             try {
@@ -128,27 +127,28 @@ body {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fullName, email, password })
                 });
+                
+                const responseText = await response.text();
 
                 if (response.ok) {
-                    // 3. Thay thế alert() thành công
+                    // THAY ĐỔI: Cập nhật thông báo và chuyển hướng
                     Swal.fire({
                         title: 'Thành công!',
-                        text: 'Đăng ký thành công! Bạn sẽ được chuyển đến trang đăng nhập.',
+                        text: responseText + ". Bạn sẽ được chuyển đến trang kích hoạt.",
                         icon: 'success',
                         confirmButtonText: 'OK'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = '/login.html';
+                            // Chuyển hướng sang trang activate.html với email
+                            window.location.href = `/activate.html?email=${encodeURIComponent(email)}`;
                         }
                     });
                 } else {
-                    const errorData = await response.text();
-                    let errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
-                    if (errorData.includes("Email is already in use")) {
+                    let errorMessage = responseText;
+                    if (responseText.includes("Email is already in use")) {
                         errorMessage = 'Email này đã được sử dụng.';
                     }
                     
-                    // 4. Thay thế các lỗi khác
                     Swal.fire({
                         title: 'Lỗi!',
                         text: errorMessage,
@@ -157,7 +157,6 @@ body {
                     });
                 }
             } catch (error) {
-                // 5. Thay thế lỗi mạng
                 Swal.fire({
                     title: 'Lỗi!',
                     text: 'Lỗi mạng. Vui lòng thử lại.',

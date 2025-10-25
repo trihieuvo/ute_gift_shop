@@ -19,12 +19,14 @@ public class UserDetailsImpl implements UserDetails {
     @JsonIgnore
     private String password;
     private GrantedAuthority authority;
+    private boolean isEnabled; // BỔ SUNG: Thêm trường này
 
-    public UserDetailsImpl(Long id, String email, String password, GrantedAuthority authority) {
+    public UserDetailsImpl(Long id, String email, String password, GrantedAuthority authority, boolean isEnabled) { // THAY ĐỔI: Thêm isEnabled
         this.id = id;
         this.email = email;
         this.password = password;
         this.authority = authority;
+        this.isEnabled = isEnabled; // BỔ SUNG
     }
 
     public static UserDetailsImpl build(User user) {
@@ -33,7 +35,8 @@ public class UserDetailsImpl implements UserDetails {
                 user.getId(),
                 user.getEmail(),
                 user.getPassword(),
-                authority);
+                authority,
+                user.isActive()); // THAY ĐỔI: Truyền trạng thái isActive
     }
 
     @Override
@@ -52,8 +55,11 @@ public class UserDetailsImpl implements UserDetails {
     public boolean isAccountNonLocked() { return true; }
     @Override
     public boolean isCredentialsNonExpired() { return true; }
+
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { 
+        return this.isEnabled; // THAY ĐỔI: Trả về trạng thái thực tế
+    }
 
     @Override
     public boolean equals(Object o) {

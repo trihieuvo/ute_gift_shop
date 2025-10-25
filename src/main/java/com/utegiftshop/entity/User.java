@@ -45,7 +45,7 @@ public class User {
     private String password;
 
     @Column(name = "is_active", nullable = false)
-    private boolean isActive = true; // Mặc định là active để test đăng nhập
+    private boolean isActive = false; // Mặc định là false
 
     @Column(name = "created_at", updatable = false)
     private Timestamp createdAt = new Timestamp(System.currentTimeMillis());
@@ -53,9 +53,17 @@ public class User {
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
 
+    // Dùng cho Quên mật khẩu
     @Column(name = "password_reset_otp")
     private String passwordResetOtp;
 
     @Column(name = "otp_expiry_time")
     private Timestamp otpExpiryTime;
+
+    // BỔ SUNG: Dùng cho Kích hoạt tài khoản
+    @Column(name = "activation_otp")
+    private String activationOtp;
+
+    @Column(name = "activation_otp_expiry_time")
+    private Timestamp activationOtpExpiryTime; // Đảm bảo tên này chính xác
 }

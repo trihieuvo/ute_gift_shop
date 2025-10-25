@@ -52,13 +52,13 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // Cấu hình logout
             .logout(logout -> logout
-                .logoutUrl("/api/auth/logout") // Định nghĩa URL cho logout
+                .logoutUrl("/api/auth/logout") 
                 .logoutSuccessHandler((request, response, authentication) -> 
-                    response.setStatus(HttpServletResponse.SC_OK)) // Trả về status 200 khi thành công
+                    response.setStatus(HttpServletResponse.SC_OK))
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/auth/**", // Cho phép cả /signin, /signup và /logout
+                    "/api/auth/**", // Cho phép tất cả /api/auth/* (bao gồm /signin, /signup, /activate, /forgot-password, /reset-password)
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
@@ -68,6 +68,7 @@ public class SecurityConfig {
                     "/home.html",
                     "/forgot-password.html", 
                     "/reset-password.html",
+                    "/activate.html", 
                  
                     "/js/**", 
                     "/images/**",
