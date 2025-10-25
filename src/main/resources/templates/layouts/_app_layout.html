@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
@@ -12,7 +12,28 @@
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
-        </nav>
+        <div class="container">
+            <a class="navbar-brand fw-bold" th:href="@{/home}">
+                <i class="bi bi-shop"></i> UTE GiftShop
+            </a>
+            <div class="d-flex align-items-center">
+                <a class="nav-link me-3" th:href="@{/cart}">
+                    <i class="bi bi-cart3"></i> Giỏ hàng
+                </a>
+                <div class="dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> <span id="userGreeting">Tài khoản</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" th:href="@{/profile}">Thông tin cá nhân</a></li>
+                        <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div class="content-wrapper">
         <div class="container">
@@ -98,16 +119,12 @@
                 const errorText = await response.text();
                 console.error(`Error during token validation (${response.status}):`, errorText);
                 Swal.fire('Lỗi', `Không thể xác thực phiên (${response.status}). Vui lòng thử lại.`, 'error');
-                // Consider redirecting here as well
-                // localStorage.removeItem('jwtToken');
-                // window.location.href = '/login';
             }
 
         } catch (error) {
             // Lỗi mạng
             console.error("Network error during token validation:", error);
             Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
-            // Prevent further actions
         }
     }
 
