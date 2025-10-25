@@ -11,10 +11,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
-import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
 import com.utegiftshop.security.JwtAuthenticationFilter;
 import com.utegiftshop.security.jwt.JwtTokenProvider;
 import com.utegiftshop.security.service.UserDetailsServiceImpl;
@@ -31,13 +27,6 @@ public class SecurityConfig {
     public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtTokenProvider jwtTokenProvider) {
         this.userDetailsService = userDetailsService;
         this.jwtTokenProvider = jwtTokenProvider;
-    }
-
-    @Bean
-    public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
-        StrictHttpFirewall firewall = new StrictHttpFirewall();
-        firewall.setAllowUrlEncodedDoubleSlash(true); // Allow //
-        return firewall;
     }
 
     @Bean
@@ -82,7 +71,10 @@ public class SecurityConfig {
                     "/reset-password",
                     "/activate",
                     "/templates/**",
-                    // Tài nguyên tĩnh và layout
+                    
+                    "/auth_layout.html", 
+                    "/app_layout.html",
+
                     "/layout/**",      
                     "/css/**",
                     "/js/**", 
