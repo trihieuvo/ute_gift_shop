@@ -11,10 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
-import org.springframework.security.web.firewall.HttpFirewall;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
+
 import com.utegiftshop.security.JwtAuthenticationFilter;
 import com.utegiftshop.security.jwt.JwtTokenProvider;
 import com.utegiftshop.security.service.UserDetailsServiceImpl;
@@ -31,13 +28,6 @@ public class SecurityConfig {
     public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtTokenProvider jwtTokenProvider) {
         this.userDetailsService = userDetailsService;
         this.jwtTokenProvider = jwtTokenProvider;
-    }
-
-    @Bean
-    public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
-        StrictHttpFirewall firewall = new StrictHttpFirewall();
-        firewall.setAllowUrlEncodedDoubleSlash(true); // Allow //
-        return firewall;
     }
 
     @Bean
@@ -60,6 +50,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Cấu hình logout
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout") 
                 .logoutSuccessHandler((request, response, authentication) -> 
@@ -67,26 +58,21 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    // API và Swagger
-                    "/api/auth/**", 
+                    "/api/auth/**", // Cho phép tất cả /api/auth/* (bao gồm /signin, /signup, /activate, /forgot-password, /reset-password)
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
 
-                    // Các trang web
-                    "/",
-                    "/login",
-                    "/signup",
-                    "/home",
-                    "/forgot-password", 
-                    "/reset-password",
-                    "/activate",
-                    "/templates/**",
-                    // Tài nguyên tĩnh và layout
-                    "/layout/**",      
-                    "/css/**",
+                    "/login.html",
+                    "/signup.html",
+                    "/home.html",
+                    "/forgot-password.html", 
+                    "/reset-password.html",
+                    "/activate.html", 
+                 
                     "/js/**", 
                     "/images/**",
+                    
                     "/*.ico"
                 ).permitAll()
                 .anyRequest().authenticated()
