@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Trang Chủ</title>
+</head>
+<body>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h1 class="h4 mb-0">Chào mừng đến với UTE GiftShop</h1>
+                </div>
+                <div class="card-body">
+                    <p id="userInfo" class="mb-3">Đang tải thông tin người dùng...</p>
+                    <button onclick="logout()" class="btn btn-danger">Đăng xuất</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function checkLoginStatus() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                window.location.href = '/login';
+            } else {
+                document.getElementById('userInfo').textContent = "Bạn đã đăng nhập thành công!";
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            
+            Swal.fire({
+                title: 'Đã đăng xuất',
+                text: 'Bạn đã đăng xuất thành công!',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/login';
+                }
+            });
+        }
+        
+        window.onload = checkLoginStatus;
+    </script>
+</body>
+</html>
