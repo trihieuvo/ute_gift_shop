@@ -10,7 +10,7 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         // Ánh xạ URL tới tên của tệp template (không cần .html)
-        
+
         // Trang chính
         registry.addViewController("/home").setViewName("home");
 
@@ -21,9 +21,8 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addViewController("/forgot-password").setViewName("forgot-password");
         registry.addViewController("/reset-password").setViewName("reset-password");
 
-        // Bạn cũng có thể thêm một trang chủ mặc định
-        // registry.addViewController("/").setViewName("home"); 
-        // Hoặc trỏ về login nếu chưa đăng nhập (Security sẽ xử lý việc này)
+        // BỎ CÁC VIEW CONTROLLER CHO /shipper/... ở đây nếu có
+
         registry.addViewController("/").setViewName("login");
     }
 }

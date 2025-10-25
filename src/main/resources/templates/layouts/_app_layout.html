@@ -1,54 +1,10 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title layout:title-pattern="$CONTENT_TITLE | $LAYOUT_TITLE">UTE GiftShop</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* *** THÊM: Đảm bảo html và body chiếm đủ chiều cao *** */
-        html, body {
-            height: 100%;
-            margin: 0; /* Xóa margin mặc định */
-        }
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; /* Giữ lại min-height */
-            display: flex;
-            flex-direction: column;
-            padding-top: 56px; /* ** QUAN TRỌNG: Điều chỉnh lại padding top = chiều cao navbar ** */
-        }
-        .navbar {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            /* ** QUAN TRỌNG: Navbar cần chiều cao cố định để tính padding-top cho body ** */
-             height: 56px; /* Chiều cao mặc định của Bootstrap navbar */
-        }
-        /* *** Wrapper cho content để nó co giãn *** */
-        .content-wrapper {
-             flex-grow: 1; /* Cho phép div này chiếm hết không gian còn lại */
-             padding-top: 1rem; /* Thêm khoảng cách với navbar */
-             padding-bottom: 1rem; /* Thêm khoảng cách với footer */
-        }
-        .main-content-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            padding: 2rem;
-            /* margin-bottom bỏ đi, vì content-wrapper đã có padding-bottom */
-        }
-        footer {
-            /* *** QUAN TRỌNG: margin-top: auto để đẩy footer xuống *** */
-            margin-top: auto;
-            background-color: #f8f9fa;
-            border-top: 1px solid #e7e7e7;
-            padding-top: 1rem;    /* py-3 */
-            padding-bottom: 1rem; /* py-3 */
-            text-align: center;   /* text-center */
-            flex-shrink: 0; /* Ngăn footer bị co lại */
-        }
+        /* ... phần style giữ nguyên ... */
     </style>
     <th:block layout:fragment="styles"></th:block>
     <th:block layout:fragment="scripts_head"></th:block>
@@ -56,52 +12,110 @@
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" th:href="@{/home}">🎁 UTE GiftShop</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <span class="nav-link" id="userGreeting">Chào bạn!</span>
-                    </li>
-                    <li class="nav-item">
-                        <button onclick="logout()" class="btn btn-outline-danger btn-sm ms-2">Đăng xuất</button>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+        </nav>
 
     <div class="content-wrapper">
-        <div class="container"> <div class="main-content-card">
+        <div class="container">
+             <div class="main-content-card">
                  <th:block layout:fragment="content"></th:block>
              </div>
         </div>
     </div>
 
-    <footer> <div class="container">
+    <footer>
+        <div class="container">
             <span class="text-muted">© 2025 UTE GiftShop</span>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        // Javascript giữ nguyên
-        function logout() {
-            localStorage.removeItem('jwtToken');
-            Swal.fire({
-                title: 'Đã đăng xuất',
-                text: 'Bạn đã đăng xuất thành công!',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => {
-                 window.location.href = '/login';
-            });
+    // Hàm logout giữ nguyên
+    function logout() {
+        localStorage.removeItem('jwtToken');
+        console.log("Token removed on logout."); // Log logout
+        Swal.fire({
+            title: 'Đã đăng xuất',
+            text: 'Bạn đã đăng xuất thành công!',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+             window.location.href = '/login';
+        });
+    }
+
+    // Hàm kiểm tra token và lấy thông tin user (với logging)
+    async function checkLoginStatusAndFetchUser() {
+        console.log("checkLoginStatusAndFetchUser running..."); // Log function start
+        const token = localStorage.getItem('jwtToken');
+        const userGreetingElem = document.getElementById('userGreeting');
+
+        if (!token) {
+            console.log("No token found in localStorage, redirecting to /login.");
+            window.location.href = '/login';
+            return;
         }
-    </script>
+
+        console.log("Token found in localStorage:", token ? 'Yes (hidden)' : 'No'); // Avoid logging the actual token
+
+        // Có token, thử gọi API để xác thực
+        try {
+            console.log("Attempting to fetch /api/users/me with token...");
+            const response = await fetch('/api/users/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            console.log("/api/users/me response status:", response.status); // Log response status
+
+            if (response.ok) {
+                // Token hợp lệ
+                const userInfo = await response.json();
+                console.log("Token validated successfully. User info:", userInfo);
+
+                if (userGreetingElem) {
+                    userGreetingElem.textContent = `Chào ${userInfo.fullName || userInfo.email || 'bạn'}!`;
+                }
+                // *** IMPORTANT: Signal that authentication check is complete ***
+                document.body.setAttribute('data-auth-checked', 'true');
+                console.log("Authentication check complete.");
+
+
+            } else if (response.status === 401 || response.status === 403) {
+                // Token không hợp lệ/hết hạn
+                console.error("Token validation failed:", response.status, await response.text());
+                localStorage.removeItem('jwtToken');
+                Swal.fire('Phiên hết hạn', 'Vui lòng đăng nhập lại.', 'warning').then(() => {
+                    window.location.href = '/login';
+                });
+            } else {
+                // Lỗi server khác
+                const errorText = await response.text();
+                console.error(`Error during token validation (${response.status}):`, errorText);
+                Swal.fire('Lỗi', `Không thể xác thực phiên (${response.status}). Vui lòng thử lại.`, 'error');
+                // Consider redirecting here as well
+                // localStorage.removeItem('jwtToken');
+                // window.location.href = '/login';
+            }
+
+        } catch (error) {
+            // Lỗi mạng
+            console.error("Network error during token validation:", error);
+            Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
+            // Prevent further actions
+        }
+    }
+
+    // Gọi hàm kiểm tra khi DOM tải xong
+    document.addEventListener('DOMContentLoaded', checkLoginStatusAndFetchUser);
+
+</script>
     <th:block layout:fragment="scripts_body"></th:block>
+
 </body>
 </html>
