@@ -62,9 +62,17 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
+
                     "/login.html",
                     "/signup.html",
-                    "/home.html" // Thêm trang home vào danh sách công khai để test
+                    "/home.html",
+                    "/forgot-password.html", 
+                    "/reset-password.html",
+                 
+                    "/js/**", 
+                    "/images/**",
+                    
+                    "/*.ico"
                 ).permitAll()
                 .anyRequest().authenticated()
             );

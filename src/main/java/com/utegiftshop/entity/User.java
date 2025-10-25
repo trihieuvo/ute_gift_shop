@@ -35,6 +35,12 @@ public class User {
     @Column(length = 255, nullable = false, unique = true)
     private String email;
 
+    @Column(name = "phone_number", length = 20, nullable = true)
+    private String phoneNumber;
+
+    @Column(name = "avatar_url", length = 255, nullable = true)
+    private String avatarUrl;
+
     @Column(length = 255, nullable = false)
     private String password;
 
@@ -46,4 +52,10 @@ public class User {
 
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+
+    @Column(name = "password_reset_otp")
+    private String passwordResetOtp;
+
+    @Column(name = "otp_expiry_time")
+    private Timestamp otpExpiryTime;
 }
