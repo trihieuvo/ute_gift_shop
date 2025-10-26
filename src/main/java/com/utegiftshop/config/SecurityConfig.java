@@ -58,6 +58,7 @@ public class SecurityConfig {
                     "/forgot-password", "/reset-password",
                     "/cart", "/checkout", "/profile", // <-- CHO PHÉP TẢI CÁC TRANG NÀY
                     "/api/auth/**",
+                    "/api/users/me",
                     "/css/**", "/js/**", "/images/**", "/*.ico",
                     "/error",
                     "/v3/api-docs/**", "/swagger-ui/**"
@@ -66,7 +67,7 @@ public class SecurityConfig {
                 // ===== 2. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
                 // ĐÂY LÀ NƠI BẢO MẬT DỮ LIỆU THỰC SỰ
                 .requestMatchers(
-                    "/api/users/me",
+                    
                     "/api/cart/**",
                     "/api/addresses/**",
                     "/api/orders/**"

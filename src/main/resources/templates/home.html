@@ -8,31 +8,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --secondary-color: #ffc107;
-            --light-gray: #f8f9fa;
-        }
         .navbar {
             box-shadow: 0 2px 4px rgba(0,0,0,.1);
         }
-        .search-bar {
-            width: 400px;
-        }
         .icon-group .nav-link {
-            color: var(--primary-color);
             font-size: 1.2rem;
-        }
-        .category-nav {
-            background-color: var(--light-gray);
-        }
-        .category-nav .nav-link {
-            color: #333;
-            font-size: 0.9rem;
-        }
-        .section-title {
-            font-weight: bold;
-            margin-bottom: 20px;
         }
         .product-card {
             border: 1px solid #eee;
@@ -42,141 +22,104 @@
             box-shadow: 0 4px 8px rgba(0,0,0,.1);
             transform: translateY(-5px);
         }
-        .product-img {
-            max-height: 200px;
-            object-fit: cover;
-        }
-        .price {
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .original-price {
-            text-decoration: line-through;
-            color: #6c757d;
-        }
-        .sale-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
     </style>
 </head>
 <body>
-
-    <header class="bg-primary text-white p-2">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div>
-                <i class="bi bi-gift-fill"></i> UTE GiftShop - Quà tặng ý nghĩa
-            </div>
-            <div>
-                <a href="#" class="text-white text-decoration-none me-3">Trở thành Người bán</a>
-                <a href="#" class="text-white text-decoration-none">Hỗ trợ</a>
-            </div>
-        </div>
-    </header>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" th:href="@{/home}">
                 <i class="bi bi-shop"></i> UTE GiftShop
             </a>
-            <div class="input-group search-bar">
-                <input type="text" class="form-control" placeholder="Tìm kiếm sản phẩm...">
-                <button class="btn btn-primary" type="button"><i class="bi bi-search"></i></button>
-            </div>
             <div class="d-flex align-items-center icon-group">
                 <a class="nav-link" th:href="@{/cart}"><i class="bi bi-cart3"></i> Giỏ hàng</a>
                 
                 <div class="dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i> <span id="userGreeting">Tài khoản</span>
+                        <i class="bi bi-person-circle"></i> <span id="user-greeting">Tài khoản</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" id="user-menu">
                         </ul>
                 </div>
-                </div>
-        </div>
-    </nav>
-
-    <nav class="category-nav py-2">
-        <div class="container">
-            <ul class="nav">
-                <li class="nav-item"><a class="nav-link" href="#">Áo Thun</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Ly Sứ</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Móc khóa</a></li>
-                <li class="nav-item"><a class="nav-link" href="#">Đồ lưu niệm</a></li>
-            </ul>
+            </div>
         </div>
     </nav>
 
     <main class="container my-4">
-
-        <div id="heroCarousel" class="carousel slide mb-4" data-bs-ride="carousel">
-            <div class="carousel-inner">
-                <div class="carousel-item active">
-                    <img src="https://via.placeholder.com/1200x400/0d6efd/ffffff?text=Khuyen+Mai+Lon" class="d-block w-100" alt="Promotion 1">
-                </div>
-                <div class="carousel-item">
-                    <img src="https://via.placeholder.com/1200x400/ffc107/000000?text=San+Pham+Moi" class="d-block w-100" alt="Promotion 2">
-                </div>
+        <div class="p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-5">
+                <h1 class="display-5 fw-bold">Chào mừng đến với UTE GiftShop</h1>
+                <p class="col-md-8 fs-4">Nơi mua sắm quà tặng và đồ lưu niệm hàng đầu dành cho cộng đồng UTE.</p>
+                <p id="auth-status" class="text-muted">Trạng thái: Đang kiểm tra...</p>
             </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
         </div>
 
-        <section class="mb-4">
-            <h2 class="section-title">Danh Mục Nổi Bật</h2>
-            </section>
-
-        <section class="mb-4 p-3 bg-light rounded">
-            <h2 class="section-title text-danger"><i class="bi bi-lightning-charge-fill"></i> Flash Sale</h2>
-            </section>
-
-        <section class="mb-4">
-            <h2 class="section-title">Sản Phẩm Bán Chạy</h2>
-            </section>
-
-    </main>
-    <footer class="bg-light py-4 mt-auto">
-        <div class="container">
+        <section>
+            <h2 class="mb-4">Sản phẩm nổi bật</h2>
             <div class="row">
-                <div class="col-md-4">
-                    <h5>UTE GiftShop</h5>
-                    <p>Nền tảng mua sắm quà tặng và đồ lưu niệm hàng đầu.</p>
-                </div>
-                <div class="col-md-4">
-                    <h5>Liên kết</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#">Về chúng tôi</a></li>
-                        <li><a href="#">Điều khoản dịch vụ</a></li>
-                        <li><a href="#">Chính sách bảo mật</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h5>Theo dõi chúng tôi</h5>
-                    <a href="#" class="fs-4 me-2"><i class="bi bi-facebook"></i></a>
-                    <a href="#" class="fs-4 me-2"><i class="bi bi-instagram"></i></a>
-                    <a href="#" class="fs-4"><i class="bi bi-twitter"></i></a>
+                <div class="col-md-3">
+                    <div class="card product-card">
+                        <img src="https://via.placeholder.com/200" class="card-img-top" alt="Product">
+                        <div class="card-body">
+                            <h5 class="card-title">Áo Thun UTE</h5>
+                            <p class="card-text fw-bold">150,000 đ</p>
+                            <a href="#" class="btn btn-primary">Xem chi tiết</a>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </section>
+    </main>
+
+    <footer class="bg-light py-4 mt-auto">
+        <div class="container text-center">
+            <p class="mb-0">© 2025 UTE GiftShop</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Hàm hiển thị menu cho khách (chưa đăng nhập)
+        function showGuestMenu() {
+            const userGreetingElem = document.getElementById('user-greeting');
+            const userMenu = document.getElementById('user-menu');
+            const authStatusElem = document.getElementById('auth-status');
+
+            userGreetingElem.textContent = 'Tài khoản';
+            userMenu.innerHTML = `
+                <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
+                <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
+            `;
+            authStatusElem.textContent = 'Trạng thái: Khách (Chưa đăng nhập)';
+        }
+
+        // Hàm hiển thị menu cho người dùng đã đăng nhập
+        function showUserMenu(userInfo) {
+            const userGreetingElem = document.getElementById('user-greeting');
+            const userMenu = document.getElementById('user-menu');
+            const authStatusElem = document.getElementById('auth-status');
+
+            userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
+            userMenu.innerHTML = `
+                <li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
+                <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>
+            `;
+            // Chuyển hướng dashboard nếu là Shipper
+            if (userInfo.role === 'Shipper') {
+                 userMenu.innerHTML += '<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>';
+            }
+
+            authStatusElem.textContent = `Trạng thái: Đã đăng nhập với vai trò ${userInfo.role}`;
+        }
+
         // Hàm đăng xuất
         function logout() {
             localStorage.removeItem('jwtToken');
             Swal.fire({
                 title: 'Đã đăng xuất',
-                text: 'Bạn đã đăng xuất thành công!',
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false
@@ -185,53 +128,40 @@
             });
         }
 
-        // Hàm kiểm tra trạng thái đăng nhập khi trang được tải
+        // Hàm chính: kiểm tra trạng thái đăng nhập khi trang tải
         document.addEventListener('DOMContentLoaded', async function() {
             const token = localStorage.getItem('jwtToken');
-            const userGreetingElem = document.getElementById('userGreeting');
-            const userMenu = document.getElementById('user-menu');
 
-            if (token) {
-                // Nếu có token, lấy thông tin người dùng
-                try {
-                    const response = await fetch('/api/users/me', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+            // Nếu không có token, không cần gọi API, chỉ hiển thị menu cho khách
+            if (!token) {
+                console.log("Không tìm thấy token. Hiển thị menu cho khách.");
+                showGuestMenu();
+                return;
+            }
 
-                    if (response.ok) {
-                        const userInfo = await response.json();
-                        userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
-                        // Thêm các mục menu cho người dùng đã đăng nhập
-                        userMenu.innerHTML = `
-                            <li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
-                            <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>
-                        `\;
-                    } else {
-                        // Token không hợp lệ, xóa token và hiển thị menu mặc định
-                        localStorage.removeItem('jwtToken');
-                        showDefaultMenu();
-                    }
-                } catch (error) {
-                    console.error("Lỗi khi lấy thông tin người dùng:", error);
-                    showDefaultMenu();
+            // Nếu có token, gọi API để xác thực và lấy thông tin
+            try {
+                console.log("Tìm thấy token. Đang gọi API /api/users/me...");
+                const response = await fetch('/api/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.authenticated) {
+                    console.log("Xác thực thành công. Dữ liệu người dùng:", data);
+                    showUserMenu(data);
+                } else {
+                    // Trường hợp token không hợp lệ (hết hạn, sai, etc.)
+                    console.log("Token không hợp lệ hoặc đã hết hạn.");
+                    localStorage.removeItem('jwtToken'); // Dọn dẹp token cũ
+                    showGuestMenu();
                 }
-            } else {
-                // Nếu không có token, hiển thị menu mặc định
-                showDefaultMenu();
+            } catch (error) {
+                console.error("Lỗi mạng hoặc lỗi khi gọi API:", error);
+                showGuestMenu(); // Hiển thị menu khách nếu có lỗi
             }
         });
-
-        function showDefaultMenu() {
-            const userGreetingElem = document.getElementById('userGreeting');
-            const userMenu = document.getElementById('user-menu');
-            userGreetingElem.textContent = 'Tài khoản';
-            userMenu.innerHTML = `
-                <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
-                <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
-            `;
-        }
     </script>
-    </body>
+</body>
 </html>
