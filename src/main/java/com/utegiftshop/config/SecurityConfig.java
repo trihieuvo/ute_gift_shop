@@ -60,6 +60,7 @@ public class SecurityConfig {
                     "/api/auth/**",
                     "/api/users/me",
                     "/api/products/**",
+                    "/order-history", "/orders/**",
                     "/css/**", "/js/**", "/images/**", "/*.ico",
                     "/error",
                     "/shipper/**",

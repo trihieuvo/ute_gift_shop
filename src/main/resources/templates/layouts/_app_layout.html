@@ -131,8 +131,12 @@
                     const userMenu = document.getElementById('user-menu');
                     if(userGreetingElem && userMenu) {
                         userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
+                        
+                        // === THAY ĐỔI: CẬP NHẬT LINK LỊCH SỬ ĐƠN HÀNG ===
                         let menuItems = `<li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
-                                         <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>`;
+                                         <li><a class="dropdown-item" href="/order-history">Lịch sử đơn hàng</a></li>`;
+                        // === KẾT THÚC THAY ĐỔI ===
+                                         
                         if (userInfo.role === 'Shipper') {
                              menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
                         }

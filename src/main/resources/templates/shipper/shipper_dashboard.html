@@ -50,34 +50,35 @@
                 window.location.href = '/login';
                 return;
             }
-
+            
+            // === SỬA LỖI: GỌI API THẬT ===
             try {
-                // Gọi API lấy thống kê (API này cần được hoàn thiện ở backend)
+                // Gọi API lấy thống kê
                 const response = await fetch('/api/shipper/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
-                    // Giả sử API trả về JSON dạng { assigned: 10, delivered: 50, failed: 5 }
-                    // const stats = await response.json();
-                    // document.getElementById('assigned-count').textContent = stats.assigned || 0;
-                    // document.getElementById('delivered-count').textContent = stats.delivered || 0;
-                    // document.getElementById('failed-count').textContent = stats.failed || 0;
-                    document.getElementById('assigned-count').textContent = 'N/A'; // Placeholder
-                    document.getElementById('delivered-count').textContent = 'N/A';// Placeholder
-                    document.getElementById('failed-count').textContent = 'N/A'; // Placeholder
+                    // API trả về JSON dạng { assigned: 10, delivered: 50, failed: 5 }
+                    const stats = await response.json();
+                    document.getElementById('assigned-count').textContent = stats.assigned || 0;
+                    document.getElementById('delivered-count').textContent = stats.delivered || 0;
+                    document.getElementById('failed-count').textContent = stats.failed || 0;
 
                 } else if (response.status === 401 || response.status === 403) {
                      Swal.fire('Lỗi', 'Không có quyền truy cập hoặc phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
                 }
                  else {
                     console.error('Lỗi lấy thống kê:', response.statusText);
-                    Swal.fire('Lỗi', 'Không thể tải dữ liệu thống kê.', 'error');
+                    document.getElementById('assigned-count').textContent = 'Lỗi';
+                    document.getElementById('delivered-count').textContent = 'Lỗi';
+                    document.getElementById('failed-count').textContent = 'Lỗi';
                 }
             } catch (error) {
                 console.error('Lỗi mạng:', error);
                 Swal.fire('Lỗi', 'Lỗi kết nối mạng.', 'error');
             }
+            // === KẾT THÚC SỬA LỖI ===
         });
     </script>
 </th:block>

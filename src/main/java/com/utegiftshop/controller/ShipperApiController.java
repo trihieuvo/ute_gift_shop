@@ -1,7 +1,8 @@
 package com.utegiftshop.controller;
 
 import com.utegiftshop.dto.request.UpdateOrderStatusRequest;
-import com.utegiftshop.dto.response.ShipperStatsDto; // Import DTO mới
+import com.utegiftshop.dto.response.ShipperStatsDto; 
+import com.utegiftshop.dto.response.ShipperOrderDto; // BỔ SUNG IMPORT
 import com.utegiftshop.entity.Order;
 import com.utegiftshop.repository.OrderRepository;
 import com.utegiftshop.security.service.UserDetailsImpl;
@@ -12,13 +13,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional; // BỔ SUNG IMPORT
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Timestamp; // Import Timestamp để cập nhật thời gian
+import java.sql.Timestamp; 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set; // Import Set để kiểm tra trạng thái hợp lệ
+import java.util.Set; 
+import java.util.stream.Collectors; // BỔ SUNG IMPORT
 
 @RestController
 @RequestMapping("/api/shipper")
@@ -45,19 +48,33 @@ public class ShipperApiController {
         return null;
     }
 
+    // === THAY ĐỔI PHƯƠNG THỨC NÀY ===
     @GetMapping("/orders/assigned")
-    public ResponseEntity<List<Order>> getAssignedOrders() {
+    @Transactional(readOnly = true) // BỔ SUNG: Để lấy được thông tin User (LAZY)
+    public ResponseEntity<List<ShipperOrderDto>> getAssignedOrders() {
         UserDetailsImpl shipperDetails = getCurrentShipper();
         if (shipperDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         List<Order> orders = orderRepository.findByShipperIdAndStatusIn(shipperDetails.getId(), ASSIGNED_STATUSES);
-        // Trả về danh sách rỗng nếu không có đơn hàng, thay vì null
-        return ResponseEntity.ok(orders == null ? Collections.emptyList() : orders);
+        
+        // Trả về danh sách rỗng nếu không có đơn hàng
+        if (orders == null || orders.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        // Chuyển đổi List<Order> (Entity) sang List<ShipperOrderDto> (DTO)
+        List<ShipperOrderDto> orderDtos = orders.stream()
+                                                .map(ShipperOrderDto::new) // Sử dụng constructor của DTO
+                                                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(orderDtos);
     }
+    // === KẾT THÚC THAY ĐỔI ===
 
     @GetMapping("/orders/{orderId}")
+    @Transactional(readOnly = true) // BỔ SUNG: Để xử lý LAZY cho trang chi tiết
     public ResponseEntity<?> getOrderDetails(@PathVariable Long orderId) {
         UserDetailsImpl shipperDetails = getCurrentShipper();
         if (shipperDetails == null) {
@@ -72,8 +89,7 @@ public class ShipperApiController {
             if (order.getShipper() == null || !order.getShipper().getId().equals(shipperDetails.getId())) {
                  return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bạn không có quyền xem đơn hàng này.");
             }
-             // TODO: Cân nhắc trả về DTO thay vì Entity để kiểm soát dữ liệu gửi đi
-            // Ví dụ: chỉ trả về thông tin cần thiết cho shipper
+             // TODO: Cân nhắc trả về DTO thay vì Entity
             return ResponseEntity.ok(order);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng với ID: " + orderId);
