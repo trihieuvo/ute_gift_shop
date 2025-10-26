@@ -59,6 +59,7 @@ public class SecurityConfig {
                     "/cart", "/checkout", "/profile", // <-- CHO PHÉP TẢI CÁC TRANG NÀY
                     "/api/auth/**",
                     "/api/users/me",
+                    "/api/products/**",
                     "/css/**", "/js/**", "/images/**", "/*.ico",
                     "/error",
                     "/v3/api-docs/**", "/swagger-ui/**"

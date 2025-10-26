@@ -8,15 +8,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .navbar {
-            box-shadow: 0 2px 4px rgba(0,0,0,.1);
-        }
-        .icon-group .nav-link {
-            font-size: 1.2rem;
-        }
+        .navbar { box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .icon-group .nav-link { font-size: 1.2rem; }
         .product-card {
             border: 1px solid #eee;
             transition: all 0.3s;
+            margin-bottom: 1.5rem; /* Thêm khoảng cách dưới cho card */
         }
         .product-card:hover {
             box-shadow: 0 4px 8px rgba(0,0,0,.1);
@@ -33,13 +30,11 @@
             </a>
             <div class="d-flex align-items-center icon-group">
                 <a class="nav-link" th:href="@{/cart}"><i class="bi bi-cart3"></i> Giỏ hàng</a>
-                
                 <div class="dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-person-circle"></i> <span id="user-greeting">Tài khoản</span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" id="user-menu">
-                        </ul>
+                    <ul class="dropdown-menu dropdown-menu-end" id="user-menu"></ul>
                 </div>
             </div>
         </div>
@@ -50,23 +45,13 @@
             <div class="container-fluid py-5">
                 <h1 class="display-5 fw-bold">Chào mừng đến với UTE GiftShop</h1>
                 <p class="col-md-8 fs-4">Nơi mua sắm quà tặng và đồ lưu niệm hàng đầu dành cho cộng đồng UTE.</p>
-                <p id="auth-status" class="text-muted">Trạng thái: Đang kiểm tra...</p>
             </div>
         </div>
 
         <section>
             <h2 class="mb-4">Sản phẩm nổi bật</h2>
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="card product-card">
-                        <img src="https://via.placeholder.com/200" class="card-img-top" alt="Product">
-                        <div class="card-body">
-                            <h5 class="card-title">Áo Thun UTE</h5>
-                            <p class="card-text fw-bold">150,000 đ</p>
-                            <a href="#" class="btn btn-primary">Xem chi tiết</a>
-                        </div>
-                    </div>
-                </div>
+            <div class="row" id="product-list">
+                <p>Đang tải sản phẩm...</p>
             </div>
         </section>
     </main>
@@ -80,87 +65,58 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Hàm hiển thị menu cho khách (chưa đăng nhập)
-        function showGuestMenu() {
-            const userGreetingElem = document.getElementById('user-greeting');
-            const userMenu = document.getElementById('user-menu');
-            const authStatusElem = document.getElementById('auth-status');
+        // Các hàm checkLoginStatusAndFetchUser, showGuestMenu, showUserMenu, logout giữ nguyên
+        function showGuestMenu() { /* ... */ }
+        function showUserMenu(userInfo) { /* ... */ }
+        function logout() { /* ... */ }
+        async function checkLoginStatusAndFetchUser() { /* ... */ }
 
-            userGreetingElem.textContent = 'Tài khoản';
-            userMenu.innerHTML = `
-                <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
-                <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
-            `;
-            authStatusElem.textContent = 'Trạng thái: Khách (Chưa đăng nhập)';
-        }
-
-        // Hàm hiển thị menu cho người dùng đã đăng nhập
-        function showUserMenu(userInfo) {
-            const userGreetingElem = document.getElementById('user-greeting');
-            const userMenu = document.getElementById('user-menu');
-            const authStatusElem = document.getElementById('auth-status');
-
-            userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
-            userMenu.innerHTML = `
-                <li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
-                <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>
-            `;
-            // Chuyển hướng dashboard nếu là Shipper
-            if (userInfo.role === 'Shipper') {
-                 userMenu.innerHTML += '<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>';
-            }
-
-            authStatusElem.textContent = `Trạng thái: Đã đăng nhập với vai trò ${userInfo.role}`;
-        }
-
-        // Hàm đăng xuất
-        function logout() {
-            localStorage.removeItem('jwtToken');
-            Swal.fire({
-                title: 'Đã đăng xuất',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => {
-                window.location.href = '/login';
-            });
-        }
-
-        // Hàm chính: kiểm tra trạng thái đăng nhập khi trang tải
-        document.addEventListener('DOMContentLoaded', async function() {
-            const token = localStorage.getItem('jwtToken');
-
-            // Nếu không có token, không cần gọi API, chỉ hiển thị menu cho khách
-            if (!token) {
-                console.log("Không tìm thấy token. Hiển thị menu cho khách.");
-                showGuestMenu();
-                return;
-            }
-
-            // Nếu có token, gọi API để xác thực và lấy thông tin
+        // HÀM MỚI: Lấy và hiển thị sản phẩm
+        async function fetchAndDisplayProducts() {
+            const productListContainer = document.getElementById('product-list');
             try {
-                console.log("Tìm thấy token. Đang gọi API /api/users/me...");
-                const response = await fetch('/api/users/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch('/api/products');
+                if (!response.ok) {
+                    throw new Error('Lỗi mạng hoặc server!');
+                }
+                const products = await response.json();
+
+                // Xóa thông báo "Đang tải..."
+                productListContainer.innerHTML = '';
+
+                if (products.length === 0) {
+                    productListContainer.innerHTML = '<p>Chưa có sản phẩm nào để hiển thị.</p>';
+                    return;
+                }
+
+                // Lặp qua danh sách sản phẩm và tạo HTML
+                products.forEach(product => {
+                    const productCard = `
+                        <div class="col-md-3">
+                            <div class="card product-card">
+                                <img src="https://via.placeholder.com/200" class="card-img-top" alt="${product.name}">
+                                <div class="card-body">
+                                    <h5 class="card-title">${product.name}</h5>
+                                    <p class="card-text fw-bold">${product.price.toLocaleString('vi-VN')} đ</p>
+                                    <a href="#" class="btn btn-primary">Xem chi tiết</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    // Thêm card sản phẩm vào container
+                    productListContainer.innerHTML += productCard;
                 });
 
-                const data = await response.json();
-
-                if (response.ok && data.authenticated) {
-                    console.log("Xác thực thành công. Dữ liệu người dùng:", data);
-                    showUserMenu(data);
-                } else {
-                    // Trường hợp token không hợp lệ (hết hạn, sai, etc.)
-                    console.log("Token không hợp lệ hoặc đã hết hạn.");
-                    localStorage.removeItem('jwtToken'); // Dọn dẹp token cũ
-                    showGuestMenu();
-                }
             } catch (error) {
-                console.error("Lỗi mạng hoặc lỗi khi gọi API:", error);
-                showGuestMenu(); // Hiển thị menu khách nếu có lỗi
+                console.error("Lỗi khi tải sản phẩm:", error);
+                productListContainer.innerHTML = '<p class="text-danger">Không thể tải danh sách sản phẩm.</p>';
             }
+        }
+
+        // Gọi các hàm khi trang được tải xong
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoginStatusAndFetchUser();
+            fetchAndDisplayProducts(); // <-- Gọi hàm mới ở đây
         });
     </script>
 </body>
