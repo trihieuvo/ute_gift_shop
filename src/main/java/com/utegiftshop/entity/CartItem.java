@@ -1,4 +1,8 @@
+// src/main/java/com/utegiftshop/entity/CartItem.java
+
 package com.utegiftshop.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore; // Thêm import này
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,11 +27,14 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // THAY ĐỔI 1: Thêm @JsonIgnore để tránh serialize đối tượng User không cần thiết
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // THAY ĐỔI 2: Chuyển từ LAZY sang EAGER để luôn tải thông tin sản phẩm
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
