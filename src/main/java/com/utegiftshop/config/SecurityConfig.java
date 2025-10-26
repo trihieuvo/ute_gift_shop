@@ -4,7 +4,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-// *** THÊM IMPORT NÀY ***
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,11 +17,9 @@ import com.utegiftshop.security.JwtAuthenticationFilter;
 import com.utegiftshop.security.jwt.JwtTokenProvider;
 import com.utegiftshop.security.service.UserDetailsServiceImpl;
 
-import jakarta.servlet.http.HttpServletResponse;
-
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // *** BẬT KIỂM TRA QUYỀN TRÊN METHOD (@PreAuthorize) ***
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
@@ -53,33 +50,33 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .logoutSuccessHandler((request, response, authentication) ->
-                    response.setStatus(HttpServletResponse.SC_OK))
-            )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers( // Các đường dẫn CÔNG KHAI
+                // ===== 1. CÁC ĐƯỜNG DẪN CÔNG KHAI (KHÔNG CẦN ĐĂNG NHẬP) =====
+                // BAO GỒM CẢ CÁC TRANG GIAO DIỆN CHÍNH
+                .requestMatchers(
+                    "/", "/home", "/login", "/signup", "/activate",
+                    "/forgot-password", "/reset-password",
+                    "/cart", "/checkout", "/profile", // <-- CHO PHÉP TẢI CÁC TRANG NÀY
                     "/api/auth/**",
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html",
+                    "/api/users/me",
+                    "/css/**", "/js/**", "/images/**", "/*.ico",
                     "/error",
-                    "/home",
-                    "/login",
-                    "/signup",
-                    "/activate",
-                    "/forgot-password",
-                    "/reset-password",
-                    "/js/**",
-                    "/images/**",
-                    "/css/**",
-                    "/*.ico",
-                    "/" // Cho phép trang gốc (sẽ redirect về login nếu chưa đăng nhập)
+                    "/v3/api-docs/**", "/swagger-ui/**"
                 ).permitAll()
-                // *** THÊM: Yêu cầu quyền 'Shipper' cho các đường dẫn Shipper ***
+
+                // ===== 2. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
+                // ĐÂY LÀ NƠI BẢO MẬT DỮ LIỆU THỰC SỰ
+                .requestMatchers(
+                    
+                    "/api/cart/**",
+                    "/api/addresses/**",
+                    "/api/orders/**"
+                ).hasAuthority("Customer")
+
+                // ===== 3. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
                 .requestMatchers("/shipper/**", "/api/shipper/**").hasAuthority("Shipper")
-                // *** THAY ĐỔI: Các đường dẫn còn lại cần xác thực ***
+
+                // ===== 4. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
                 .anyRequest().authenticated()
             );
 

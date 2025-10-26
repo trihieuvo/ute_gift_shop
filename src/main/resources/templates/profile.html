@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Thông tin cá nhân</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1>Thông tin cá nhân</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Sổ địa chỉ</h4>
+            <div id="address-list-profile">
+                </div>
+            <button class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#addressModal">Thêm địa chỉ mới</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addressModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm địa chỉ mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAddressForm">
+                        <div class="mb-3">
+                            <label for="recipientName" class="form-label">Tên người nhận</label>
+                            <input type="text" class="form-control" id="recipientName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phoneNumber" class="form-label">Số điện thoại</label>
+                            <input type="text" class="form-control" id="phoneNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fullAddress" class="form-label">Địa chỉ chi tiết</label>
+                            <input type="text" class="form-control" id="fullAddress" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lưu địa chỉ</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+<script>
+    document.addEventListener('DOMContentLoaded', fetchAddressesForProfile);
+
+    async function fetchAddressesForProfile() {
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch('/api/addresses', { headers: { 'Authorization': `Bearer ${token}` } });
+        const addresses = await response.json();
+        const container = document.getElementById('address-list-profile');
+        container.innerHTML = '';
+        addresses.forEach(addr => {
+            container.innerHTML += `
+                <div class="card card-body mb-2">
+                    <strong>${addr.recipientName}</strong> - ${addr.phoneNumber}<br>
+                    ${addr.fullAddress}
+                </div>`;
+        });
+    }
+    
+    document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch('/api/addresses', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientName: document.getElementById('recipientName').value,
+                phoneNumber: document.getElementById('phoneNumber').value,
+                fullAddress: document.getElementById('fullAddress').value
+            })
+        });
+
+        if (response.ok) {
+            var myModalEl = document.getElementById('addressModal');
+            var modal = bootstrap.Modal.getInstance(myModalEl);
+            modal.hide();
+            fetchAddressesForProfile(); // Reload list
+        } else {
+            Swal.fire('Lỗi', 'Không thể thêm địa chỉ', 'error');
+        }
+    });
+</script>
+</th:block>
+
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Giỏ hàng</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="mb-4">Giỏ hàng của bạn</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <div id="cart-items-container">
+                <p>Đang tải giỏ hàng...</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Tóm tắt đơn hàng</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Tạm tính:</span>
+                            <strong id="subtotal">0 đ</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Phí vận chuyển:</span>
+                            <strong>Miễn phí</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Tổng cộng:</span>
+                            <strong id="total" class="text-danger fs-5">0 đ</strong>
+                        </li>
+                    </ul>
+                    <a th:href="@{/checkout}" class="btn btn-primary w-100 mt-3" id="checkout-button" style="display: none;">Tiến hành thanh toán</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchCartItems);
+
+        async function fetchCartItems() {
+            const token = localStorage.getItem('jwtToken');
+            const container = document.getElementById('cart-items-container');
+            
+            const response = await fetch('/api/cart', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const items = await response.json();
+                renderCart(items);
+            } else {
+                container.innerHTML = '<p class="text-danger">Lỗi khi tải giỏ hàng.</p>';
+            }
+        }
+
+        function renderCart(items) {
+            const container = document.getElementById('cart-items-container');
+            const checkoutBtn = document.getElementById('checkout-button');
+            
+            if (items.length === 0) {
+                container.innerHTML = '<p>Giỏ hàng của bạn đang trống.</p>';
+                checkoutBtn.style.display = 'none';
+                updateSummary(0);
+                return;
+            }
+
+            let subtotal = 0;
+            container.innerHTML = ''; // Clear loading message
+
+            items.forEach(item => {
+                const itemTotal = item.product.price * item.quantity;
+                subtotal += itemTotal;
+                container.innerHTML += `
+                    <div class="card mb-3" id="cart-item-${item.product.id}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div class="d-flex flex-row align-items-center">
+                                    <div>
+                                        <img src="https://via.placeholder.com/100" class="img-fluid rounded-3" alt="Shopping item">
+                                    </div>
+                                    <div class="ms-3">
+                                        <h5>${item.product.name}</h5>
+                                        <p class="small mb-0">${item.product.price.toLocaleString('vi-VN')} đ</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-row align-items-center">
+                                    <div style="width: 120px;">
+                                        <input type="number" value="${item.quantity}" min="1" class="form-control" onchange="updateQuantity(${item.product.id}, this.value)"/>
+                                    </div>
+                                    <div style="width: 80px;">
+                                        <h5 class="mb-0">${itemTotal.toLocaleString('vi-VN')} đ</h5>
+                                    </div>
+                                    <a href="#!" style="color: #cecece;" onclick="removeItem(${item.product.id})"><i class="fas fa-trash-alt"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            updateSummary(subtotal);
+            checkoutBtn.style.display = 'block';
+        }
+
+        function updateSummary(subtotal) {
+            document.getElementById('subtotal').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('total').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
+        }
+
+        async function updateQuantity(productId, quantity) {
+            const token = localStorage.getItem('jwtToken');
+            await fetch(`/api/cart/${productId}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: parseInt(quantity) })
+            });
+            fetchCartItems(); // Reload cart
+        }
+
+        async function removeItem(productId) {
+            const token = localStorage.getItem('jwtToken');
+            await fetch(`/api/cart/${productId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            fetchCartItems(); // Reload cart
+        }
+    </script>
+</th:block>
+</body>
+</html>

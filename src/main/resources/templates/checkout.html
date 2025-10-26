@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Thanh toán</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="mb-4">Thanh toán đơn hàng</h1>
+    <div class="row">
+        <div class="col-md-7">
+            <h4>Chọn địa chỉ giao hàng</h4>
+            <div id="address-list" class="mb-3">
+                </div>
+            <h4 class="mt-4">Chọn phương thức thanh toán</h4>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
+                <label class="form-check-label" for="cod">
+                    Thanh toán khi nhận hàng (COD)
+                </label>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Tóm tắt đơn hàng</h5>
+                    <div id="order-summary">Đang tải...</div>
+                    <button class="btn btn-success w-100 mt-3" onclick="placeOrder()">Đặt hàng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAddresses();
+            fetchOrderSummary();
+        });
+
+        async function fetchAddresses() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch('/api/addresses', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const addresses = await response.json();
+            const container = document.getElementById('address-list');
+            container.innerHTML = '';
+            addresses.forEach((addr, index) => {
+                container.innerHTML += `
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="address" id="addr-${addr.id}" value="${addr.id}" ${index === 0 ? 'checked' : ''}>
+                        <label class="form-check-label" for="addr-${addr.id}">
+                            <strong>${addr.recipientName}</strong> - ${addr.phoneNumber}<br>
+                            ${addr.fullAddress}
+                        </label>
+                    </div>
+                `;
+            });
+        }
+        
+        async function fetchOrderSummary() {
+            const token = localStorage.getItem('jwtToken');
+            const response = await fetch('/api/cart', { headers: { 'Authorization': `Bearer ${token}` } });
+            const items = await response.json();
+            const container = document.getElementById('order-summary');
+            
+            let total = 0;
+            container.innerHTML = '';
+            items.forEach(item => {
+                total += item.product.price * item.quantity;
+                container.innerHTML += `<p>${item.product.name} (x${item.quantity})</p>`;
+            });
+            container.innerHTML += `<hr><h5>Tổng cộng: ${total.toLocaleString('vi-VN')} đ</h5>`;
+        }
+
+        async function placeOrder() {
+            const token = localStorage.getItem('jwtToken');
+            const selectedAddress = document.querySelector('input[name="address"]:checked');
+            const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+
+            if (!selectedAddress) {
+                Swal.fire('Lỗi', 'Vui lòng chọn địa chỉ giao hàng.', 'warning');
+                return;
+            }
+
+            const response = await fetch('/api/orders/checkout', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    addressId: selectedAddress.value,
+                    paymentMethod: selectedPayment.value
+                })
+            });
+
+            if (response.ok) {
+                Swal.fire('Thành công!', 'Đặt hàng thành công!', 'success').then(() => {
+                    window.location.href = '/home'; // Hoặc trang lịch sử đơn hàng
+                });
+            } else {
+                const error = await response.text();
+                Swal.fire('Lỗi!', `Không thể đặt hàng: ${error}`, 'error');
+            }
+        }
+    </script>
+</th:block>
+</body>
+</html>

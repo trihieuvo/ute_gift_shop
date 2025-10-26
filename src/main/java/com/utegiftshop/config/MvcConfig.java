@@ -21,6 +21,10 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addViewController("/forgot-password").setViewName("forgot-password");
         registry.addViewController("/reset-password").setViewName("reset-password");
 
+        registry.addViewController("/cart").setViewName("cart"); // Trang giỏ hàng
+        registry.addViewController("/checkout").setViewName("checkout"); // Trang thanh toán
+        registry.addViewController("/profile").setViewName("profile"); // Trang thông tin cá nhân
+
         // BỎ CÁC VIEW CONTROLLER CHO /shipper/... ở đây nếu có
 
         registry.addViewController("/").setViewName("login");
