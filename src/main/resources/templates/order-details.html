@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Chi tiết Đơn hàng</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+         <h1 id="order-title">Chi tiết Đơn hàng #...</h1>
+         <a th_href="@{/order-history}" class="btn btn-secondary btn-sm">Quay lại lịch sử</a>
+    </div>
+
+    <div id="order-details-loading" class="text-center p-5">Đang tải thông tin đơn hàng...</div>
+
+    <div id="order-details-content" class="d-none">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <h5>Thông tin nhận hàng</h5>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item"><strong>Ngày đặt:</strong> <span id="order-date"></span></li>
+                    <li class="list-group-item"><strong>Địa chỉ:</strong> <span id="recipient-address"></span></li>
+                    <li class="list-group-item"><strong>Phương thức TT:</strong> <span id="order-payment"></span></li>
+                </ul>
+                 <h5>Trạng thái đơn hàng</h5>
+                 <p class="fs-4"><strong id="order-current-status"></strong></p>
+                 <div id="action-buttons"></div>
+            </div>
+
+            <div class="col-md-6">
+                <h5>Các sản phẩm</h5>
+                <ul class="list-group" id="product-list">
+                    </ul>
+                <hr>
+                <h4 class="text-end">Tổng cộng: <span id="order-total" class="text-danger"></span></h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // Lấy orderId từ URL (Giả định URL là /orders/123)
+        const pathParts = window.location.pathname.split('/');
+        const orderId = pathParts[pathParts.length - 1];
+        /*]]>*/
+
+        const loadingDiv = document.getElementById('order-details-loading');
+        const contentDiv = document.getElementById('order-details-content');
+
+        async function fetchOrderDetails() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token || !orderId) {
+                window.location.href = '/login';
+                return;
+            }
+
+            document.getElementById('order-title').textContent = `Chi tiết Đơn hàng #${orderId}`;
+
+            try {
+                // 1. Gọi API /api/orders/{id} (sẽ được tạo ở OrderController)
+                const response = await fetch(`/api/orders/${orderId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                loadingDiv.classList.add('d-none'); // Ẩn loading
+
+                if (response.ok) {
+                    const order = await response.json();
+                    contentDiv.classList.remove('d-none'); // Hiện content
+
+                    // Đổ dữ liệu
+                    document.getElementById('order-date').textContent = new Date(order.orderDate).toLocaleString('vi-VN');
+                    document.getElementById('recipient-address').textContent = order.shippingAddress || 'N/A';
+                    document.getElementById('order-payment').textContent = order.paymentMethod || 'N/A';
+                    document.getElementById('order-current-status').textContent = order.status || 'N/A';
+                    document.getElementById('order-total').textContent = order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') + ' đ' : 'N/A';
+
+                    // Hiển thị sản phẩm (Giả định API trả về chi tiết sản phẩm)
+                    // Lưu ý: Cần sửa OrderController để trả về OrderDetail cùng với Order
+                    const productList = document.getElementById('product-list');
+                    productList.innerHTML = '';
+                    if (order.orderDetails && order.orderDetails.length > 0) {
+                        order.orderDetails.forEach(detail => {
+                            productList.innerHTML += `
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>
+                                        ${detail.product.name} (x${detail.quantity})
+                                    </span>
+                                    <span>${(detail.price * detail.quantity).toLocaleString('vi-VN')} đ</span>
+                                </li>
+                            `;
+                        });
+                    } else {
+                         productList.innerHTML = '<li class="list-group-item">Không thể tải chi tiết sản phẩm.</li>';
+                    }
+                    
+                    // 2. Hiển thị nút Hủy đơn hàng nếu trạng thái là "NEW"
+                    if (order.status === 'NEW') {
+                        document.getElementById('action-buttons').innerHTML = 
+                            '<button class="btn btn-danger" onclick="cancelOrder()">Hủy đơn hàng</button>';
+                    }
+
+                } else if (response.status === 401 || response.status === 403) {
+                     Swal.fire('Lỗi', 'Không có quyền truy cập (Đây không phải đơn hàng của bạn) hoặc phiên hết hạn.', 'error').then(() => window.location.href = '/order-history');
+                } else if (response.status === 404) {
+                    contentDiv.innerHTML = '<p class="text-danger text-center">Không tìm thấy đơn hàng.</p>';
+                    contentDiv.classList.remove('d-none');
+                }
+                else {
+                     contentDiv.innerHTML = '<p class="text-danger text-center">Lỗi tải thông tin đơn hàng.</p>';
+                     contentDiv.classList.remove('d-none');
+                }
+            } catch (error) {
+                 loadingDiv.classList.add('d-none');
+                 contentDiv.innerHTML = '<p class="text-danger text-center">Lỗi kết nối mạng.</p>';
+                 contentDiv.classList.remove('d-none');
+            }
+        }
+        
+        // 3. Hàm xử lý Hủy đơn hàng
+        async function cancelOrder() {
+            const token = localStorage.getItem('jwtToken');
+            
+            Swal.fire({
+                title: 'Bạn chắc chắn muốn hủy?',
+                text: "Bạn không thể hoàn tác hành động này!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Đồng ý hủy!',
+                cancelButtonText: 'Không'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(`/api/orders/${orderId}/cancel`, {
+                             method: 'PUT',
+                             headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const responseText = await response.text();
+                        
+                        if(response.ok) {
+                            Swal.fire('Đã hủy!', responseText, 'success').then(() => {
+                                fetchOrderDetails(); // Tải lại trang
+                            });
+                        } else {
+                            Swal.fire('Lỗi!', responseText, 'error');
+                        }
+                    } catch (e) {
+                        Swal.fire('Lỗi!', 'Lỗi mạng khi hủy đơn.', 'error');
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchOrderDetails);
+    </script>
+</th:block>
+
+</body>
+</html>

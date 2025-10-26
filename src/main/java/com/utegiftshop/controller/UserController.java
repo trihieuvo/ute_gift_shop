@@ -1,58 +1,101 @@
 package com.utegiftshop.controller;
 
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity; // THÊM IMPORT MỚI
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder; // Import thêm
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.utegiftshop.dto.request.ChangePasswordRequest;
+import com.utegiftshop.dto.request.UpdateProfileRequest;
+import com.utegiftshop.dto.response.UserInfoResponse;
 import com.utegiftshop.entity.User;
-import com.utegiftshop.repository.UserRepository; // Import thêm
+import com.utegiftshop.repository.UserRepository;
 import com.utegiftshop.security.service.UserDetailsImpl;
 
-
-// *** TẠO CONTROLLER NÀY ĐỂ XỬ LÝ YÊU CẦU LẤY THÔNG TIN USER HIỆN TẠI ***
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     @Autowired
-    UserRepository userRepository; // Inject UserRepository
+    private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    /**
+     * SỬA LỖI: Trả về một DTO an toàn thay vì Map hoặc Entity
+     */
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser() {
+    public ResponseEntity<UserInfoResponse> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // KIỂM TRA NẾU CHƯA XÁC THỰC HOẶC LÀ NGƯỜI DÙNG VÔ DANH (GUEST)
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
-            // Thay vì trả về lỗi, trả về một đối tượng rỗng hoặc một thông báo trạng thái
-            // Trả về 200 OK để frontend không coi đây là một lỗi
-            return ResponseEntity.ok(Map.of("authenticated", false));
-        }
-
-        // NẾU ĐÃ XÁC THỰC, TRẢ VỀ THÔNG TIN USER NHƯ CŨ
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        
-        String fullName = userRepository.findById(userDetails.getId())
-                                      .map(User::getFullName)
-                                      .orElse("N/A");
 
+        User currentUser = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("Lỗi: Không tìm thấy người dùng trong CSDL."));
+        
         String role = userDetails.getAuthorities().stream()
                                   .map(GrantedAuthority::getAuthority)
                                   .collect(Collectors.joining());
 
-        return ResponseEntity.ok(Map.of(
-            "authenticated", true, // Thêm trường này để frontend dễ kiểm tra
-            "id", userDetails.getId(),
-            "email", userDetails.getUsername(),
-            "fullName", fullName,
-            "role", role
-        ));
+        // Tạo đối tượng DTO để trả về
+        UserInfoResponse response = new UserInfoResponse(
+            true,
+            currentUser.getId(),
+            currentUser.getEmail(),
+            currentUser.getFullName(),
+            currentUser.getPhoneNumber(),
+            role
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * API để cập nhật thông tin cá nhân (Giữ nguyên)
+     */
+    @PutMapping("/me")
+    public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFullName(request.getFullName());
+        user.setPhoneNumber(request.getPhoneNumber());
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Cập nhật thông tin thành công.");
+    }
+
+    /**
+     * API để đổi mật khẩu (Giữ nguyên)
+     */
+    @PostMapping("/me/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest().body("Mật khẩu hiện tại không chính xác.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Đổi mật khẩu thành công.");
     }
 }

@@ -1,7 +1,11 @@
+// src/main/java/com/utegiftshop/entity/Product.java
+
 package com.utegiftshop.entity;
 
-import java.math.BigDecimal;
+import java.math.BigDecimal; // Thêm import này
 import java.sql.Timestamp;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,10 +30,14 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // THAY ĐỔI 1: Thêm @JsonIgnore
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
+    // THAY ĐỔI 2: Thêm @JsonIgnore
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;

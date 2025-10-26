@@ -4,19 +4,21 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/_app_layout}">
 <head>
-    <title>Shipper - Đơn hàng cần giao</title>
+    <title>Shipper - Lịch sử đơn hàng</title>
     <style>
         .order-card {
             border: 1px solid #ddd;
             border-left-width: 5px;
-            border-left-color: #ffc107; /* Màu vàng */
-            border-radius: 5px;
             margin-bottom: 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,.05);
-            transition: box-shadow 0.2s ease;
         }
-        .order-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,.1);
+        /* Thẻ thành công */
+        .order-card-success {
+            border-left-color: #198754; 
+        }
+         /* Thẻ thất bại */
+        .order-card-danger {
+            border-left-color: #dc3545;
         }
         .order-card-body {
             padding: 1rem;
@@ -39,14 +41,14 @@
 
 <div layout:fragment="content">
     <div class="d-flex justify-content-between align-items-center mb-4">
-         <h1>Đơn hàng cần giao</h1>
+         <h1>Lịch sử đơn hàng</h1>
          <a th:href="@{/shipper/dashboard}" class="btn btn-secondary btn-sm">
              <i class="bi bi-arrow-left-circle"></i> Quay lại
          </a>
     </div>
 
     <div id="orders-list-container">
-        <p class="text-center p-5">Đang tải danh sách đơn hàng...</p>
+        <p class="text-center p-5">Đang tải lịch sử đơn hàng...</p>
     </div>
 </div>
 
@@ -58,7 +60,7 @@
             currency: 'VND'
         });
 
-        async function fetchAssignedOrders() {
+        async function fetchCompletedOrders() {
             const token = localStorage.getItem('jwtToken');
             const container = document.getElementById('orders-list-container');
             if (!token) {
@@ -67,8 +69,8 @@
             }
 
             try {
-                // Gọi API lấy đơn hàng CHƯA GIAO
-                const response = await fetch('/api/shipper/orders/assigned', {
+                // Gọi API lấy đơn hàng ĐÃ HOÀN THÀNH
+                const response = await fetch('/api/shipper/orders/completed', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -78,27 +80,28 @@
 
                     if (orders.length === 0) {
                         container.innerHTML = `
-                            <div class="alert alert-success text-center">
-                                <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
-                                <h5>Tuyệt vời!</h5>
-                                <p class="mb-0">Bạn đã hoàn thành tất cả đơn hàng được giao.</p>
+                            <div class="alert alert-info text-center">
+                                <i class="bi bi-info-circle-fill fs-3 d-block mb-2"></i>
+                                <p class="mb-0">Bạn chưa có đơn hàng nào đã hoàn thành.</p>
                             </div>`;
                         return;
                     }
 
                     orders.forEach(order => {
                         const orderCard = document.createElement('div');
-                        orderCard.className = 'order-card';
+                        let cardClass = 'order-card';
+                        let statusBadge = '';
+
+                        if(order.status === 'DELIVERED') {
+                            cardClass += ' order-card-success';
+                            statusBadge = `<span class="badge bg-success">Đã giao thành công</span>`;
+                        } else {
+                            cardClass += ' order-card-danger';
+                            statusBadge = `<span class="badge bg-danger">Giao thất bại</span>`;
+                        }
+                        orderCard.className = cardClass;
                         
                         let totalAmountDisplay = order.totalAmount ? formatter.format(order.totalAmount) : 'N/A';
-                        
-                        // Thêm tag COD
-                        let paymentTag = '';
-                        if (order.paymentMethod === 'COD') {
-                            paymentTag = `<span class="badge bg-danger">Thu hộ</span>`;
-                        } else {
-                            paymentTag = `<span class="badge bg-success">Đã thanh toán</span>`;
-                        }
                         
                         let phoneHtml = order.recipientPhone 
                             ? `<a href="tel:${order.recipientPhone}" class="phone-link"><i class="bi bi-telephone-fill"></i> ${order.recipientPhone}</a>`
@@ -109,10 +112,10 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <h5 class="mb-1">Đơn hàng #${order.id}</h5>
-                                        <span class="badge bg-primary me-2">${order.status}</span>
-                                        <span class="text-muted small">${new Date(order.orderDate).toLocaleDateString('vi-VN')}</span>
+                                        ${statusBadge}
+                                        <span class="text-muted small ms-2">${new Date(order.orderDate).toLocaleDateString('vi-VN')}</span>
                                     </div>
-                                    <strong class="text-danger fs-5">${totalAmountDisplay} ${paymentTag}</strong>
+                                    <strong class_A="fs-5">${totalAmountDisplay}</strong>
                                 </div>
                                 <hr class="my-2">
                                 <p class="mb-1">
@@ -125,8 +128,8 @@
                                 </p>
                             </div>
                             <div class="order-card-footer text-end">
-                                <a href="/shipper/orders/${order.id}" class="btn btn-primary">
-                                    Chi tiết & Cập nhật <i class="bi bi-arrow-right-short"></i>
+                                <a href="/shipper/orders/${order.id}" class="btn btn-outline-secondary btn-sm">
+                                    Xem lại chi tiết
                                 </a>
                             </div>
                         `;
@@ -137,7 +140,7 @@
                      Swal.fire('Lỗi', 'Không có quyền truy cập hoặc phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
                 } else {
                     console.error('Lỗi lấy đơn hàng:', response.statusText);
-                    container.innerHTML = '<div class="alert alert-danger text-center">Lỗi tải danh sách đơn hàng.</div>';
+                    container.innerHTML = '<div class="alert alert-danger text-center">Lỗi tải lịch sử đơn hàng.</div>';
                 }
             } catch (error) {
                 console.error('Lỗi mạng:', error);
@@ -145,7 +148,7 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', fetchAssignedOrders);
+        document.addEventListener('DOMContentLoaded', fetchCompletedOrders);
     </script>
 </th:block>
 

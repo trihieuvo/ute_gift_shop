@@ -1,6 +1,5 @@
 package com.utegiftshop.controller;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/shipper")
-@PreAuthorize("hasAuthority('Shipper')") // Chỉ Shipper mới truy cập được các trang này
 public class ShipperViewController {
 
     @GetMapping("/dashboard")
@@ -21,6 +19,14 @@ public class ShipperViewController {
     public String showOrdersPage() {
         return "shipper/shipper_orders"; // Trỏ tới templates/shipper/shipper_orders.html
     }
+    
+    // === BỔ SUNG: ROUTE CHO TRANG LỊCH SỬ ===
+    @GetMapping("/orders/completed")
+    public String showCompletedOrdersPage() {
+        // Trỏ tới templates/shipper/shipper_completed_orders.html
+        return "shipper/shipper_completed_orders"; 
+    }
+    // === KẾT THÚC BỔ SUNG ===
 
     @GetMapping("/orders/{orderId}")
     public String showOrderDetailsPage(@PathVariable Long orderId, Model model) {

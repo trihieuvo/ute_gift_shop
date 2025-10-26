@@ -1,4 +1,8 @@
+// src/main/java/com/utegiftshop/entity/Address.java
+
 package com.utegiftshop.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore; // Thêm import này
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,6 +27,8 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // THAY ĐỔI: Thêm @JsonIgnore để ngăn Jackson serialize trường này
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

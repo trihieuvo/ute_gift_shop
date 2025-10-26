@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Lịch sử đơn hàng</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <h1 class="mb-4">Lịch sử đơn hàng</h1>
+
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Mã ĐH</th>
+                <th scope="col">Ngày đặt</th>
+                <th scope="col">Địa chỉ</th>
+                <th scope="col">Tổng tiền</th>
+                <th scope="col">Trạng thái</th>
+                <th scope="col">Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="orders-table-body">
+            <tr><td colspan="6" class="text-center p-5">Đang tải lịch sử đơn hàng...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script>
+        async function fetchOrderHistory() {
+            const token = localStorage.getItem('jwtToken');
+            const tableBody = document.getElementById('orders-table-body');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                // 1. Gọi API /api/orders/my-history (sẽ được tạo ở OrderController)
+                const response = await fetch('/api/orders/my-history', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const orders = await response.json();
+                    tableBody.innerHTML = ''; // Xóa dòng "Đang tải..."
+
+                    if (orders.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5">Bạn chưa có đơn hàng nào.</td></tr>';
+                        return;
+                    }
+
+                    orders.forEach(order => {
+                        const row = tableBody.insertRow();
+                        let statusBadge = '';
+                        switch (order.status) {
+                            case 'NEW': statusBadge = 'bg-info'; break;
+                            case 'CONFIRMED': statusBadge = 'bg-primary'; break;
+                            case 'DELIVERING': statusBadge = 'bg-warning text-dark'; break;
+                            case 'DELIVERED': statusBadge = 'bg-success'; break;
+                            case 'CANCELLED': statusBadge = 'bg-danger'; break;
+                            default: statusBadge = 'bg-secondary';
+                        }
+                        
+                        row.innerHTML = `
+                            <td>#${order.id}</td>
+                            <td>${new Date(order.orderDate).toLocaleDateString('vi-VN')}</td>
+                            <td>${order.shippingAddress}</td>
+                            <td>${order.totalAmount.toLocaleString('vi-VN')} đ</td>
+                            <td><span class="badge ${statusBadge}">${order.status}</span></td>
+                            <td>
+                                <a href="/orders/${order.id}" class="btn btn-primary btn-sm">Xem chi tiết</a>
+                            </td>
+                        `;
+                    });
+
+                } else if (response.status === 401 || response.status === 403) {
+                     Swal.fire('Lỗi', 'Không có quyền truy cập hoặc phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5 text-danger">Lỗi tải lịch sử đơn hàng.</td></tr>';
+                }
+            } catch (error) {
+                 tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5 text-danger">Lỗi kết nối mạng.</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchOrderHistory);
+    </script>
+</th:block>
+
+</body>
+</html>
