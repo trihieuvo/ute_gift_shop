@@ -3,8 +3,37 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title layout:title-pattern="$CONTENT_TITLE | UTE GiftShop">$LAYOUT_TITLE</title>
+
     <style>
-        /* ... phần style giữ nguyên ... */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 70px; /* Thêm padding để nội dung không bị header che khuất */
+        }
+        .content-wrapper {
+            flex: 1;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .main-content-card {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
+        footer {
+            background-color: #f8f9fa;
+            padding: 1rem 0;
+            text-align: center;
+        }
     </style>
     <th:block layout:fragment="styles"></th:block>
     <th:block layout:fragment="scripts_head"></th:block>
@@ -18,18 +47,14 @@
             </a>
             <div class="d-flex align-items-center">
                 <a class="nav-link me-3" th:href="@{/cart}">
-                    <i class="bi bi-cart3"></i> Giỏ hàng
+                    <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
                 </a>
                 <div class="dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i> <span id="userGreeting">Tài khoản</span>
+                        <i class="bi bi-person-circle fs-5"></i> <span id="userGreeting">Tài khoản</span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" th:href="@{/profile}">Thông tin cá nhân</a></li>
-                        <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>
-                    </ul>
+                    <ul id="user-menu" class="dropdown-menu dropdown-menu-end">
+                        </ul>
                 </div>
             </div>
         </div>
@@ -52,86 +77,68 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-    // Hàm logout giữ nguyên
-    function logout() {
-        localStorage.removeItem('jwtToken');
-        console.log("Token removed on logout."); // Log logout
-        Swal.fire({
-            title: 'Đã đăng xuất',
-            text: 'Bạn đã đăng xuất thành công!',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-             window.location.href = '/login';
-        });
-    }
-
-    // Hàm kiểm tra token và lấy thông tin user (với logging)
-    async function checkLoginStatusAndFetchUser() {
-        console.log("checkLoginStatusAndFetchUser running..."); // Log function start
-        const token = localStorage.getItem('jwtToken');
-        const userGreetingElem = document.getElementById('userGreeting');
-
-        if (!token) {
-            console.log("No token found in localStorage, redirecting to /login.");
-            window.location.href = '/login';
-            return;
-        }
-
-        console.log("Token found in localStorage:", token ? 'Yes (hidden)' : 'No'); // Avoid logging the actual token
-
-        // Có token, thử gọi API để xác thực
-        try {
-            console.log("Attempting to fetch /api/users/me with token...");
-            const response = await fetch('/api/users/me', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+        // Hàm logout giữ nguyên
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            Swal.fire({
+                title: 'Đã đăng xuất',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                 window.location.href = '/login';
             });
-
-            console.log("/api/users/me response status:", response.status); // Log response status
-
-            if (response.ok) {
-                // Token hợp lệ
-                const userInfo = await response.json();
-                console.log("Token validated successfully. User info:", userInfo);
-
-                if (userGreetingElem) {
-                    userGreetingElem.textContent = `Chào ${userInfo.fullName || userInfo.email || 'bạn'}!`;
-                }
-                // *** IMPORTANT: Signal that authentication check is complete ***
-                document.body.setAttribute('data-auth-checked', 'true');
-                console.log("Authentication check complete.");
-
-
-            } else if (response.status === 401 || response.status === 403) {
-                // Token không hợp lệ/hết hạn
-                console.error("Token validation failed:", response.status, await response.text());
-                localStorage.removeItem('jwtToken');
-                Swal.fire('Phiên hết hạn', 'Vui lòng đăng nhập lại.', 'warning').then(() => {
-                    window.location.href = '/login';
-                });
-            } else {
-                // Lỗi server khác
-                const errorText = await response.text();
-                console.error(`Error during token validation (${response.status}):`, errorText);
-                Swal.fire('Lỗi', `Không thể xác thực phiên (${response.status}). Vui lòng thử lại.`, 'error');
-            }
-
-        } catch (error) {
-            // Lỗi mạng
-            console.error("Network error during token validation:", error);
-            Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
         }
-    }
-
-    // Gọi hàm kiểm tra khi DOM tải xong
-    document.addEventListener('DOMContentLoaded', checkLoginStatusAndFetchUser);
-
-</script>
+    
+        // Cập nhật hàm này để xử lý menu tốt hơn
+        async function checkLoginStatusAndFetchUser() {
+            const token = localStorage.getItem('jwtToken');
+            const userGreetingElem = document.getElementById('userGreeting');
+            const userMenu = document.getElementById('user-menu');
+    
+            if (!token) {
+                userGreetingElem.textContent = 'Tài khoản';
+                userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
+                                      <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
+                return;
+            }
+    
+            try {
+                const response = await fetch('/api/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+    
+                if (response.ok) {
+                    const userInfo = await response.json();
+                    if (userInfo.authenticated) {
+                        userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
+                        let menuItems = `<li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
+                                         <li><a class="dropdown-item" href="#">Lịch sử đơn hàng</a></li>`;
+                        if (userInfo.role === 'Shipper') {
+                             menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
+                        }
+                        menuItems += `<li><hr class="dropdown-divider"></li>
+                                      <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
+                        userMenu.innerHTML = menuItems;
+                    } else {
+                         // Token không hợp lệ
+                         logout();
+                    }
+                } else {
+                    // Lỗi 401, 403
+                    logout();
+                }
+            } catch (error) {
+                console.error("Lỗi khi xác thực:", error);
+                // Có thể hiển thị menu đăng nhập nếu có lỗi mạng
+                userGreetingElem.textContent = 'Tài khoản';
+                userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>`;
+            }
+        }
+    
+        document.addEventListener('DOMContentLoaded', checkLoginStatusAndFetchUser);
+    
+    </script>
     <th:block layout:fragment="scripts_body"></th:block>
 
 </body>
