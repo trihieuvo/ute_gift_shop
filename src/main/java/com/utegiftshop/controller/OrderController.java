@@ -6,7 +6,7 @@ import com.utegiftshop.repository.*;
 import com.utegiftshop.security.service.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus; // BỔ SUNG
+import org.springframework.http.HttpStatus; 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional; // BỔ SUNG
+import java.util.Optional; 
 
 @RestController
 @RequestMapping("/api/orders")
@@ -47,8 +47,14 @@ public class OrderController {
         Order order = new Order();
         User user = new User();
         user.setId(userId);
-        order.setUser(user);
+        order.setUser(user); // Gán người dùng đặt hàng
+
+        // === HOÀN TÁC: Chỉ lưu địa chỉ, không lưu SĐT/Tên (vì CSDL gốc không có) ===
         order.setShippingAddress(address.getFullAddress());
+        // order.setRecipientName(address.getRecipientName()); // <-- XÓA DÒNG NÀY
+        // order.setRecipientPhone(address.getPhoneNumber()); // <-- XÓA DÒNG NÀY
+        // === KẾT THÚC HOÀN TÁC ===
+
         order.setPaymentMethod(request.getPaymentMethod());
         order.setStatus("NEW"); // Trạng thái ban đầu
 
@@ -80,13 +86,12 @@ public class OrderController {
         // Save Order and OrderDetails
         Order savedOrder = orderRepository.save(order);
         
-        // BỔ SUNG: Lấy danh sách OrderDetail đã lưu để trả về
         List<OrderDetail> savedDetails = new ArrayList<>();
         for(OrderDetail detail : orderDetails) {
             detail.setOrder(savedOrder);
             savedDetails.add(orderDetailRepository.save(detail));
         }
-        savedOrder.setOrderDetails(savedDetails); // Gán chi tiết vào đơn hàng
+        savedOrder.setOrderDetails(savedDetails); 
 
         // Clear cart
         cartItemRepository.deleteByUserId(userId);
@@ -94,7 +99,7 @@ public class OrderController {
         return ResponseEntity.ok(savedOrder);
     }
 
-    // === BỔ SUNG: API LẤY LỊCH SỬ ĐƠN HÀNG ===
+    // === CÁC API CỦA CUSTOMER (GIỮ NGUYÊN) ===
     @GetMapping("/my-history")
     public ResponseEntity<List<Order>> getOrderHistory() {
         Long userId = getCurrentUser().getId();
@@ -102,7 +107,6 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
-    // === BỔ SUNG: API LẤY CHI TIẾT ĐƠN HÀNG (KÈM KIỂM TRA BẢO MẬT) ===
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrderDetails(@PathVariable Long orderId) {
         Long userId = getCurrentUser().getId();
@@ -113,19 +117,10 @@ public class OrderController {
                                  .body("Không tìm thấy đơn hàng hoặc bạn không có quyền xem.");
         }
         
-        // TODO: Cần load cả OrderDetails
-        // (Nếu Order.orderDetails không được @OneToMany, bạn cần query riêng)
-        // Hiện tại, Order.java chưa có List<OrderDetail>, cần thêm vào
         Order order = orderOpt.get();
-        // Giả sử đã thêm List<OrderDetail> orderDetails vào Order.java và fetch EAGER
-        // Nếu không, bạn phải query thủ công:
-        // List<OrderDetail> details = orderDetailRepository.findByOrderId(orderId);
-        // order.setOrderDetails(details); // (Cần thêm setter vào Order.java)
-        
         return ResponseEntity.ok(order);
     }
     
-    // === BỔ SUNG: API HỦY ĐƠN HÀNG ===
     @PutMapping("/{orderId}/cancel")
     @Transactional
     public ResponseEntity<String> cancelOrder(@PathVariable Long orderId) {
@@ -142,15 +137,12 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Chỉ có thể hủy đơn hàng ở trạng thái 'Mới' (NEW).");
         }
 
-        // 1. Cập nhật trạng thái đơn hàng
         order.setStatus("CANCELLED");
         orderRepository.save(order);
 
-        // 2. Hoàn lại số lượng sản phẩm vào kho
-        // (Giả sử đã load được OrderDetails cùng với Order)
         List<OrderDetail> details = orderDetailRepository.findAllById(
              order.getOrderDetails().stream().map(OrderDetail::getId).toList()
-        ); // Cần query lại chi tiết
+        ); 
         
         for (OrderDetail detail : details) {
             Product product = detail.getProduct();
