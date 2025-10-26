@@ -1,6 +1,5 @@
 package com.utegiftshop.controller;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/shipper")
-@PreAuthorize("hasAuthority('Shipper')") // Chỉ Shipper mới truy cập được các trang này
 public class ShipperViewController {
 
     @GetMapping("/dashboard")

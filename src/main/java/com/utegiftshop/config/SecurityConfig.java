@@ -62,6 +62,7 @@ public class SecurityConfig {
                     "/api/products/**",
                     "/css/**", "/js/**", "/images/**", "/*.ico",
                     "/error",
+                    "/shipper/**",
                     "/v3/api-docs/**", "/swagger-ui/**"
                 ).permitAll()
 
@@ -75,7 +76,7 @@ public class SecurityConfig {
                 ).hasAuthority("Customer")
 
                 // ===== 3. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
-                .requestMatchers("/shipper/**", "/api/shipper/**").hasAuthority("Shipper")
+                .requestMatchers("/api/shipper/**").hasAuthority("Shipper")
 
                 // ===== 4. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
                 .anyRequest().authenticated()
