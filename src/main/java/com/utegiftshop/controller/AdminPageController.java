@@ -42,4 +42,11 @@ public class AdminPageController {
         // và nó nằm trong thư mục 'admin/'
         return "admin/manage-shipping"; 
     }
+
+    // 6. Trang Quản lý Khuyến mãi
+    @GetMapping("/manage-promotions")
+    public String managePromotions() {
+        // SỬA LỖI: Trả về đúng tên file HTML của trang khuyến mãi
+        return "admin/manage-promotions"; 
+    }
 }

@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository; // <-- BỔ SUNG
 
 import com.utegiftshop.entity.Product; // <-- BỔ SUNG
+import com.utegiftshop.entity.Promotion;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     
@@ -19,4 +20,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     Optional<Product> findByIdAndShopId(Long productId, Long shopId);
     List<Product> findByCategoryIdIn(List<Integer> categoryIds);
+
 }

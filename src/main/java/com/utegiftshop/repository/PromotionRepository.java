@@ -15,4 +15,5 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
 
     // Tìm một khuyến mãi cụ thể theo ID và shop ID (để kiểm tra quyền sở hữu)
     Optional<Promotion> findByIdAndShopId(Integer promotionId, Long shopId);
+    List<Promotion> findByShopIdIsNull();
 }
