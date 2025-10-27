@@ -1,5 +1,6 @@
 package com.utegiftshop.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     Optional<Product> findByIdAndShopId(Long productId, Long shopId);
     List<Product> findByCategoryIdIn(List<Integer> categoryIds);
+    
+    // Lọc theo khoảng giá
+    List<Product> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice);
+
+    // Lọc theo danh mục VÀ khoảng giá
+    List<Product> findByCategoryIdInAndPriceBetween(List<Integer> categoryIds, BigDecimal minPrice, BigDecimal maxPrice);
+    //Tìm kiếm theo tên sản phẩm (dùng cho chức năng tìm kiếm)
+    List<Product> findByNameContainingIgnoreCase(String name);
 }

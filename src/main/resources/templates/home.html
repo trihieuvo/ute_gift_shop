@@ -6,78 +6,20 @@
 <head>
     <title>UTE Gift Shop - Trang Chủ</title>
     <style>
-        .product-card {
-            border: 1px solid #eee;
-            transition: all 0.3s;
-            margin-bottom: 1.5rem;
-        }
-        .product-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,.1);
-            transform: translateY(-5px);
-        }
-        .product-card .card-img-top {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-        }
-        .category-sidebar {
-            background: #fff;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,.1);
-        }
-        .category-sidebar .nav-link,
-        .category-sidebar .dropdown-item {
-            color: #333;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        .category-sidebar .nav-item .nav-link:hover,
-        .category-sidebar .dropdown-item:hover {
-            color: #0d6efd;
-        }
-        .category-sidebar .nav-link.active,
-        .category-sidebar .dropdown-item.active {
-            color: #fff;
-            background-color: #0d6efd;
-            border-radius: 0.25rem;
-        }
-        .category-sidebar .dropdown-menu {
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,.1);
-        }
-
-        .product-img-container {
-            position: relative;
-            overflow: hidden;
-        }
-        .img-nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.4);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .product-img-container:hover .img-nav-btn {
-            opacity: 1;
-        }
-        .img-prev {
-            left: 10px;
-        }
-        .img-next {
-            right: 10px;
-        }
+        .product-card { border: 1px solid #eee; transition: all 0.3s; margin-bottom: 1.5rem; }
+        .product-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,.1); transform: translateY(-5px); }
+        .product-card .card-img-top { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
+        .category-sidebar { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1); position: sticky; top: 90px; }
+        .category-sidebar .nav-link, .category-sidebar .dropdown-item { color: #333; cursor: pointer; font-weight: 500; }
+        .category-sidebar .nav-item .nav-link:hover, .category-sidebar .dropdown-item:hover { color: #0d6efd; }
+        .category-sidebar .nav-link.active, .category-sidebar .dropdown-item.active { color: #fff; background-color: #0d6efd; border-radius: 0.25rem; }
+        .category-sidebar .dropdown-menu { border: none; box-shadow: 0 4px 6px rgba(0,0,0,.1); }
+        .product-img-container { position: relative; overflow: hidden; }
+        .img-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; cursor: pointer; z-index: 10; }
+        .product-img-container:hover .img-nav-btn { opacity: 1; }
+        .img-prev { left: 10px; }
+        .img-next { right: 10px; }
+        .price-filter .form-check { margin-bottom: 0.5rem; }
     </style>
 </head>
 <body>
@@ -94,22 +36,31 @@
         <div class="col-md-3">
             <div class="category-sidebar">
                 <h4 class="mb-3">Danh mục</h4>
-                <nav id="category-menu" class="nav flex-column">
-                    <p>Đang tải danh mục...</p>
-                </nav>
+                <nav id="category-menu" class="nav flex-column"></nav>
+                <hr>
+                <h4 class="mb-3">Khoảng giá</h4>
+                <div class="price-filter" id="price-filter">
+                    <div class="form-check"><input class="form-check-input" type="radio" name="priceRange" id="price-all" value="all" checked onchange="handlePriceFilterChange()"><label class="form-check-label" for="price-all">Tất cả</label></div>
+                    <div class="form-check"><input class="form-check-input" type="radio" name="priceRange" id="price-1" value="0-100000" onchange="handlePriceFilterChange()"><label class="form-check-label" for="price-1">Dưới 100.000đ</label></div>
+                    <div class="form-check"><input class="form-check-input" type="radio" name="priceRange" id="price-2" value="100000-500000" onchange="handlePriceFilterChange()"><label class="form-check-label" for="price-2">100.000đ - 500.000đ</label></div>
+                    <div class="form-check"><input class="form-check-input" type="radio" name="priceRange" id="price-3" value="500000-1000000" onchange="handlePriceFilterChange()"><label class="form-check-label" for="price-3">500.000đ - 1.000.000đ</label></div>
+                    <div class="form-check"><input class="form-check-input" type="radio" name="priceRange" id="price-4" value="1000000-Infinity" onchange="handlePriceFilterChange()"><label class="form-check-label" for="price-4">Trên 1.000.000đ</label></div>
+                </div>
             </div>
         </div>
 
         <div class="col-md-9">
+            <form class="mb-4" id="search-form" onsubmit="event.preventDefault();">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Nhập tên sản phẩm cần tìm..." id="search-keyword">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                </div>
+            </form>
+
             <section>
                 <h2 class="mb-4" id="products-title">Sản phẩm nổi bật</h2>
                 <div class="row" id="product-list">
-                    <div class="text-center p-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Đang tải sản phẩm...</p>
-                    </div>
+                    <div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Đang tải sản phẩm...</p></div>
                 </div>
             </section>
         </div>
@@ -118,177 +69,263 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
+        // === DOM ELEMENTS ===
         const productListContainer = document.getElementById('product-list');
         const categoryMenu = document.getElementById('category-menu');
         const productsTitle = document.getElementById('products-title');
+        const searchKeywordInput = document.getElementById('search-keyword');
+        
+        // === STATE MANAGEMENT ===
+        let currentFilters = { keyword: null, categoryId: null, minPrice: null, maxPrice: null };
+        let debounceTimer;
 
+        // === INITIALIZATION ===
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentFilters = {
+                keyword: urlParams.get('keyword'),
+                categoryId: urlParams.get('category'),
+                minPrice: urlParams.get('minPrice'),
+                maxPrice: urlParams.get('maxPrice')
+            };
+            
+            restoreUIFromState();
+            fetchAndDisplayProducts();
+            fetchAndDisplayCategories();
+            
+            searchKeywordInput.addEventListener('input', handleLiveSearch);
+        });
+        
+        // === CORE LOGIC ===
+        
         /**
-         * SỬA LỖI: Thêm event.stopPropagation() để ngăn chuyển trang khi bấm nút
+         * Hàm trung tâm, gọi API để tải sản phẩm dựa trên state `currentFilters`
          */
-        function changeImage(event, productId, direction) {
-            event.stopPropagation(); // Ngăn sự kiện click lan ra thẻ cha
-            const card = document.getElementById(`product-card-${productId}`);
-            const img = document.getElementById(`product-img-${productId}`);
-            
-            if (!card || !img) return;
-
-            const images = JSON.parse(card.dataset.images);
-            let currentIndex = parseInt(img.dataset.currentIndex, 10);
-            
-            currentIndex += direction;
-
-            if (currentIndex >= images.length) {
-                currentIndex = 0;
-            } else if (currentIndex < 0) {
-                currentIndex = images.length - 1;
+        async function fetchAndDisplayProducts() {
+            const url = new URL('/api/products', window.location.origin);
+            if (currentFilters.keyword) url.searchParams.append('keyword', currentFilters.keyword);
+            if (currentFilters.categoryId) url.searchParams.append('categoryId', currentFilters.categoryId);
+            if (currentFilters.minPrice != null) {
+                url.searchParams.append('minPrice', currentFilters.minPrice);
+                if (currentFilters.maxPrice != null) {
+                     url.searchParams.append('maxPrice', currentFilters.maxPrice);
+                }
             }
-
-            img.src = images[currentIndex];
-            img.dataset.currentIndex = currentIndex;
-        }
-
-        async function fetchAndDisplayProducts(categoryId = null) {
-            let url = '/api/products';
-            if (categoryId) {
-                url += `?categoryId=${categoryId}`;
-            }
-
-            productListContainer.innerHTML = `
-                <div class="text-center p-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Đang tải sản phẩm...</p>
-                </div>`;
-
+        
+            productListContainer.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải sản phẩm...</p></div>`;
+        
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Lỗi mạng hoặc server!');
-                
-                let products = await response.json();
-                productListContainer.innerHTML = '';
-
-                if (products.length === 0) {
-                    productListContainer.innerHTML = '<p class="text-center text-muted">Không tìm thấy sản phẩm nào phù hợp.</p>';
-                    return;
-                }
-                
-                // === CẢI TIẾN: XÁO TRỘN DANH SÁCH SẢN PHẨM ===
-                for (let i = products.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [products[i], products[j]] = [products[j], products[i]];
-                }
-
-
-                products.forEach(product => {
-                    const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
-                    let initialImageUrl = noImageUrl;
-                    let allImageUrls = [];
-                    let imageNavigationButtons = '';
-
-                    if (product.images && product.images.length > 0) {
-                        allImageUrls = product.images.map(img => img.imageUrl);
-                        initialImageUrl = allImageUrls[0] || noImageUrl;
-
-                        if (allImageUrls.length > 1) {
-                            // Sửa lại hàm onclick để truyền vào `event`
-                            imageNavigationButtons = `
-                                <button class="img-nav-btn img-prev" onclick="changeImage(event, ${product.id}, -1)">&#10094;</button>
-                                <button class="img-nav-btn img-next" onclick="changeImage(event, ${product.id}, 1)">&#10095;</button>
-                            `;
-                        }
-                    }
-
-                    const imagesData = JSON.stringify(allImageUrls);
-
-                    const productCard = `
-                        <div class="col-md-4">
-                            <div class="card product-card" id="product-card-${product.id}" data-images='${imagesData}' onclick="window.location.href='/products/${product.id}'" style="cursor: pointer;">
-                                <div class="product-img-container">
-                                    <img src="${initialImageUrl}" 
-                                         class="card-img-top" 
-                                         alt="${product.name}" 
-                                         id="product-img-${product.id}"
-                                         data-current-index="0"
-                                         onerror="this.onerror=null;this.src='${noImageUrl}';">
-                                    ${imageNavigationButtons}
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title">${product.name}</h5>
-                                    <p class="card-text fw-bold">${product.price.toLocaleString('vi-VN')} đ</p>
-                                    <a href="/products/${product.id}" class="btn btn-primary">Xem chi tiết</a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    productListContainer.innerHTML += productCard;
-                });
-
+                const products = await response.json();
+                renderProductCards(products);
             } catch (error) {
                 console.error("Lỗi khi tải sản phẩm:", error);
-                productListContainer.innerHTML = '<p class="text-danger text-center">Không thể tải danh sách sản phẩm.</p>';
+                productListContainer.innerHTML = '<p class="text-danger text-center col-12">Không thể tải danh sách sản phẩm.</p>';
             }
         }
         
-        // Các hàm fetchAndDisplayCategories và filterProductsByCategory giữ nguyên
-        async function fetchAndDisplayCategories(activeCategoryId = null) {
+        /**
+         * Xử lý sự kiện gõ phím trên thanh tìm kiếm
+         */
+        function handleLiveSearch() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const keyword = searchKeywordInput.value.trim();
+
+                // Cập nhật state
+                currentFilters.keyword = keyword || null;
+                currentFilters.categoryId = null;
+                currentFilters.minPrice = null;
+                currentFilters.maxPrice = null;
+
+                // Cập nhật UI
+                updateURL();
+                resetCategoryAndPriceUI();
+                updateProductsTitle();
+                
+                // Tải lại sản phẩm
+                fetchAndDisplayProducts();
+            }, 500);
+        }
+
+        /**
+         * Xử lý sự kiện click vào một danh mục
+         */
+        function handleCategoryClick(categoryId, element, categoryName) {
+            // Cập nhật state
+            currentFilters.keyword = null;
+            currentFilters.categoryId = categoryId;
+            
+            // Cập nhật UI
+            updateURL();
+            searchKeywordInput.value = '';
+            setActiveCategory(element);
+            updateProductsTitle(categoryName);
+            
+            // Tải lại sản phẩm
+            fetchAndDisplayProducts();
+        }
+
+        /**
+         * Xử lý sự kiện thay đổi bộ lọc giá
+         */
+        function handlePriceFilterChange() {
+            // Cập nhật state
+            currentFilters.keyword = null;
+            const selectedPriceRange = document.querySelector('input[name="priceRange"]:checked').value;
+            if (selectedPriceRange === 'all') {
+                currentFilters.minPrice = null;
+                currentFilters.maxPrice = null;
+            } else {
+                const [min, max] = selectedPriceRange.split('-');
+                currentFilters.minPrice = min;
+                currentFilters.maxPrice = max === 'Infinity' ? null : max;
+            }
+            
+            // Cập nhật UI
+            updateURL();
+            searchKeywordInput.value = '';
+            updateProductsTitle();
+
+            // Tải lại sản phẩm
+            fetchAndDisplayProducts();
+        }
+
+        // === UI HELPER FUNCTIONS ===
+        
+        function updateURL() {
+            const url = new URL(window.location);
+            url.search = '';
+            for (const key in currentFilters) {
+                if (currentFilters[key] != null) {
+                    url.searchParams.set(key, currentFilters[key]);
+                }
+            }
+            window.history.pushState({}, '', url);
+        }
+
+        function restoreUIFromState() {
+            if (currentFilters.keyword) { searchKeywordInput.value = currentFilters.keyword; }
+            if (currentFilters.minPrice != null) {
+                const max = currentFilters.maxPrice == null ? 'Infinity' : currentFilters.maxPrice;
+                const priceValue = `${currentFilters.minPrice}-${max}`;
+                const priceRadio = document.querySelector(`input[name="priceRange"][value="${priceValue}"]`);
+                if (priceRadio) priceRadio.checked = true;
+            }
+        }
+
+        function resetCategoryAndPriceUI() {
+            document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => el.classList.remove('active'));
+            const allCategoriesLink = document.querySelector('#category-menu .nav-link');
+            if (allCategoriesLink) allCategoriesLink.classList.add('active');
+            document.getElementById('price-all').checked = true;
+        }
+
+        function setActiveCategory(element) {
+            document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => el.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
+                if (element.classList.contains('dropdown-item')) {
+                    element.closest('.dropdown').querySelector('.dropdown-toggle').classList.add('active');
+                }
+            }
+        }
+
+        function updateProductsTitle(newTitle) {
+            if (currentFilters.keyword) {
+                productsTitle.textContent = `Kết quả cho "${currentFilters.keyword}"`;
+            } else if (newTitle) {
+                productsTitle.textContent = newTitle;
+            } else {
+                const activeCategory = document.querySelector('#category-menu .active');
+                productsTitle.textContent = activeCategory ? activeCategory.textContent.trim() : "Tất cả sản phẩm";
+            }
+        }
+        
+        // === RENDERING FUNCTIONS (Không thay đổi) ===
+        
+        function renderProductCards(products) {
+            productListContainer.innerHTML = '';
+            if (products.length === 0) {
+                productListContainer.innerHTML = '<p class="text-center text-muted col-12">Không tìm thấy sản phẩm nào phù hợp.</p>';
+                return;
+            }
+            products.forEach(product => {
+                const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
+                let initialImageUrl = noImageUrl, allImageUrls = [], imageNavigationButtons = '';
+                if (product.images && product.images.length > 0) {
+                    allImageUrls = product.images.map(img => img.imageUrl);
+                    initialImageUrl = allImageUrls[0] || noImageUrl;
+                    if (allImageUrls.length > 1) {
+                        imageNavigationButtons = `
+                            <button class="img-nav-btn img-prev" onclick="changeImage(event, ${product.id}, -1)">&#10094;</button>
+                            <button class="img-nav-btn img-next" onclick="changeImage(event, ${product.id}, 1)">&#10095;</button>
+                        `;
+                    }
+                }
+                const imagesData = JSON.stringify(allImageUrls);
+                productListContainer.innerHTML += `
+                    <div class="col-md-4">
+                        <div class="card product-card" id="product-card-${product.id}" data-images='${imagesData}' onclick="window.location.href='/products/${product.id}'" style="cursor: pointer;">
+                            <div class="product-img-container">
+                                <img src="${initialImageUrl}" class="card-img-top" alt="${product.name}" id="product-img-${product.id}" data-current-index="0" onerror="this.onerror=null;this.src='${noImageUrl}';">
+                                ${imageNavigationButtons}
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">${product.name}</h5>
+                                <p class="card-text fw-bold">${product.price.toLocaleString('vi-VN')} đ</p>
+                                <a href="/products/${product.id}" class="btn btn-primary">Xem chi tiết</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        async function fetchAndDisplayCategories() {
             try {
                 const response = await fetch('/api/categories');
                 if (!response.ok) throw new Error('Lỗi khi tải danh mục');
                 const categories = await response.json();
                 categoryMenu.innerHTML = '';
-                const allProductsActiveClass = !activeCategoryId ? 'active' : '';
-                categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link ${allProductsActiveClass}" onclick="filterProductsByCategory(null, this, 'Tất cả sản phẩm')">Tất cả sản phẩm</a></li>`;
-                let activeCategoryName = 'Tất cả sản phẩm';
+                const allProductsActiveClass = !currentFilters.categoryId && !currentFilters.keyword ? 'active' : '';
+                categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link ${allProductsActiveClass}" onclick="handleCategoryClick(null, this, 'Tất cả sản phẩm')">Tất cả sản phẩm</a></li>`;
+                
                 categories.forEach(category => {
-                    let parentActiveClass = (activeCategoryId && category.id == activeCategoryId) ? 'active' : '';
+                    let isParentActive = false;
                     let childrenHtml = '';
                     if (category.children && category.children.length > 0) {
                         childrenHtml = category.children.map(child => {
-                            const childActiveClass = (activeCategoryId && child.id == activeCategoryId) ? 'active' : '';
-                            if (childActiveClass) {
-                                parentActiveClass = 'active';
-                                activeCategoryName = child.name;
-                            }
-                            return `<li><a class="dropdown-item ${childActiveClass}" onclick="filterProductsByCategory(${child.id}, this, '${child.name}')">${child.name}</a></li>`;
+                            const childActiveClass = (currentFilters.categoryId && child.id == currentFilters.categoryId) ? 'active' : '';
+                            if (childActiveClass) isParentActive = true;
+                            return `<li><a class="dropdown-item ${childActiveClass}" onclick="handleCategoryClick(${child.id}, this, '${child.name}')">${child.name}</a></li>`;
                         }).join('');
-                        const dropdownHtml = `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">${category.name}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
-                        categoryMenu.innerHTML += dropdownHtml;
+                    }
+                    const parentActiveClass = isParentActive || (currentFilters.categoryId && category.id == currentFilters.categoryId) ? 'active' : '';
+                    if (childrenHtml) {
+                        categoryMenu.innerHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="handleCategoryClick(${category.id}, this, '${category.name}')">${category.name}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
                     } else {
-                        if (parentActiveClass) activeCategoryName = category.name;
-                        const linkHtml = `<li class="nav-item"><a class="nav-link ${parentActiveClass}" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">${category.name}</a></li>`;
-                        categoryMenu.innerHTML += linkHtml;
+                        categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link ${parentActiveClass}" onclick="handleCategoryClick(${category.id}, this, '${category.name}')">${category.name}</a></li>`;
                     }
                 });
-                productsTitle.textContent = activeCategoryName;
             } catch (error) {
-                console.error("Lỗi khi tải danh mục:", error);
                 categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
             }
         }
-
-        function filterProductsByCategory(categoryId, element, categoryName) {
-            productsTitle.textContent = categoryName;
-            document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => el.classList.remove('active'));
-            if (element) {
-                element.classList.add('active');
-            }
-            const url = new URL(window.location);
-            if (categoryId) {
-                url.searchParams.set('category', categoryId);
-            } else {
-                url.searchParams.delete('category');
-            }
-            window.history.pushState({}, '', url);
-            fetchAndDisplayProducts(categoryId);
+        
+        function changeImage(event, productId, direction) {
+            event.stopPropagation();
+            const card = document.getElementById(`product-card-${productId}`);
+            const img = document.getElementById(`product-img-${productId}`);
+            if (!card || !img) return;
+            const images = JSON.parse(card.dataset.images);
+            let currentIndex = parseInt(img.dataset.currentIndex, 10) + direction;
+            if (currentIndex >= images.length) currentIndex = 0;
+            else if (currentIndex < 0) currentIndex = images.length - 1;
+            img.src = images[currentIndex];
+            img.dataset.currentIndex = currentIndex;
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const categoryIdFromUrl = urlParams.get('category');
-            fetchAndDisplayProducts(categoryIdFromUrl);
-            fetchAndDisplayCategories(categoryIdFromUrl);
-        });
     </script>
 </th:block>
 

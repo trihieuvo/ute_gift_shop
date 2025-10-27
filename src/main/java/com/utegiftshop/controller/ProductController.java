@@ -1,5 +1,6 @@
 package com.utegiftshop.controller;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -43,13 +44,22 @@ public class ProductController {
     }
 
     @GetMapping("/products")
-    public ResponseEntity<List<Product>> getAllProducts(@RequestParam(required = false) Integer categoryId) {
-        if (categoryId == null) {
-            // No filter, return all products
-            List<Product> products = productRepository.findAll();
+    public ResponseEntity<List<Product>> getAllProducts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice) {
+
+        List<Product> products;
+        if (keyword != null && !keyword.isEmpty()) {
+            products = productRepository.findByNameContainingIgnoreCase(keyword);
             return ResponseEntity.ok(products);
-        } else {
-            // Filter by category and its children
+        }
+        boolean hasCategoryFilter = categoryId != null;
+        boolean hasPriceFilter = minPrice != null && maxPrice != null;
+
+        if (hasCategoryFilter) {
+            // Lấy ID của category và các category con
             List<Category> allCategories = categoryRepository.findAll();
             Map<Integer, List<Category>> parentToChildrenMap = allCategories.stream()
                     .filter(c -> c.getParent() != null)
@@ -57,10 +67,25 @@ public class ProductController {
 
             Set<Integer> categoryIdsToSearch = new HashSet<>();
             getAllSubCategoryIds(categoryId, parentToChildrenMap, categoryIdsToSearch);
+            List<Integer> categoryIdList = new ArrayList<>(categoryIdsToSearch);
 
-            List<Product> filteredProducts = productRepository.findByCategoryIdIn(new ArrayList<>(categoryIdsToSearch));
-            return ResponseEntity.ok(filteredProducts);
+            if (hasPriceFilter) {
+                // Lọc theo cả danh mục và giá
+                products = productRepository.findByCategoryIdInAndPriceBetween(categoryIdList, minPrice, maxPrice);
+            } else {
+                // Chỉ lọc theo danh mục
+                products = productRepository.findByCategoryIdIn(categoryIdList);
+            }
+        } else {
+            if (hasPriceFilter) {
+                // Chỉ lọc theo giá
+                products = productRepository.findByPriceBetween(minPrice, maxPrice);
+            } else {
+                // Không có bộ lọc nào
+                products = productRepository.findAll();
+            }
         }
+        return ResponseEntity.ok(products);
     }
 
     @GetMapping("/products/{id}")
