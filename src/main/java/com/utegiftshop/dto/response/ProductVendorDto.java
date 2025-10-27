@@ -1,9 +1,8 @@
+// src/main/java/com/utegiftshop/dto/response/ProductVendorDto.java
 package com.utegiftshop.dto.response;
 
 import java.math.BigDecimal;
-
-import com.utegiftshop.entity.Product; // THÊM IMPORT
-
+import com.utegiftshop.entity.Product;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +13,7 @@ public class ProductVendorDto {
     private String name;
     private BigDecimal price;
     private Integer stockQuantity;
-    private String imageUrl; // Giữ lại để làm ảnh đại diện
+    private String imageUrl; // Ảnh đại diện (sẽ có timestamp)
     private boolean isActive;
     private String categoryName;
 
@@ -23,27 +22,27 @@ public class ProductVendorDto {
         this.name = product.getName();
         this.price = product.getPrice();
         this.stockQuantity = product.getStockQuantity();
-        this.isActive = product.isActive();
-        
-        // === THAY ĐỔI: Lấy ảnh đầu tiên làm ảnh đại diện ===
+        this.isActive = product.isActive(); // Đảm bảo đúng tên field 'active' từ Product entity
+
+        String firstImageUrl = null;
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             // Lấy URL gốc từ ảnh đầu tiên
-            String originalUrl = product.getImages().get(0).getImageUrl();
-            if (originalUrl != null && !originalUrl.isBlank()) {
-                // **THÊM TIMESTAMP VÀO ĐÂY**
-                this.imageUrl = originalUrl + "?t=" + System.currentTimeMillis();
+             firstImageUrl = product.getImages().get(0).getImageUrl();
+        }
+
+        // *** THÊM TIMESTAMP VÀO ĐÂY ***
+        if (firstImageUrl != null && !firstImageUrl.isBlank()) {
+            // Kiểm tra xem URL đã có dấu ? chưa để tránh lỗi ?t=...?t=...
+            if (firstImageUrl.contains("?")) {
+                 this.imageUrl = firstImageUrl + "&t=" + System.currentTimeMillis(); // Dùng & nếu đã có ?
             } else {
-                 this.imageUrl = null; // Hoặc ảnh mặc định
+                 this.imageUrl = firstImageUrl + "?t=" + System.currentTimeMillis(); // Dùng ? nếu chưa có
             }
         } else {
-            this.imageUrl = null; // Hoặc một URL ảnh mặc định
+            this.imageUrl = null; // Hoặc URL ảnh mặc định của bạn
         }
-        // === KẾT THÚC THAY ĐỔI ===
+        // *** KẾT THÚC THÊM TIMESTAMP ***
 
-        if (product.getCategory() != null) {
-            this.categoryName = product.getCategory().getName();
-        } else {
-            this.categoryName = "N/A";
-        }
+        this.categoryName = (product.getCategory() != null) ? product.getCategory().getName() : "N/A";
     }
 }

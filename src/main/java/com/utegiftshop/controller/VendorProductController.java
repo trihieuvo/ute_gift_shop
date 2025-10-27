@@ -44,7 +44,7 @@ public class VendorProductController {
         // 2. Kiểm tra định dạng file (chỉ chấp nhận ảnh)
         if (!Objects.requireNonNull(file.getContentType()).startsWith("image/")) {
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(Map.of("message", "File không phải là hình ảnh hợp lệ."));
+                    .body(Map.of("message", "File không phải là hình ảnh hợp l	ệ."));
         }
 
         try {

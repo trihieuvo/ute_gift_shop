@@ -39,7 +39,9 @@ import com.utegiftshop.security.service.UserDetailsImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-
+import org.springframework.web.bind.annotation.DeleteMapping; // Thêm import này
+import org.springframework.dao.DataIntegrityViolationException; // Thêm import này để xử lý ràng buộc
+import java.util.Map;
 	
 	@RestController
 	@RequestMapping("/api/vendor")
@@ -223,4 +225,48 @@ import jakarta.persistence.TypedQuery;
 	        // ... (Giữ nguyên logic như trước) ...
 	        try { logger.info("Fetching all categories."); List<CategoryDto> dtos = categoryRepository.findAll().stream().map(CategoryDto::new).collect(Collectors.toList()); logger.info("Found {} categories.", dtos.size()); return ResponseEntity.ok(dtos); } catch (Exception e) { logger.error("Error fetching categories:", e); return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList()); }
 	    }
+	    @DeleteMapping(value = "/products/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	    @Transactional
+	    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+	        try {
+	            Shop shop = getAuthenticatedShop(); // Lấy thông tin shop của vendor đang đăng nhập
+	            Long shopId = shop.getId();
+	            logger.info("🗑️ Đang xóa sản phẩm ID: {} cho Shop ID: {}", id, shopId);
+
+	            // 1. Tìm sản phẩm theo ID và Shop ID để đảm bảo quyền sở hữu
+	            Product product = productRepository.findByIdAndShopId(id, shopId)
+	                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm (ID: " + id + ") hoặc sản phẩm không thuộc cửa hàng của bạn."));
+
+	            // 2. Thực hiện xóa
+	            productRepository.delete(product);
+
+	            logger.info("✅ Sản phẩm ID: {} đã được xóa thành công.", id);
+
+	            // 3. Trả về thông báo thành công
+	            return ResponseEntity.ok(Map.of("message", "Đã xóa sản phẩm '" + product.getName() + "' thành công."));
+
+	        } catch (DataIntegrityViolationException e) { // <-- ĐƯA LÊN TRƯỚC
+	            logger.error("❌ Vi phạm ràng buộc khi xóa sản phẩm ID {}: {}", id, e.getMessage());
+	            // Trả về lỗi 409 Conflict
+	            return ResponseEntity.status(HttpStatus.CONFLICT)
+	                                 .contentType(MediaType.APPLICATION_JSON)
+	                                 .body(Map.of("message", "Không thể xóa sản phẩm này vì nó đã được tham chiếu (ví dụ: trong đơn hàng đã đặt). Vui lòng ẩn sản phẩm thay vì xóa."));
+	        } catch (RuntimeException e) { // <-- ĐƯA XUỐNG SAU
+	            logger.error("❌ Lỗi khi xóa sản phẩm ID {}: {}", id, e.getMessage());
+	            // Trả về lỗi 404 Not Found nếu là lỗi không tìm thấy, nếu không thì lỗi khác
+	             HttpStatus status = e.getMessage().contains("Không tìm thấy sản phẩm") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST; // Hoặc một status khác phù hợp
+	             return ResponseEntity.status(status)
+	                                  .contentType(MediaType.APPLICATION_JSON)
+	                                  .body(Map.of("message", e.getMessage()));
+	        } catch (Exception e) { // Bắt các lỗi không mong muốn khác
+	            logger.error("❌ Lỗi không mong muốn khi xóa sản phẩm ID {}:", id, e);
+	            // Trả về lỗi 500 Internal Server Error
+	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	                                 .contentType(MediaType.APPLICATION_JSON)
+	                                 .body(Map.of("message", "Lỗi máy chủ không mong muốn khi xóa sản phẩm."));
+	        }
+	    }
+	    
+	    
+	    
 	}
