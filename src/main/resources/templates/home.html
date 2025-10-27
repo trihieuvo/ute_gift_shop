@@ -9,11 +9,46 @@
         .product-card {
             border: 1px solid #eee;
             transition: all 0.3s;
-            margin-bottom: 1.5rem; /* Thêm khoảng cách dưới cho card */
+            margin-bottom: 1.5rem;
         }
         .product-card:hover {
             box-shadow: 0 4px 8px rgba(0,0,0,.1);
             transform: translateY(-5px);
+        }
+        /* === THAY ĐỔI Ở ĐÂY === */
+        .product-card .card-img-top {
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Đảm bảo tỉ lệ 1:1 */
+            object-fit: cover;   /* Giữ nguyên để ảnh không bị méo */
+        }
+        .category-sidebar {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
+        .category-sidebar .nav-link {
+            color: #333;
+            cursor: pointer;
+        }
+         .category-sidebar .nav-item .nav-link,
+         .category-sidebar .dropdown-item {
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .category-sidebar .nav-item .nav-link:hover,
+        .category-sidebar .dropdown-item:hover {
+            color: #0d6efd;
+        }
+        .category-sidebar .nav-link.active,
+        .category-sidebar .dropdown-item.active {
+            color: #fff;
+            background-color: #0d6efd;
+            border-radius: 0.25rem;
+        }
+        .category-sidebar .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
         }
     </style>
 </head>
@@ -27,40 +62,71 @@
         </div>
     </div>
 
-    <section>
-        <h2 class="mb-4">Sản phẩm nổi bật</h2>
-        <div class="row" id="product-list">
-            <p>Đang tải sản phẩm...</p>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="category-sidebar">
+                <h4 class="mb-3">Danh mục</h4>
+                <nav id="category-menu" class="nav flex-column">
+                    <p>Đang tải danh mục...</p>
+                </nav>
+            </div>
         </div>
-    </section>
+
+        <div class="col-md-9">
+            <section>
+                <h2 class="mb-4" id="products-title">Sản phẩm nổi bật</h2>
+                <div class="row" id="product-list">
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Đang tải sản phẩm...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 </div>
 
 <th:block layout:fragment="scripts_body">
     <script>
-        // HÀM: Lấy và hiển thị sản phẩm
-        async function fetchAndDisplayProducts() {
-            const productListContainer = document.getElementById('product-list');
-            try {
-                const response = await fetch('/api/products');
-                if (!response.ok) {
-                    throw new Error('Lỗi mạng hoặc server!');
-                }
-                const products = await response.json();
+        const productListContainer = document.getElementById('product-list');
+        const categoryMenu = document.getElementById('category-menu');
+        const productsTitle = document.getElementById('products-title');
 
-                // Xóa thông báo "Đang tải..."
+        async function fetchAndDisplayProducts(categoryId = null) {
+            let url = '/api/products';
+            if (categoryId) {
+                url += `?categoryId=${categoryId}`;
+            }
+
+            productListContainer.innerHTML = `
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Đang tải sản phẩm...</p>
+                </div>`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Lỗi mạng hoặc server!');
+                
+                const products = await response.json();
                 productListContainer.innerHTML = '';
 
                 if (products.length === 0) {
-                    productListContainer.innerHTML = '<p>Chưa có sản phẩm nào để hiển thị.</p>';
+                    productListContainer.innerHTML = '<p class="text-center text-muted">Không tìm thấy sản phẩm nào phù hợp.</p>';
                     return;
                 }
 
-                // Lặp qua danh sách sản phẩm và tạo HTML
                 products.forEach(product => {
+                    const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
+                    const imageUrl = product.imageUrl || noImageUrl;
                     const productCard = `
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="card product-card">
-                                <img src="https://via.placeholder.com/200" class="card-img-top" alt="${product.name}">
+                                <img src="${imageUrl}" class="card-img-top" alt="${product.name}" onerror="this.onerror=null;this.src='${noImageUrl}';">
                                 <div class="card-body">
                                     <h5 class="card-title">${product.name}</h5>
                                     <p class="card-text fw-bold">${product.price.toLocaleString('vi-VN')} đ</p>
@@ -69,20 +135,83 @@
                             </div>
                         </div>
                     `;
-                    // Thêm card sản phẩm vào container
                     productListContainer.innerHTML += productCard;
                 });
 
             } catch (error) {
                 console.error("Lỗi khi tải sản phẩm:", error);
-                productListContainer.innerHTML = '<p class="text-danger">Không thể tải danh sách sản phẩm.</p>';
+                productListContainer.innerHTML = '<p class="text-danger text-center">Không thể tải danh sách sản phẩm.</p>';
             }
         }
 
-        // Gọi hàm khi trang được tải xong
+        async function fetchAndDisplayCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                if (!response.ok) throw new Error('Lỗi khi tải danh mục');
+                
+                const categories = await response.json();
+                categoryMenu.innerHTML = '';
+
+                categoryMenu.innerHTML += `
+                    <li class="nav-item">
+                        <a class="nav-link active" onclick="filterProductsByCategory(null, this, 'Tất cả sản phẩm')">
+                            Tất cả sản phẩm
+                        </a>
+                    </li>`;
+
+                categories.forEach(category => {
+                    if (category.children && category.children.length > 0) {
+                        const childrenHtml = category.children.map(child => `
+                            <li>
+                                <a class="dropdown-item" onclick="filterProductsByCategory(${child.id}, this, '${child.name}')">
+                                    ${child.name}
+                                </a>
+                            </li>`).join('');
+
+                        const dropdownHtml = `
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="category-dropdown-${category.id}" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">
+                                    ${category.name}
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="category-dropdown-${category.id}">
+                                    ${childrenHtml}
+                                </ul>
+                            </li>
+                        `;
+                        categoryMenu.innerHTML += dropdownHtml;
+                    } else {
+                        const linkHtml = `
+                            <li class="nav-item">
+                                <a class="nav-link" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">
+                                    ${category.name}
+                                </a>
+                            </li>`;
+                        categoryMenu.innerHTML += linkHtml;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Lỗi khi tải danh mục:", error);
+                categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
+            }
+        }
+
+        function filterProductsByCategory(categoryId, element, categoryName) {
+            productsTitle.textContent = categoryName;
+            document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            fetchAndDisplayProducts(categoryId);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            // Hàm checkLoginStatus() đã có trong _app_layout.html và sẽ được tự động gọi
-            fetchAndDisplayProducts(); // Chỉ cần gọi hàm tải sản phẩm
+            fetchAndDisplayProducts();
+            fetchAndDisplayCategories();
         });
     </script>
 </th:block>
