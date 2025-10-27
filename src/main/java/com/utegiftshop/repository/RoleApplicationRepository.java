@@ -1,12 +1,11 @@
 package com.utegiftshop.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.utegiftshop.entity.RoleApplication;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.utegiftshop.entity.RoleApplication;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RoleApplicationRepository extends JpaRepository<RoleApplication, Long> {
