@@ -9,5 +9,8 @@ public class UpdateOrderStatusRequest {
     
     // === BỔ SUNG: GHI CHÚ (LÝ DO THẤT BẠI) ===
     private String note;
+    
+    // === BỔ SUNG: BẰNG CHỨNG GIAO HÀNG (POD) ===
+    private String proofOfDeliveryImageUrl; 
     // === KẾT THÚC BỔ SUNG ===
 }
