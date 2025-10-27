@@ -49,4 +49,10 @@ public class AdminPageController {
         // SỬA LỖI: Trả về đúng tên file HTML của trang khuyến mãi
         return "admin/manage-promotions"; 
     }
+
+    // 6. Trang Quản lý sản phẩm
+    @GetMapping("/manage-products") // Đặt tên là manage-products
+    public String manageProducts() {
+        return "admin/manage-products"; 
+    }
 }
