@@ -5,6 +5,22 @@
       layout:decorate="~{layouts/_app_layout}">
 <head>
     <title>Giỏ hàng</title>
+    <style>
+        /* Thêm một vài style nhỏ để giao diện đẹp hơn */
+        .cart-item-img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+        .remove-btn {
+            cursor: pointer;
+            color: #dc3545; /* Màu đỏ của Bootstrap */
+            font-size: 1.25rem;
+        }
+        .remove-btn:hover {
+            color: #a71d2a;
+        }
+    </style>
 </head>
 <body>
 <div layout:fragment="content">
@@ -12,11 +28,14 @@
     <div class="row">
         <div class="col-md-8">
             <div id="cart-items-container">
-                <p>Đang tải giỏ hàng...</p>
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Đang tải giỏ hàng...</p>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">Tóm tắt đơn hàng</h5>
                     <ul class="list-group list-group-flush">
@@ -42,22 +61,31 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
-        // JavaScript của bạn giữ nguyên ở đây
         document.addEventListener('DOMContentLoaded', fetchCartItems);
 
         async function fetchCartItems() {
             const token = localStorage.getItem('jwtToken');
-            const container = document.getElementById('cart-items-container');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
             
-            const response = await fetch('/api/cart', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const container = document.getElementById('cart-items-container');
 
-            if (response.ok) {
-                const items = await response.json();
-                renderCart(items);
-            } else {
-                container.innerHTML = '<p class="text-danger">Lỗi khi tải giỏ hàng.</p>';
+            try {
+                const response = await fetch('/api/cart', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const items = await response.json();
+                    renderCart(items);
+                } else {
+                    container.innerHTML = '<p class="text-danger">Lỗi khi tải giỏ hàng.</p>';
+                }
+            } catch (error) {
+                console.error("Fetch cart error:", error);
+                container.innerHTML = '<p class="text-danger">Lỗi kết nối. Vui lòng tải lại trang.</p>';
             }
         }
 
@@ -65,8 +93,8 @@
             const container = document.getElementById('cart-items-container');
             const checkoutBtn = document.getElementById('checkout-button');
             
-            if (items.length === 0) {
-                container.innerHTML = '<p>Giỏ hàng của bạn đang trống.</p>';
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="text-center p-5"><i class="bi bi-cart-x" style="font-size: 4rem; color: #6c757d;"></i><p class="mt-3">Giỏ hàng của bạn đang trống.</p></div>';
                 checkoutBtn.style.display = 'none';
                 updateSummary(0);
                 return;
@@ -78,13 +106,21 @@
             items.forEach(item => {
                 const itemTotal = item.product.price * item.quantity;
                 subtotal += itemTotal;
+
+                // === THAY ĐỔI 1: LẤY ẢNH SẢN PHẨM ===
+                const noImageUrl = 'https://via.placeholder.com/100?text=No+Image';
+                let imageUrl = noImageUrl;
+                if (item.product.images && item.product.images.length > 0) {
+                    imageUrl = item.product.images[0].imageUrl;
+                }
+                
                 container.innerHTML += `
                     <div class="card mb-3" id="cart-item-${item.product.id}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div class="d-flex flex-row align-items-center">
                                     <div>
-                                        <img src="https://via.placeholder.com/100" class="img-fluid rounded-3" alt="Shopping item">
+                                        <img src="${imageUrl}" class="img-fluid rounded-3 cart-item-img" alt="${item.product.name}" onerror="this.src='${noImageUrl}'">
                                     </div>
                                     <div class="ms-3">
                                         <h5>${item.product.name}</h5>
@@ -93,12 +129,12 @@
                                 </div>
                                 <div class="d-flex flex-row align-items-center">
                                     <div style="width: 120px;">
-                                        <input type="number" value="${item.quantity}" min="1" class="form-control" onchange="updateQuantity(${item.product.id}, this.value)"/>
+                                        <input type="number" value="${item.quantity}" min="0" class="form-control" onchange="updateQuantity(${item.product.id}, this)"/>
                                     </div>
-                                    <div style="width: 80px;">
+                                    <div style="width: 100px;" class="text-end">
                                         <h5 class="mb-0">${itemTotal.toLocaleString('vi-VN')} đ</h5>
                                     </div>
-                                    <a href="#!" style="color: #cecece;" onclick="removeItem(${item.product.id})"><i class="fas fa-trash-alt"></i></a>
+                                    <a class="ms-3 remove-btn" onclick="removeItem(${item.product.id})"><i class="bi bi-trash-fill"></i></a>
                                 </div>
                             </div>
                         </div>
@@ -110,27 +146,73 @@
         }
 
         function updateSummary(subtotal) {
-            document.getElementById('subtotal').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
-            document.getElementById('total').textContent = subtotal.toLocaleString('vi-VN') + ' đ';
+            const formattedSubtotal = subtotal.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('subtotal').textContent = formattedSubtotal;
+            document.getElementById('total').textContent = formattedSubtotal;
         }
 
-        async function updateQuantity(productId, quantity) {
+        // === THAY ĐỔI 2: CẬP NHẬT LOGIC HÀM UPDATEQUANTITY ===
+        async function updateQuantity(productId, inputElement) {
             const token = localStorage.getItem('jwtToken');
+            const quantity = parseInt(inputElement.value);
+
+            if (quantity <= 0) {
+                // Nếu số lượng là 0 hoặc âm, hỏi xác nhận xóa
+                Swal.fire({
+                    title: 'Xóa sản phẩm?',
+                    text: "Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Đồng ý xóa',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Gọi API xóa
+                        fetch(`/api/cart/${productId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        }).then(() => fetchCartItems()); // Tải lại giỏ hàng
+                    } else {
+                        // Nếu người dùng hủy, trả lại giá trị là 1
+                        inputElement.value = 1;
+                    }
+                });
+                return; // Dừng hàm tại đây
+            }
+
+            // Nếu số lượng > 0, thực hiện cập nhật như cũ
             await fetch(`/api/cart/${productId}`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ quantity: parseInt(quantity) })
+                body: JSON.stringify({ quantity: quantity })
             });
-            fetchCartItems(); // Reload cart
+            fetchCartItems(); // Tải lại giỏ hàng để cập nhật tổng tiền
         }
 
+        // === THAY ĐỔI 3: THÊM XÁC NHẬN CHO HÀM REMOVEITEM ===
         async function removeItem(productId) {
             const token = localStorage.getItem('jwtToken');
-            await fetch(`/api/cart/${productId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+
+            Swal.fire({
+                title: 'Xóa sản phẩm?',
+                text: "Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Đồng ý xóa',
+                cancelButtonText: 'Hủy'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await fetch(`/api/cart/${productId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    fetchCartItems(); // Tải lại giỏ hàng
+                }
             });
-            fetchCartItems(); // Reload cart
         }
     </script>
 </th:block>

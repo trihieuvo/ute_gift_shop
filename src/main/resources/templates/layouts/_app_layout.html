@@ -102,6 +102,17 @@
         }
         /* === KẾT THÚC CSS CHATBOT === */
 
+        /* === BỔ SUNG MỚI: CSS CHO DROPDOWN KHI HOVER === */
+        /* Chỉ áp dụng cho màn hình desktop (rộng hơn 992px) */
+        @media (min-width: 992px) {
+            /* Khi rê chuột vào thẻ li.dropdown, hiển thị menu con (.dropdown-menu) */
+            .category-sidebar .nav-item.dropdown:hover > .dropdown-menu {
+                display: block;
+                margin-top: 0; /* Ghi đè margin của Bootstrap để menu sát hơn */
+            }
+        }
+        /* === KẾT THÚC BỔ SUNG MỚI === */
+
     </style>
     <th:block layout:fragment="styles"></th:block>
     <th:block layout:fragment="scripts_head"></th:block>

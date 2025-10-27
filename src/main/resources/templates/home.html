@@ -47,7 +47,6 @@
             box-shadow: 0 4px 6px rgba(0,0,0,.1);
         }
 
-        /* === CSS MỚI CHO NÚT XEM ẢNH === */
         .product-img-container {
             position: relative;
             overflow: hidden;
@@ -79,7 +78,6 @@
         .img-next {
             right: 10px;
         }
-        /* === KẾT THÚC CSS MỚI === */
     </style>
 </head>
 <body>
@@ -125,31 +123,26 @@
         const productsTitle = document.getElementById('products-title');
 
         /**
-         * 🔄 Hàm mới để chuyển đổi ảnh trên card sản phẩm
-         * @param {number} productId - ID của sản phẩm
-         * @param {number} direction - Hướng chuyển (-1 cho ảnh trước, 1 cho ảnh sau)
+         * SỬA LỖI: Thêm event.stopPropagation() để ngăn chuyển trang khi bấm nút
          */
-        function changeImage(productId, direction) {
+        function changeImage(event, productId, direction) {
+            event.stopPropagation(); // Ngăn sự kiện click lan ra thẻ cha
             const card = document.getElementById(`product-card-${productId}`);
             const img = document.getElementById(`product-img-${productId}`);
             
             if (!card || !img) return;
 
-            // Lấy danh sách URL ảnh từ data attribute
             const images = JSON.parse(card.dataset.images);
             let currentIndex = parseInt(img.dataset.currentIndex, 10);
             
-            // Tính toán index ảnh mới
             currentIndex += direction;
 
-            // Xử lý xoay vòng (nếu đến cuối thì quay về đầu và ngược lại)
             if (currentIndex >= images.length) {
                 currentIndex = 0;
             } else if (currentIndex < 0) {
                 currentIndex = images.length - 1;
             }
 
-            // Cập nhật ảnh và lưu lại index hiện tại
             img.src = images[currentIndex];
             img.dataset.currentIndex = currentIndex;
         }
@@ -172,50 +165,51 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Lỗi mạng hoặc server!');
                 
-                const products = await response.json();
+                let products = await response.json();
                 productListContainer.innerHTML = '';
 
                 if (products.length === 0) {
                     productListContainer.innerHTML = '<p class="text-center text-muted">Không tìm thấy sản phẩm nào phù hợp.</p>';
                     return;
                 }
+                
+                // === CẢI TIẾN: XÁO TRỘN DANH SÁCH SẢN PHẨM ===
+                for (let i = products.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [products[i], products[j]] = [products[j], products[i]];
+                }
+
 
                 products.forEach(product => {
                     const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
                     let initialImageUrl = noImageUrl;
-                    let initialImageIndex = 0;
                     let allImageUrls = [];
                     let imageNavigationButtons = '';
 
-                    // Chuẩn bị dữ liệu ảnh
                     if (product.images && product.images.length > 0) {
                         allImageUrls = product.images.map(img => img.imageUrl);
-                        
-                        // ✨ Tính năng 1: Lấy ảnh ngẫu nhiên khi tải trang
-                        initialImageIndex = Math.floor(Math.random() * allImageUrls.length);
-                        initialImageUrl = allImageUrls[initialImageIndex] || noImageUrl;
+                        initialImageUrl = allImageUrls[0] || noImageUrl;
 
-                        // ✨ Tính năng 2: Tạo nút bấm nếu có nhiều hơn 1 ảnh
                         if (allImageUrls.length > 1) {
+                            // Sửa lại hàm onclick để truyền vào `event`
                             imageNavigationButtons = `
-                                <button class="img-nav-btn img-prev" onclick="event.stopPropagation(); changeImage(${product.id}, -1)">&#10094;</button>
-                                <button class="img-nav-btn img-next" onclick="event.stopPropagation(); changeImage(${product.id}, 1)">&#10095;</button>
+                                <button class="img-nav-btn img-prev" onclick="changeImage(event, ${product.id}, -1)">&#10094;</button>
+                                <button class="img-nav-btn img-next" onclick="changeImage(event, ${product.id}, 1)">&#10095;</button>
                             `;
                         }
                     }
 
-                    // Chuyển mảng URL thành chuỗi JSON để lưu vào data attribute
                     const imagesData = JSON.stringify(allImageUrls);
 
                     const productCard = `
                         <div class="col-md-4">
-                            <div class="card product-card" id="product-card-${product.id}" data-images='${imagesData}'>
+                            <div class="card product-card" id="product-card-${product.id}" data-images='${imagesData}' onclick="window.location.href='/products/${product.id}'" style="cursor: pointer;">
                                 <div class="product-img-container">
                                     <img src="${initialImageUrl}" 
                                          class="card-img-top" 
                                          alt="${product.name}" 
                                          id="product-img-${product.id}"
-                                         data-current-index="${initialImageIndex}"
+                                         data-current-index="0"
                                          onerror="this.onerror=null;this.src='${noImageUrl}';">
                                     ${imageNavigationButtons}
                                 </div>
@@ -235,53 +229,38 @@
                 productListContainer.innerHTML = '<p class="text-danger text-center">Không thể tải danh sách sản phẩm.</p>';
             }
         }
-
-        async function fetchAndDisplayCategories() {
+        
+        // Các hàm fetchAndDisplayCategories và filterProductsByCategory giữ nguyên
+        async function fetchAndDisplayCategories(activeCategoryId = null) {
             try {
                 const response = await fetch('/api/categories');
                 if (!response.ok) throw new Error('Lỗi khi tải danh mục');
-                
                 const categories = await response.json();
                 categoryMenu.innerHTML = '';
-
-                categoryMenu.innerHTML += `
-                    <li class="nav-item">
-                        <a class="nav-link active" onclick="filterProductsByCategory(null, this, 'Tất cả sản phẩm')">
-                            Tất cả sản phẩm
-                        </a>
-                    </li>`;
-
+                const allProductsActiveClass = !activeCategoryId ? 'active' : '';
+                categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link ${allProductsActiveClass}" onclick="filterProductsByCategory(null, this, 'Tất cả sản phẩm')">Tất cả sản phẩm</a></li>`;
+                let activeCategoryName = 'Tất cả sản phẩm';
                 categories.forEach(category => {
+                    let parentActiveClass = (activeCategoryId && category.id == activeCategoryId) ? 'active' : '';
+                    let childrenHtml = '';
                     if (category.children && category.children.length > 0) {
-                        const childrenHtml = category.children.map(child => `
-                            <li>
-                                <a class="dropdown-item" onclick="filterProductsByCategory(${child.id}, this, '${child.name}')">
-                                    ${child.name}
-                                </a>
-                            </li>`).join('');
-
-                        const dropdownHtml = `
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="category-dropdown-${category.id}" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">
-                                    ${category.name}
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="category-dropdown-${category.id}">
-                                    ${childrenHtml}
-                                </ul>
-                            </li>
-                        `;
+                        childrenHtml = category.children.map(child => {
+                            const childActiveClass = (activeCategoryId && child.id == activeCategoryId) ? 'active' : '';
+                            if (childActiveClass) {
+                                parentActiveClass = 'active';
+                                activeCategoryName = child.name;
+                            }
+                            return `<li><a class="dropdown-item ${childActiveClass}" onclick="filterProductsByCategory(${child.id}, this, '${child.name}')">${child.name}</a></li>`;
+                        }).join('');
+                        const dropdownHtml = `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">${category.name}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
                         categoryMenu.innerHTML += dropdownHtml;
                     } else {
-                        const linkHtml = `
-                            <li class="nav-item">
-                                <a class="nav-link" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">
-                                    ${category.name}
-                                </a>
-                            </li>`;
+                        if (parentActiveClass) activeCategoryName = category.name;
+                        const linkHtml = `<li class="nav-item"><a class="nav-link ${parentActiveClass}" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">${category.name}</a></li>`;
                         categoryMenu.innerHTML += linkHtml;
                     }
                 });
-
+                productsTitle.textContent = activeCategoryName;
             } catch (error) {
                 console.error("Lỗi khi tải danh mục:", error);
                 categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
@@ -290,20 +269,25 @@
 
         function filterProductsByCategory(categoryId, element, categoryName) {
             productsTitle.textContent = categoryName;
-            document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => {
-                el.classList.remove('active');
-            });
-
+            document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => el.classList.remove('active'));
             if (element) {
                 element.classList.add('active');
             }
-            
+            const url = new URL(window.location);
+            if (categoryId) {
+                url.searchParams.set('category', categoryId);
+            } else {
+                url.searchParams.delete('category');
+            }
+            window.history.pushState({}, '', url);
             fetchAndDisplayProducts(categoryId);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            fetchAndDisplayProducts();
-            fetchAndDisplayCategories();
+            const urlParams = new URLSearchParams(window.location.search);
+            const categoryIdFromUrl = urlParams.get('category');
+            fetchAndDisplayProducts(categoryIdFromUrl);
+            fetchAndDisplayCategories(categoryIdFromUrl);
         });
     </script>
 </th:block>

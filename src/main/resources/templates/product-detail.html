@@ -6,6 +6,7 @@
 <head>
     <title>Chi tiết sản phẩm</title>
     <style>
+        /* CSS cho gallery ảnh (giữ nguyên) */
         .product-gallery-main {
             width: 100%;
             aspect-ratio: 1/1;
@@ -29,17 +30,67 @@
         .thumbnail-img.active {
             border-color: #0d6efd;
         }
+
+        /* CSS cho sidebar danh mục (lấy từ home.html) */
+        .category-sidebar {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+            /* Thêm để sidebar cố định khi cuộn trang */
+            position: sticky;
+            top: 90px; /* 70px navbar + 20px padding */
+        }
+        .category-sidebar .nav-link,
+        .category-sidebar .dropdown-item {
+            color: #333;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .category-sidebar .nav-item .nav-link:hover,
+        .category-sidebar .dropdown-item:hover {
+            color: #0d6efd;
+        }
+        .category-sidebar .nav-link.active,
+        .category-sidebar .dropdown-item.active {
+            color: #fff;
+            background-color: #0d6efd;
+            border-radius: 0.25rem;
+        }
+        .category-sidebar .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
     </style>
 </head>
 <body>
 
 <div layout:fragment="content">
-    <div id="product-detail-container">
-        <div class="text-center p-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+    <div class="mb-4">
+        <a th:href="@{/home}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại trang chủ
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="category-sidebar">
+                <h4 class="mb-3">Danh mục</h4>
+                <nav id="category-menu" class="nav flex-column">
+                    <p>Đang tải danh mục...</p>
+                </nav>
             </div>
-            <p class="mt-2">Đang tải chi tiết sản phẩm...</p>
+        </div>
+
+        <div class="col-md-9">
+            <div id="product-detail-container">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Đang tải chi tiết sản phẩm...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -47,53 +98,43 @@
 <th:block layout:fragment="scripts_body">
     <script th:inline="javascript">
         /*<![CDATA[*/
-        // Lấy productId từ Model mà ProductViewController đã truyền sang
         const productId = /*[[${productId}]]*/ '0';
         /*]]>*/
 
         const container = document.getElementById('product-detail-container');
+        const categoryMenu = document.getElementById('category-menu');
 
+        // --- CÁC HÀM XỬ LÝ CHI TIẾT SẢN PHẨM (GIỮ NGUYÊN) ---
         async function fetchProductDetails() {
             try {
-                // Sử dụng productId đã lấy được để gọi đúng API
                 const response = await fetch(`/api/products/${productId}`);
                 if (!response.ok) throw new Error('Không tìm thấy sản phẩm');
-
                 const product = await response.json();
                 renderProductDetails(product);
-
             } catch (error) {
                 container.innerHTML = `<p class="text-danger text-center">${error.message}</p>`;
             }
         }
 
         function renderProductDetails(product) {
-            document.title = product.name; // Cập nhật tiêu đề trang
-
+            document.title = product.name;
             let galleryHtml = '<p>Không có hình ảnh.</p>';
             if (product.images && product.images.length > 0) {
                 const mainImage = product.images[0].imageUrl;
                 const thumbnails = product.images.map((img, index) => `
-                    <img src="${img.imageUrl}"
-                         class="thumbnail-img ${index === 0 ? 'active' : ''}"
-                         alt="Thumbnail ${index + 1}"
-                         onclick="changeMainImage(this, '${img.imageUrl}')">
+                    <img src="${img.imageUrl}" class="thumbnail-img ${index === 0 ? 'active' : ''}" onclick="changeMainImage(this, '${img.imageUrl}')">
                 `).join('');
-
                 galleryHtml = `
                     <img src="${mainImage}" id="main-product-image" class="product-gallery-main" alt="Ảnh chính">
-                    <div class="product-gallery-thumbnails">
-                        ${thumbnails}
-                    </div>
+                    <div class="product-gallery-thumbnails">${thumbnails}</div>
                 `;
             }
-
             container.innerHTML = `
                 <div class="row">
-                    <div class="col-md-5">
+                    <div class="col-md-6">
                         ${galleryHtml}
                     </div>
-                    <div class="col-md-7">
+                    <div class="col-md-6">
                         <h2>${product.name}</h2>
                         <h3 class="text-danger">${product.price.toLocaleString('vi-VN')} đ</h3>
                         <p class="text-muted">Tình trạng: <strong>Còn hàng</strong></p>
@@ -125,17 +166,12 @@
                    .then(() => window.location.href = '/login');
                 return;
             }
-
             const quantity = document.getElementById('quantity').value;
             const response = await fetch('/api/cart', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: productId,
-                    quantity: parseInt(quantity)
-                })
+                body: JSON.stringify({ productId: productId, quantity: parseInt(quantity) })
             });
-
             if (response.ok) {
                 Swal.fire('Thành công!', 'Đã thêm sản phẩm vào giỏ hàng.', 'success');
             } else {
@@ -144,7 +180,59 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', fetchProductDetails);
+        // --- CÁC HÀM MỚI ĐỂ HIỂN THỊ VÀ XỬ LÝ SIDEBAR DANH MỤC ---
+        async function fetchAndDisplayCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                if (!response.ok) throw new Error('Lỗi khi tải danh mục');
+                
+                const categories = await response.json();
+                categoryMenu.innerHTML = '';
+
+                categoryMenu.innerHTML += `
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="filterProductsByCategory(null)">
+                            Tất cả sản phẩm
+                        </a>
+                    </li>`;
+
+                categories.forEach(category => {
+                    if (category.children && category.children.length > 0) {
+                        const childrenHtml = category.children.map(child => `
+                            <li><a class="dropdown-item" onclick="filterProductsByCategory(${child.id})">${child.name}</a></li>
+                        `).join('');
+                        const dropdownHtml = `
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="filterProductsByCategory(${category.id})">
+                                    ${category.name}
+                                </a>
+                                <ul class="dropdown-menu">${childrenHtml}</ul>
+                            </li>`;
+                        categoryMenu.innerHTML += dropdownHtml;
+                    } else {
+                        const linkHtml = `<li class="nav-item"><a class="nav-link" onclick="filterProductsByCategory(${category.id})">${category.name}</a></li>`;
+                        categoryMenu.innerHTML += linkHtml;
+                    }
+                });
+            } catch (error) {
+                categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
+            }
+        }
+
+        function filterProductsByCategory(categoryId) {
+            // Khi ở trang chi tiết, nhấn vào danh mục sẽ điều hướng về trang chủ với bộ lọc
+            let homeUrl = '/home';
+            if (categoryId) {
+                homeUrl += `?category=${categoryId}`;
+            }
+            window.location.href = homeUrl;
+        }
+
+        // --- GỌI CÁC HÀM KHI TẢI TRANG ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProductDetails();
+            fetchAndDisplayCategories(); // Gọi thêm hàm để tải danh mục
+        });
     </script>
 </th:block>
 
