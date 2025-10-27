@@ -35,4 +35,11 @@ public class AdminPageController {
         // Trả về file: templates/admin/manage-users.html
         return "admin/manage-users";
     }
+     // 5. Trang Quản lý Vận chuyển
+    @GetMapping("/manage-shipping")
+    public String manageShipping() {
+        // Đảm bảo tên file là 'manage-shipping' (không có .html)
+        // và nó nằm trong thư mục 'admin/'
+        return "admin/manage-shipping"; 
+    }
 }

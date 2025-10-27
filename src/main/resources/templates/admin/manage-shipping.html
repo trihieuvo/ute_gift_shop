@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Vận chuyển</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Vận chuyển</h1>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header">
+              <h5 id="form-title">Thêm Đơn vị Vận chuyển</h5>
+            </div>
+            <div class="card-body">
+              <input type="hidden" id="method-id" />
+              
+              <div class="mb-3">
+                <label for="method-name" class="form-label">Tên nhà vận chuyển (*)</label>
+                <input type="text" class="form-control" id="method-name" required />
+              </div>
+              
+              <div class="mb-3">
+                <label for="method-fee" class="form-label">Chi phí vận chuyển (*)</label>
+                <input type="number" class="form-control" id="method-fee" required />
+              </div>
+              
+              <button class="btn btn-primary" onclick="handleSave()">
+                <i class="bi bi-floppy-fill"></i> Lưu
+              </button>
+              <button class="btn btn-secondary" onclick="clearForm()" id="btn-cancel" style="display: none;">
+                <i class="bi bi-x-circle"></i> Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">Danh sách Đơn vị Vận chuyển</div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tên</th>
+                      <th>Chi phí</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shipping-table-body">
+                    <tr>
+                      <td colspan="4" class="text-center">Đang tải...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/shipping-methods";
+
+        // DOM Elements
+        const tbody = document.getElementById("shipping-table-body");
+        const formTitle = document.getElementById("form-title");
+        const methodId = document.getElementById("method-id");
+        const methodName = document.getElementById("method-name");
+        const methodFee = document.getElementById("method-fee");
+        const btnCancel = document.getElementById("btn-cancel");
+
+        // 1. Tải danh sách khi trang được mở
+        document.addEventListener("DOMContentLoaded", fetchShippingMethods);
+
+        async function fetchShippingMethods() {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center">Đang tải...</td></tr>';
+          
+          try {
+            const response = await fetch(API_URL, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error("Lỗi tải dữ liệu");
+
+            const methods = await response.json();
+            tbody.innerHTML = ""; // Xóa "Đang tải..."
+
+            if (methods.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="4" class="text-center">Chưa có đơn vị vận chuyển nào.</td></tr>';
+            }
+
+            methods.forEach((method) => {
+              tbody.innerHTML += `
+                <tr id="row-${method.id}">
+                  <td>${method.id}</td>
+                  <td>${method.name}</td>
+                  <td>${new Intl.NumberFormat('vi-VN').format(method.fee)} đ</td>
+                  <td>
+                    <button class.="btn btn-warning btn-sm" onclick="handleEdit(${method.id}, '${method.name}', ${method.fee})">
+                      <i class="bi bi-pencil-square"></i> Sửa
+                    </button>
+                    <button class.="btn btn-danger btn-sm" onclick="handleDelete(${method.id})">
+                      <i class="bi bi-trash-fill"></i> Xóa
+                    </button>
+                  </td>
+                </tr>
+              `;
+            });
+          } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
+          }
+        }
+
+        // 2. Xóa Form
+        function clearForm() {
+          formTitle.textContent = "Thêm Đơn vị Vận chuyển";
+          methodId.value = "";
+          methodName.value = "";
+          methodFee.value = "";
+          btnCancel.style.display = "none";
+        }
+
+        // 3. Đưa dữ liệu lên Form để Sửa
+        function handleEdit(id, name, fee) {
+          formTitle.textContent = "Cập nhật Đơn vị Vận chuyển";
+          methodId.value = id;
+          methodName.value = name;
+          methodFee.value = fee;
+          btnCancel.style.display = "inline-block"; // Hiển thị nút Hủy
+        }
+
+        // 4. Xử lý Lưu (Thêm/Cập nhật)
+        async function handleSave() {
+          const id = methodId.value || null; // Nếu rỗng thì là null (cho Thêm mới)
+          const name = methodName.value;
+          const fee = methodFee.value;
+
+          if (!name || !fee) {
+            Swal.fire("Lỗi", "Vui lòng nhập Tên và Chi phí", "error");
+            return;
+          }
+
+          const methodData = { id, name, fee };
+
+          try {
+            const response = await fetch(API_URL, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(methodData),
+            });
+
+            if (!response.ok) throw new Error("Lỗi khi lưu");
+
+            Swal.fire("Thành công!", "Đã lưu đơn vị vận chuyển.", "success");
+            clearForm();
+            fetchShippingMethods(); // Tải lại bảng
+          } catch (err) {
+            Swal.fire("Lỗi", "Không thể lưu. Vui lòng thử lại.", "error");
+          }
+        }
+
+        // 5. Xử lý Xóa
+        async function handleDelete(id) {
+          Swal.fire({
+            title: "Bạn chắc chắn?",
+            text: "Bạn muốn XÓA đơn vị vận chuyển này?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc3545",
+            cancelButtonText: "Hủy",
+            confirmButtonText: "Vâng, xóa!",
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (!response.ok) throw new Error("Lỗi khi xóa");
+
+                Swal.fire("Đã xóa!", "Đã xóa đơn vị vận chuyển.", "success");
+                fetchShippingMethods(); // Tải lại bảng
+              } catch (err) {
+                Swal.fire("Lỗi", "Không thể xóa. ĐVVC này có thể đang được sử dụng.", "error");
+              }
+            }
+          });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>
