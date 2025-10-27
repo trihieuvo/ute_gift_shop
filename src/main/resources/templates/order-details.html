@@ -5,37 +5,78 @@
       layout:decorate="~{layouts/_app_layout}">
 <head>
     <title>Chi tiết Đơn hàng</title>
+    <style>
+        .status-badge {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .order-product-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
 
 <div layout:fragment="content">
     <div class="d-flex justify-content-between align-items-center mb-4">
          <h1 id="order-title">Chi tiết Đơn hàng #...</h1>
-         <a th_href="@{/order-history}" class="btn btn-secondary btn-sm">Quay lại lịch sử</a>
+         <a th:href="@{/order-history}" class="btn btn-outline-secondary btn-sm">
+             <i class="bi bi-arrow-left"></i> Quay lại lịch sử
+         </a>
     </div>
 
-    <div id="order-details-loading" class="text-center p-5">Đang tải thông tin đơn hàng...</div>
+    <div id="order-details-loading" class="text-center p-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Đang tải thông tin đơn hàng...</p>
+    </div>
 
     <div id="order-details-content" class="d-none">
         <div class="row g-4">
-            <div class="col-md-6">
-                <h5>Thông tin nhận hàng</h5>
-                <ul class="list-group list-group-flush mb-3">
-                    <li class="list-group-item"><strong>Ngày đặt:</strong> <span id="order-date"></span></li>
-                    <li class="list-group-item"><strong>Địa chỉ:</strong> <span id="recipient-address"></span></li>
-                    <li class="list-group-item"><strong>Phương thức TT:</strong> <span id="order-payment"></span></li>
-                </ul>
-                 <h5>Trạng thái đơn hàng</h5>
-                 <p class="fs-4"><strong id="order-current-status"></strong></p>
-                 <div id="action-buttons"></div>
+            <div class="col-lg-7">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Các sản phẩm trong đơn hàng</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush" id="product-list">
+                            </div>
+                    </div>
+                    <div class="card-footer">
+                        <h4 class="text-end mb-0">
+                            Tổng cộng: <strong id="order-total" class="text-danger">0 đ</strong>
+                        </h4>
+                    </div>
+                </div>
             </div>
 
-            <div class="col-md-6">
-                <h5>Các sản phẩm</h5>
-                <ul class="list-group" id="product-list">
+            <div class="col-lg-5">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-clipboard2-check me-2"></i>Trạng thái đơn hàng</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="order-current-status-badge" class="mb-3">
+                            </div>
+                        <div id="action-buttons">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Thông tin chi tiết</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Ngày đặt:</strong> <span id="order-date"></span></li>
+                        <li class="list-group-item"><strong>Phương thức TT:</strong> <span id="order-payment"></span></li>
+                        <li class="list-group-item"><strong>Địa chỉ nhận hàng:</strong><br><span id="recipient-address"></span></li>
                     </ul>
-                <hr>
-                <h4 class="text-end">Tổng cộng: <span id="order-total" class="text-danger"></span></h4>
+                </div>
             </div>
         </div>
     </div>
@@ -44,7 +85,6 @@
 <th:block layout:fragment="scripts_body">
     <script th:inline="javascript">
         /*<![CDATA[*/
-        // Lấy orderId từ URL (Giả định URL là /orders/123)
         const pathParts = window.location.pathname.split('/');
         const orderId = pathParts[pathParts.length - 1];
         /*]]>*/
@@ -60,73 +100,100 @@
             }
 
             document.getElementById('order-title').textContent = `Chi tiết Đơn hàng #${orderId}`;
+            loadingDiv.classList.remove('d-none');
+            contentDiv.classList.add('d-none');
 
             try {
-                // 1. Gọi API /api/orders/{id} (sẽ được tạo ở OrderController)
                 const response = await fetch(`/api/orders/${orderId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                loadingDiv.classList.add('d-none'); // Ẩn loading
+                loadingDiv.classList.add('d-none');
 
                 if (response.ok) {
                     const order = await response.json();
-                    contentDiv.classList.remove('d-none'); // Hiện content
-
-                    // Đổ dữ liệu
-                    document.getElementById('order-date').textContent = new Date(order.orderDate).toLocaleString('vi-VN');
-                    document.getElementById('recipient-address').textContent = order.shippingAddress || 'N/A';
-                    document.getElementById('order-payment').textContent = order.paymentMethod || 'N/A';
-                    document.getElementById('order-current-status').textContent = order.status || 'N/A';
-                    document.getElementById('order-total').textContent = order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') + ' đ' : 'N/A';
-
-                    // Hiển thị sản phẩm (Giả định API trả về chi tiết sản phẩm)
-                    // Lưu ý: Cần sửa OrderController để trả về OrderDetail cùng với Order
-                    const productList = document.getElementById('product-list');
-                    productList.innerHTML = '';
-                    if (order.orderDetails && order.orderDetails.length > 0) {
-                        order.orderDetails.forEach(detail => {
-                            productList.innerHTML += `
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>
-                                        ${detail.product.name} (x${detail.quantity})
-                                    </span>
-                                    <span>${(detail.price * detail.quantity).toLocaleString('vi-VN')} đ</span>
-                                </li>
-                            `;
-                        });
-                    } else {
-                         productList.innerHTML = '<li class="list-group-item">Không thể tải chi tiết sản phẩm.</li>';
-                    }
-                    
-                    // 2. Hiển thị nút Hủy đơn hàng nếu trạng thái là "NEW"
-                    if (order.status === 'NEW') {
-                        document.getElementById('action-buttons').innerHTML = 
-                            '<button class="btn btn-danger" onclick="cancelOrder()">Hủy đơn hàng</button>';
-                    }
-
-                } else if (response.status === 401 || response.status === 403) {
-                     Swal.fire('Lỗi', 'Không có quyền truy cập (Đây không phải đơn hàng của bạn) hoặc phiên hết hạn.', 'error').then(() => window.location.href = '/order-history');
-                } else if (response.status === 404) {
-                    contentDiv.innerHTML = '<p class="text-danger text-center">Không tìm thấy đơn hàng.</p>';
+                    renderOrderDetails(order);
                     contentDiv.classList.remove('d-none');
-                }
-                else {
-                     contentDiv.innerHTML = '<p class="text-danger text-center">Lỗi tải thông tin đơn hàng.</p>';
-                     contentDiv.classList.remove('d-none');
+                } else {
+                    let errorMessage = "Lỗi tải thông tin đơn hàng.";
+                    if (response.status === 403 || response.status === 401) {
+                        errorMessage = "Bạn không có quyền xem đơn hàng này hoặc phiên đăng nhập đã hết hạn.";
+                    } else if (response.status === 404) {
+                        errorMessage = "Không tìm thấy đơn hàng.";
+                    }
+                    throw new Error(errorMessage);
                 }
             } catch (error) {
-                 loadingDiv.classList.add('d-none');
-                 contentDiv.innerHTML = '<p class="text-danger text-center">Lỗi kết nối mạng.</p>';
+                 contentDiv.innerHTML = `<div class="alert alert-danger text-center">${error.message}</div>`;
                  contentDiv.classList.remove('d-none');
             }
         }
         
-        // 3. Hàm xử lý Hủy đơn hàng
+        function getStatusBadge(status) {
+            let badgeClass = 'bg-secondary';
+            let statusText = status;
+            switch(status) {
+                case 'NEW': badgeClass = 'bg-info text-dark'; statusText = 'Mới'; break;
+                case 'CONFIRMED': badgeClass = 'bg-primary'; statusText = 'Đã xác nhận'; break;
+                case 'PREPARING': badgeClass = 'bg-primary'; statusText = 'Đang chuẩn bị'; break;
+                case 'READY_FOR_SHIPMENT': badgeClass = 'bg-primary'; statusText = 'Sẵn sàng giao'; break;
+                case 'DELIVERING': badgeClass = 'bg-warning text-dark'; statusText = 'Đang giao'; break;
+                case 'DELIVERED': badgeClass = 'bg-success'; statusText = 'Đã giao thành công'; break;
+                case 'CANCELLED': badgeClass = 'bg-danger'; statusText = 'Đã hủy'; break;
+                case 'FAILED_DELIVERY': badgeClass = 'bg-danger'; statusText = 'Giao thất bại'; break;
+            }
+            return `<span class="badge status-badge ${badgeClass}">${statusText}</span>`;
+        }
+
+        function renderOrderDetails(order) {
+            document.getElementById('order-date').textContent = new Date(order.orderDate).toLocaleString('vi-VN');
+            document.getElementById('recipient-address').textContent = order.shippingAddress || 'N/A';
+            document.getElementById('order-payment').textContent = order.paymentMethod || 'N/A';
+            document.getElementById('order-total').textContent = order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') + ' đ' : 'N/A';
+            document.getElementById('order-current-status-badge').innerHTML = getStatusBadge(order.status);
+
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = '';
+            
+            if (order.orderDetails && order.orderDetails.length > 0) {
+                order.orderDetails.forEach(detail => {
+                    const noImageUrl = 'https://via.placeholder.com/60?text=N/A';
+                    let imageUrl = noImageUrl;
+                    if (detail.product && detail.product.images && detail.product.images.length > 0) {
+                        imageUrl = detail.product.images[0].imageUrl;
+                    }
+
+                    // === THAY ĐỔI Ở ĐÂY: DÙNG THẺ <a> THAY CHO <li> ===
+                    const productUrl = `/products/${detail.product.id}`;
+                    productList.innerHTML += `
+                        <a href="${productUrl}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-decoration-none text-dark">
+                            <div class="d-flex align-items-center">
+                                <img src="${imageUrl}" alt="${detail.product.name}" class="me-3 order-product-image" onerror="this.src='${noImageUrl}'">
+                                <div>
+                                    <h6 class="my-0">${detail.product.name}</h6>
+                                    <small class="text-muted">Số lượng: ${detail.quantity}</small>
+                                </div>
+                            </div>
+                            <span class="text-muted">${(detail.price * detail.quantity).toLocaleString('vi-VN')} đ</span>
+                        </a>
+                    `;
+                });
+            } else {
+                 productList.innerHTML = '<div class="list-group-item">Không có chi tiết sản phẩm.</div>';
+            }
+            
+            const actionButtons = document.getElementById('action-buttons');
+            if (order.status === 'NEW') {
+                actionButtons.innerHTML = '<button class="btn btn-danger" onclick="cancelOrder()">Hủy đơn hàng</button>';
+            } else {
+                actionButtons.innerHTML = '';
+            }
+        }
+        
         async function cancelOrder() {
             const token = localStorage.getItem('jwtToken');
             
-            Swal.fire({
+            const result = await Swal.fire({
                 title: 'Bạn chắc chắn muốn hủy?',
                 text: "Bạn không thể hoàn tác hành động này!",
                 icon: 'warning',
@@ -135,27 +202,26 @@
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Đồng ý hủy!',
                 cancelButtonText: 'Không'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        const response = await fetch(`/api/orders/${orderId}/cancel`, {
-                             method: 'PUT',
-                             headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        const responseText = await response.text();
-                        
-                        if(response.ok) {
-                            Swal.fire('Đã hủy!', responseText, 'success').then(() => {
-                                fetchOrderDetails(); // Tải lại trang
-                            });
-                        } else {
-                            Swal.fire('Lỗi!', responseText, 'error');
-                        }
-                    } catch (e) {
-                        Swal.fire('Lỗi!', 'Lỗi mạng khi hủy đơn.', 'error');
-                    }
-                }
             });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/orders/${orderId}/cancel`, {
+                         method: 'PUT',
+                         headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const responseText = await response.text();
+                    
+                    if(response.ok) {
+                        await Swal.fire('Đã hủy!', responseText, 'success');
+                        fetchOrderDetails();
+                    } else {
+                        Swal.fire('Lỗi!', responseText, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Lỗi!', 'Lỗi mạng khi hủy đơn.', 'error');
+                }
+            }
         }
 
         document.addEventListener('DOMContentLoaded', fetchOrderDetails);
