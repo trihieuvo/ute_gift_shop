@@ -1,6 +1,8 @@
 package com.utegiftshop.dto.request;
 
 import java.math.BigDecimal;
+import java.util.List; // THÊM IMPORT
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,7 +13,8 @@ public class ProductVendorRequestDto {
     private String description;
     private BigDecimal price;
     private Integer stockQuantity;
-    private String imageUrl; // URL ảnh đại diện
-    private Integer categoryId; // Chỉ cần ID của category
+    // private String imageUrl; // <-- THAY THẾ DÒNG NÀY
+    private List<String> imageUrls; // <-- BẰNG DÒNG NÀY
+    private Integer categoryId;
     private boolean isActive = true;
 }

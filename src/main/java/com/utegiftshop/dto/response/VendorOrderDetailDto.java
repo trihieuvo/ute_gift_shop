@@ -1,11 +1,13 @@
 package com.utegiftshop.dto.response;
 
-import com.utegiftshop.entity.OrderDetail;
+import java.math.BigDecimal;
+
+import com.utegiftshop.entity.OrderDetail; // THÊM IMPORT
+import com.utegiftshop.entity.Product;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -13,16 +15,23 @@ import java.math.BigDecimal;
 public class VendorOrderDetailDto {
     private Long productId;
     private String productName;
-    private String productImageUrl; // Lấy ảnh từ Product
+    private String productImageUrl;
     private Integer quantity;
-    private BigDecimal price; // Giá tại thời điểm mua
+    private BigDecimal price;
     private BigDecimal totalItemPrice;
 
     public VendorOrderDetailDto(OrderDetail detail) {
         if (detail.getProduct() != null) {
-            this.productId = detail.getProduct().getId();
-            this.productName = detail.getProduct().getName();
-            this.productImageUrl = detail.getProduct().getImageUrl(); // Lấy URL ảnh
+            Product product = detail.getProduct();
+            this.productId = product.getId();
+            this.productName = product.getName();
+            
+            // === THAY ĐỔI CÁCH LẤY ẢNH ===
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
+                this.productImageUrl = product.getImages().get(0).getImageUrl();
+            }
+            // === KẾT THÚC THAY ĐỔI ===
+
         } else {
             this.productName = "Sản phẩm không xác định";
         }
