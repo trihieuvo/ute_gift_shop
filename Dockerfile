@@ -24,10 +24,10 @@ FROM openjdk:21-jdk-slim
 WORKDIR /app
 
 # Copy the executable JAR file from the build stage
-COPY --from=build /app/target/trungtambaohanh-0.0.1-SNAPSHOT.jar .
+COPY --from=build /app/target/ute-giftshop-0.0.1-SNAPSHOT.jar .
 
 # Expose the port your app runs on
 EXPOSE 8080
 
 # The command to run your application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "ute-giftshop-0.0.1-SNAPSHOT.jar"]
