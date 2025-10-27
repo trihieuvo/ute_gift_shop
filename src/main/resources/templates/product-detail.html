@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Chi tiết sản phẩm</title>
+    <style>
+        .product-gallery-main {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .product-gallery-thumbnails {
+            display: flex;
+            gap: 10px;
+        }
+        .thumbnail-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .thumbnail-img.active {
+            border-color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div id="product-detail-container">
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Đang tải chi tiết sản phẩm...</p>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // Lấy productId từ Model mà ProductViewController đã truyền sang
+        const productId = /*[[${productId}]]*/ '0';
+        /*]]>*/
+
+        const container = document.getElementById('product-detail-container');
+
+        async function fetchProductDetails() {
+            try {
+                // Sử dụng productId đã lấy được để gọi đúng API
+                const response = await fetch(`/api/products/${productId}`);
+                if (!response.ok) throw new Error('Không tìm thấy sản phẩm');
+
+                const product = await response.json();
+                renderProductDetails(product);
+
+            } catch (error) {
+                container.innerHTML = `<p class="text-danger text-center">${error.message}</p>`;
+            }
+        }
+
+        function renderProductDetails(product) {
+            document.title = product.name; // Cập nhật tiêu đề trang
+
+            let galleryHtml = '<p>Không có hình ảnh.</p>';
+            if (product.images && product.images.length > 0) {
+                const mainImage = product.images[0].imageUrl;
+                const thumbnails = product.images.map((img, index) => `
+                    <img src="${img.imageUrl}"
+                         class="thumbnail-img ${index === 0 ? 'active' : ''}"
+                         alt="Thumbnail ${index + 1}"
+                         onclick="changeMainImage(this, '${img.imageUrl}')">
+                `).join('');
+
+                galleryHtml = `
+                    <img src="${mainImage}" id="main-product-image" class="product-gallery-main" alt="Ảnh chính">
+                    <div class="product-gallery-thumbnails">
+                        ${thumbnails}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-5">
+                        ${galleryHtml}
+                    </div>
+                    <div class="col-md-7">
+                        <h2>${product.name}</h2>
+                        <h3 class="text-danger">${product.price.toLocaleString('vi-VN')} đ</h3>
+                        <p class="text-muted">Tình trạng: <strong>Còn hàng</strong></p>
+                        <hr>
+                        <p>${product.description || 'Chưa có mô tả cho sản phẩm này.'}</p>
+                        <hr>
+                        <div class="d-flex align-items-center gap-3">
+                            <label for="quantity">Số lượng:</label>
+                            <input type="number" id="quantity" class="form-control" value="1" min="1" style="width: 80px;">
+                            <button class="btn btn-primary" onclick="addToCart()">
+                                <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function changeMainImage(thumbnailElement, newSrc) {
+            document.getElementById('main-product-image').src = newSrc;
+            document.querySelectorAll('.thumbnail-img').forEach(img => img.classList.remove('active'));
+            thumbnailElement.classList.add('active');
+        }
+
+        async function addToCart() {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng.', 'info')
+                   .then(() => window.location.href = '/login');
+                return;
+            }
+
+            const quantity = document.getElementById('quantity').value;
+            const response = await fetch('/api/cart', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: productId,
+                    quantity: parseInt(quantity)
+                })
+            });
+
+            if (response.ok) {
+                Swal.fire('Thành công!', 'Đã thêm sản phẩm vào giỏ hàng.', 'success');
+            } else {
+                const error = await response.text();
+                Swal.fire('Lỗi!', `Không thể thêm vào giỏ: ${error}`, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchProductDetails);
+    </script>
+</th:block>
+
+</body>
+</html>

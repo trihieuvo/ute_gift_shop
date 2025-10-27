@@ -5,13 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Configuration
 public class MvcConfig implements WebMvcConfigurer {
@@ -39,7 +39,7 @@ public class MvcConfig implements WebMvcConfigurer {
         // Ánh xạ cho trang chi tiết, {id} sẽ được xử lý bởi JS ở frontend
         registry.addViewController("/orders/{id}").setViewName("order-details"); 
         // === KẾT THÚC BỔ SUNG ===
-
+        registry.addViewController("/products/{id}").setViewName("product-detail");
         // BỎ CÁC VIEW CONTROLLER CHO /shipper/... ở đây nếu có
 
         registry.addViewController("/").setViewName("login");

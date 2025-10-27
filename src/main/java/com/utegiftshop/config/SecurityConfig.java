@@ -58,10 +58,11 @@
 						"/cart", "/checkout", "/profile",
 						"/api/auth/**",
 						"/api/products/**",
+						"/products/**",
 						"/order-history", "/orders/**",
 						"/css/**", "/js/**", "/images/**", "/*.ico",
 						"/error",
-				
+
 						"/api/categories",
 						"/shipper/**",
 						"/vendor/**",
