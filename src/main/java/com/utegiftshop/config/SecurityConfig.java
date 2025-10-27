@@ -61,7 +61,7 @@
 						"/order-history", "/orders/**",
 						"/css/**", "/js/**", "/images/**", "/*.ico",
 						"/error",
-						"/api/users/me",
+				
 						"/api/categories",
 						"/shipper/**",
 						"/vendor/**",
