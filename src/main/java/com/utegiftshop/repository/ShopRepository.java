@@ -16,4 +16,6 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
      */
     Optional<Shop> findByUserId(Long userId);
     List<Shop> findByStatus(String status);
+    // Thêm hàm đếm theo trạng thái (status)
+    long countByStatus(String status);
 }

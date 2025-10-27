@@ -6,42 +6,145 @@
   layout:decorate="~{layouts/_admin_layout}"
 >
   <head>
-    <title>Dashboard</title>
+    <title>Admin Dashboard</title>
   </head>
   <body>
     <div layout:fragment="content">
-      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Dashboard</h1>
-      <p>Chào mừng Admin!</p>
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Admin Dashboard</h1>
 
-      <div class="row" id="stats-container">
-        <p>Đang tải dữ liệu thống kê...</p>
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Tổng Doanh thu</h5>
+              <p class="card-text fs-3 fw-bold" id="total-revenue">
+                Đang tải...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Tổng Đơn hàng</h5>
+              <p class="card-text fs-3 fw-bold" id="total-orders">
+                Đang tải...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Tổng Người dùng</h5>
+              <p class="card-text fs-3 fw-bold" id="total-users">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Shop Hoạt động</h5>
+              <p class="card-text fs-3 fw-bold" id="total-shops">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">Doanh thu 3 tháng gần nhất</div>
+        <div class="card-body">
+          <canvas id="revenueChart" width="400" height="150"></canvas>
+        </div>
       </div>
     </div>
 
     <th:block layout:fragment="scripts_body">
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
       <script>
         const token = localStorage.getItem("jwtToken");
 
-        document.addEventListener("DOMContentLoaded", () => {
-          fetchDashboardStats();
-        });
+        document.addEventListener("DOMContentLoaded", fetchDashboardData);
 
-        async function fetchDashboardStats() {
-          const statsContainer = document.getElementById("stats-container");
+        // Định dạng tiền tệ
+        const formatVND = (amount) => {
+          return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+            minimumFractionDigits: 0,
+          }).format(amount);
+        };
+
+        async function fetchDashboardData() {
+          // 1. Lấy số liệu tổng quan
           try {
-            // Bạn sẽ cần tạo API này ở backend
-            // const response = await fetch("/api/v1/admin/stats", {
-            //     headers: { 'Authorization': `Bearer ${token}` }
-            // });
-            // const stats = await response.json();
+            const response = await fetch("/api/v1/admin/stats/dashboard", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const stats = await response.json();
 
-            // (Tạm thời hiển thị text)
-            statsContainer.innerHTML =
-              "<p>Dữ liệu thống kê sẽ được hiển thị ở đây.</p>";
+            document.getElementById("total-revenue").textContent = formatVND(
+              stats.totalRevenue
+            );
+            document.getElementById("total-orders").textContent =
+              stats.totalOrders;
+            document.getElementById("total-users").textContent =
+              stats.totalUsers;
+            document.getElementById("total-shops").textContent =
+              stats.totalActiveShops;
           } catch (err) {
-            statsContainer.innerHTML =
-              '<p class="text-danger">Lỗi tải dữ liệu thống kê.</p>';
+            console.error("Lỗi tải số liệu tổng quan:", err);
           }
+
+          // 2. Lấy dữ liệu cho biểu đồ
+          try {
+            const response = await fetch("/api/v1/admin/stats/revenue-chart", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const monthlyData = await response.json();
+
+            renderRevenueChart(monthlyData);
+          } catch (err) {
+            console.error("Lỗi tải dữ liệu biểu đồ:", err);
+          }
+        }
+
+        // 3. Hàm vẽ biểu đồ
+        function renderRevenueChart(data) {
+          const ctx = document.getElementById("revenueChart").getContext("2d");
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: Object.keys(data),
+              datasets: [
+                {
+                  label: "Doanh thu (Đồng)",
+                  data: Object.values(data),
+                  backgroundColor: "rgba(40, 167, 69, 0.5)", // Màu xanh lá cây
+                  borderColor: "rgba(40, 167, 69, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  // Hiển thị tooltip tiền tệ (tùy chọn)
+                  ticks: {
+                    callback: function (value, index, values) {
+                      return formatVND(value);
+                    },
+                  },
+                },
+              },
+            },
+          });
         }
       </script>
     </th:block>

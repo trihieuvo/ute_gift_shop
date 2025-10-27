@@ -43,4 +43,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // === DÙNG CHO CUSTOMER (GIỮ NGUYÊN) ===
     List<Order> findByUserId(Long userId);
     Optional<Order> findByIdAndUserId(Long orderId, Long userId);
+
+    // Thêm hàm tính tổng tiền của các đơn hàng có trạng thái "DELIVERED"
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'DELIVERED'")
+    BigDecimal sumTotalAmountIfStatusDelivered();
 }
