@@ -252,7 +252,7 @@
                             }
                             return `<li><a class="dropdown-item ${childActiveClass}" onclick="filterProductsByCategory(${child.id}, this, '${child.name}')">${child.name}</a></li>`;
                         }).join('');
-                        const dropdownHtml = `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">${category.name}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
+                        const dropdownHtml = `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="filterProductsByCategory(${category.id}, this, '${category.name}')">${category.name}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
                         categoryMenu.innerHTML += dropdownHtml;
                     } else {
                         if (parentActiveClass) activeCategoryName = category.name;
