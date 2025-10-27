@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_vendor_layout}">
+<head>
+    <title>Quản lý Đơn hàng</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Quản lý Đơn hàng</h1>
+        {/* Filters (New, Processing, etc.) could go here */}
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+             <p class="text-muted">Xem và xử lý các đơn hàng cho cửa hàng của bạn.</p>
+            {/* Table or list of orders will go here */}
+             <div class="alert alert-info">Nội dung chức năng Quản lý Đơn hàng sẽ được thêm vào đây.</div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    {/* Page specific scripts will go here */}
+</th:block>
+
+</body>
+</html>

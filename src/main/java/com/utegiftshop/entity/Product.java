@@ -62,4 +62,7 @@ public class Product {
 
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+    @Column(name = "image_url", length = 512)
+    private String imageUrl;
+    // === KẾT THÚC BỔ SUNG ===
 }
