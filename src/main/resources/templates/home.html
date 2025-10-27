@@ -15,6 +15,26 @@
             box-shadow: 0 4px 8px rgba(0,0,0,.1);
             transform: translateY(-5px);
         }
+        /* Styles for category menu */
+        .category-sidebar {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
+        .category-sidebar .nav-link {
+            color: #333;
+        }
+         .category-sidebar .nav-item .nav-link {
+            font-weight: 500;
+        }
+        .category-sidebar .nav-item .nav-link:hover {
+            color: #0d6efd;
+        }
+        .category-sidebar .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        }
     </style>
 </head>
 <body>
@@ -27,12 +47,25 @@
         </div>
     </div>
 
-    <section>
-        <h2 class="mb-4">Sản phẩm nổi bật</h2>
-        <div class="row" id="product-list">
-            <p>Đang tải sản phẩm...</p>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="category-sidebar">
+                <h4 class="mb-3">Danh mục</h4>
+                <nav id="category-menu" class="nav flex-column">
+                    <p>Đang tải danh mục...</p>
+                </nav>
+            </div>
         </div>
-    </section>
+
+        <div class="col-md-9">
+            <section>
+                <h2 class="mb-4">Sản phẩm nổi bật</h2>
+                <div class="row" id="product-list">
+                    <p>Đang tải sản phẩm...</p>
+                </div>
+            </section>
+        </div>
+    </div>
 </div>
 
 <th:block layout:fragment="scripts_body">
@@ -58,7 +91,7 @@
                 // Lặp qua danh sách sản phẩm và tạo HTML
                 products.forEach(product => {
                     const productCard = `
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="card product-card">
                                 <img src="https://via.placeholder.com/200" class="card-img-top" alt="${product.name}">
                                 <div class="card-body">
@@ -79,10 +112,48 @@
             }
         }
 
-        // Gọi hàm khi trang được tải xong
+        // HÀM MỚI: Lấy và hiển thị danh mục
+        async function fetchAndDisplayCategories() {
+            const categoryMenu = document.getElementById('category-menu');
+            try {
+                const response = await fetch('/api/categories');
+                if (!response.ok) {
+                    throw new Error('Lỗi khi tải danh mục');
+                }
+                const categories = await response.json();
+                categoryMenu.innerHTML = ''; // Xóa thông báo "Đang tải..."
+
+                categories.forEach(category => {
+                    if (category.children && category.children.length > 0) {
+                        // Danh mục có con -> tạo dropdown
+                        const dropdownHtml = `
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="category-dropdown-${category.id}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    ${category.name}
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="category-dropdown-${category.id}">
+                                    ${category.children.map(child => `<li><a class="dropdown-item" href="#">${child.name}</a></li>`).join('')}
+                                </ul>
+                            </li>
+                        `;
+                        categoryMenu.innerHTML += dropdownHtml;
+                    } else {
+                        // Danh mục không có con -> tạo link đơn
+                        const linkHtml = `<li class="nav-item"><a class="nav-link" href="#">${category.name}</a></li>`;
+                        categoryMenu.innerHTML += linkHtml;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Lỗi khi tải danh mục:", error);
+                categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
+            }
+        }
+
+        // Gọi các hàm khi trang tải xong
         document.addEventListener('DOMContentLoaded', function() {
-            // Hàm checkLoginStatus() đã có trong _app_layout.html và sẽ được tự động gọi
-            fetchAndDisplayProducts(); // Chỉ cần gọi hàm tải sản phẩm
+            fetchAndDisplayProducts();
+            fetchAndDisplayCategories();
         });
     </script>
 </th:block>

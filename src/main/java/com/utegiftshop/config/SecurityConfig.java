@@ -58,6 +58,7 @@
 	                    "/cart", "/checkout", "/profile",
 	                    "/api/auth/**",
 	                    "/api/users/me",
+						"/api/categories",
 	                    "/api/products/**", // <-- API công khai cho trang home
 	                    "/order-history", "/orders/**",
 	                    "/css/**", "/js/**", "/images/**", "/*.ico",
