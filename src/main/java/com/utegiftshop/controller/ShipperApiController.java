@@ -3,22 +3,30 @@ package com.utegiftshop.controller;
 import com.utegiftshop.dto.request.UpdateOrderStatusRequest;
 import com.utegiftshop.dto.response.ShipperStatsDto; 
 import com.utegiftshop.dto.response.ShipperOrderDto;
-import com.utegiftshop.dto.response.ShipperOrderDetailDto; // <-- BỔ SUNG IMPORT
+import com.utegiftshop.dto.response.ShipperOrderDetailDto;
 import com.utegiftshop.entity.Order;
 import com.utegiftshop.repository.OrderRepository;
 import com.utegiftshop.security.service.UserDetailsImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page; // BỔ SUNG
+import org.springframework.data.domain.PageRequest; // BỔ SUNG
+import org.springframework.data.domain.Pageable; // BỔ SUNG
+import org.springframework.data.domain.Sort; // BỔ SUNG
+import org.springframework.format.annotation.DateTimeFormat; // BỔ SUNG
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils; 
-import org.springframework.transaction.annotation.Transactional; // <-- BỔ SUNG IMPORT
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal; // BỔ SUNG
 import java.sql.Timestamp; 
+import java.time.LocalDate; // BỔ SUNG
+import java.time.LocalTime; // BỔ SUNG
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -33,12 +41,25 @@ public class ShipperApiController {
     @Autowired
     private OrderRepository orderRepository;
 
-    // (Giữ nguyên các hằng số)
-    private static final List<String> ASSIGNED_STATUSES = List.of("CONFIRMED", "PREPARING");
-    private static final List<String> ACTIVE_STATUSES_FOR_DASHBOARD = List.of("CONFIRMED", "PREPARING", "DELIVERING");
-    private static final List<String> COMPLETED_STATUSES = List.of("DELIVERED", "FAILED_DELIVERY"); 
-    private static final Set<String> VALID_SHIPPER_UPDATE_STATUSES = Set.of("DELIVERING", "DELIVERED", "FAILED_DELIVERY");
-    private static final Set<String> FINAL_STATUSES = Set.of("DELIVERED", "FAILED_DELIVERY", "CANCELLED", "RETURNED");
+    // === THAY ĐỔI: CÁC TRẠNG THÁI NGHIỆP VỤ MỚI ===
+    
+    // 1. Đơn hàng đang xử lý (Hiển thị ở trang "Đơn hàng cần giao")
+    // BAO GỒM CẢ ĐƠN ĐANG GIAO
+    private static final List<String> ACTIVE_STATUSES = List.of("CONFIRMED", "PREPARING", "DELIVERING");
+    
+    // 2. Đơn hàng đã hoàn tất (Hiển thị ở trang "Lịch sử")
+    // THÊM TRẠNG THÁI MỚI 'RETURN_PENDING' và 'RETURNED'
+    private static final List<String> COMPLETED_STATUSES = List.of("DELIVERED", "FAILED_DELIVERY", "RETURN_PENDING", "RETURNED"); 
+    
+    // 3. Các trạng thái Shipper có thể cập nhật
+    // THAY 'FAILED_DELIVERY' BẰNG 'RETURN_PENDING'
+    private static final Set<String> VALID_SHIPPER_UPDATE_STATUSES = Set.of("DELIVERING", "DELIVERED", "RETURN_PENDING");
+    
+    // 4. Các trạng thái cuối (Không thể cập nhật nữa)
+    private static final Set<String> FINAL_STATUSES = Set.of("DELIVERED", "RETURNED", "CANCELLED");
+
+    // === KẾT THÚC THAY ĐỔI TRẠNG THÁI ===
+
 
     private UserDetailsImpl getCurrentShipper() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -48,34 +69,62 @@ public class ShipperApiController {
         return null;
     }
 
-    // (Giữ nguyên API /orders/assigned)
-    @GetMapping("/orders/assigned")
-    public ResponseEntity<List<ShipperOrderDto>> getAssignedOrders() {
+    /**
+     * THAY ĐỔI: Đổi tên API từ "assigned" thành "active"
+     * Lấy các đơn hàng ĐANG XỬ LÝ (bao gồm cả 'DELIVERING')
+     */
+    @GetMapping("/orders/active")
+    public ResponseEntity<List<ShipperOrderDto>> getActiveOrders() {
         UserDetailsImpl shipperDetails = getCurrentShipper();
         if (shipperDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        List<Order> orders = orderRepository.findByShipperIdAndStatusIn(shipperDetails.getId(), ASSIGNED_STATUSES);
+        // THAY ĐỔI: Gọi list trạng thái mới (ACTIVE_STATUSES)
+        List<Order> orders = orderRepository.findByShipperIdAndStatusIn(shipperDetails.getId(), ACTIVE_STATUSES);
         if (orders == null || orders.isEmpty()) return ResponseEntity.ok(Collections.emptyList());
+        
         List<ShipperOrderDto> orderDtos = orders.stream().map(ShipperOrderDto::new).collect(Collectors.toList());
         return ResponseEntity.ok(orderDtos);
     }
     
-    // (Giữ nguyên API /orders/completed)
+    /**
+     * THAY ĐỔI: Thêm Phân trang và Lọc theo ngày
+     */
     @GetMapping("/orders/completed")
-    public ResponseEntity<List<ShipperOrderDto>> getCompletedOrders() {
+    public ResponseEntity<Page<ShipperOrderDto>> getCompletedOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        
         UserDetailsImpl shipperDetails = getCurrentShipper();
         if (shipperDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        List<Order> orders = orderRepository.findByShipperIdAndStatusIn(shipperDetails.getId(), COMPLETED_STATUSES);
-        if (orders == null || orders.isEmpty()) return ResponseEntity.ok(Collections.emptyList());
-        List<ShipperOrderDto> orderDtos = orders.stream().map(ShipperOrderDto::new).collect(Collectors.toList());
-        return ResponseEntity.ok(orderDtos);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
+        
+        Page<Order> orderPage;
+        if (startDate != null && endDate != null) {
+            Timestamp startTimestamp = Timestamp.valueOf(startDate.atStartOfDay());
+            Timestamp endTimestamp = Timestamp.valueOf(endDate.atTime(LocalTime.MAX));
+            orderPage = orderRepository.findByShipperIdAndStatusInAndOrderDateBetween(
+                shipperDetails.getId(), COMPLETED_STATUSES, startTimestamp, endTimestamp, pageable);
+        } else {
+            orderPage = orderRepository.findByShipperIdAndStatusIn(
+                shipperDetails.getId(), COMPLETED_STATUSES, pageable);
+        }
+
+        if (orderPage == null || !orderPage.hasContent()) {
+            return ResponseEntity.ok(Page.empty());
+        }
+        
+        // Chuyển Page<Order> thành Page<ShipperOrderDto>
+        Page<ShipperOrderDto> orderDtoPage = orderPage.map(ShipperOrderDto::new);
+        return ResponseEntity.ok(orderDtoPage);
     }
 
     /**
-     * API lấy chi tiết một đơn hàng (SỬ DỤNG DTO)
+     * (Giữ nguyên) API lấy chi tiết một đơn hàng 
      */
-    // === BỔ SUNG LẠI @Transactional VÀ THAY ĐỔI KIỂU TRẢ VỀ ===
     @Transactional(readOnly = true) 
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<?> getOrderDetails(@PathVariable Long orderId) { 
@@ -84,25 +133,23 @@ public class ShipperApiController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Vẫn dùng findById để lấy Order Entity (vì cần load OrderDetails EAGER)
         Optional<Order> orderOpt = orderRepository.findById(orderId); 
 
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
-            // Kiểm tra quyền sở hữu
             if (order.getShipper() == null || !order.getShipper().getId().equals(shipperDetails.getId())) {
                  return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Bạn không có quyền xem đơn hàng này.");
             }
-            // Chuyển đổi Entity sang DTO trước khi trả về
             ShipperOrderDetailDto dto = new ShipperOrderDetailDto(order); 
-            return ResponseEntity.ok(dto); // Trả về DTO
+            return ResponseEntity.ok(dto);
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng với ID: " + orderId);
         }
     }
-    // === KẾT THÚC THAY ĐỔI ===
 
-    // (Giữ nguyên API updateOrderStatus)
+    /**
+     * THAY ĐỔI: Xử lý trạng thái mới (RETURN_PENDING) và lưu POD URL
+     */
     @PutMapping("/orders/{orderId}/status")
     public ResponseEntity<String> updateOrderStatus(@PathVariable Long orderId, @RequestBody UpdateOrderStatusRequest request) {
         UserDetailsImpl shipperDetails = getCurrentShipper();
@@ -126,19 +173,28 @@ public class ShipperApiController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Không thể cập nhật trạng thái cho đơn hàng đã kết thúc (Hiện tại: " + currentStatus + ").");
         }
         
-        if ("FAILED_DELIVERY".equals(newStatus) && !StringUtils.hasText(request.getNote())) {
-            return ResponseEntity.badRequest().body("Vui lòng cung cấp lý do giao hàng thất bại.");
-        }
-
+        // Kiểm tra logic trạng thái
         switch (newStatus) {
             case "DELIVERING":
-                if (!ASSIGNED_STATUSES.contains(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể bắt đầu giao hàng từ trạng thái " + ASSIGNED_STATUSES);
+                if (!List.of("CONFIRMED", "PREPARING").contains(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể bắt đầu giao hàng từ trạng thái " + List.of("CONFIRMED", "PREPARING"));
                 break;
             case "DELIVERED":
                 if (!"DELIVERING".equals(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể xác nhận đã giao hàng từ trạng thái Đang giao hàng.");
+                
+                // THAY ĐỔI: Yêu cầu POD
+                if (!StringUtils.hasText(request.getProofOfDeliveryImageUrl())) {
+                    return ResponseEntity.badRequest().body("Vui lòng cung cấp URL bằng chứng giao hàng (POD).");
+                }
+                order.setProofOfDeliveryImageUrl(request.getProofOfDeliveryImageUrl());
+                
                 break;
-            case "FAILED_DELIVERY":
+            case "RETURN_PENDING": // THAY ĐỔI: Trạng thái mới
                  if (!"DELIVERING".equals(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể báo giao hàng thất bại từ trạng thái Đang giao hàng.");
+                 
+                 // Yêu cầu lý do thất bại
+                 if (!StringUtils.hasText(request.getNote())) {
+                    return ResponseEntity.badRequest().body("Vui lòng cung cấp lý do giao hàng thất bại.");
+                 }
                  break;
             default:
                  return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Trạng thái cập nhật không xác định.");
@@ -146,23 +202,38 @@ public class ShipperApiController {
 
         order.setStatus(newStatus);
         if (StringUtils.hasText(request.getNote())) order.setDeliveryNote(request.getNote());
+        
         orderRepository.save(order);
         return ResponseEntity.ok("Cập nhật trạng thái đơn hàng #" + orderId + " thành công thành: " + newStatus);
     }
 
-     // (Giữ nguyên API /stats)
+     /**
+      * THAY ĐỔI: Bổ sung tính toán tiền COD
+      */
      @GetMapping("/stats")
      public ResponseEntity<?> getShipperStats() {
          UserDetailsImpl shipperDetails = getCurrentShipper();
          if (shipperDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
          try {
-             long assignedCount = orderRepository.countByShipperIdAndStatusIn(shipperDetails.getId(), ACTIVE_STATUSES_FOR_DASHBOARD);
+             // Đơn đang xử lý (ACTIVE_STATUSES)
+             long assignedCount = orderRepository.countByShipperIdAndStatusIn(shipperDetails.getId(), ACTIVE_STATUSES);
+             
+             // Đơn đã giao (Chỉ DELIVERED)
              long deliveredCount = orderRepository.countByShipperIdAndStatus(shipperDetails.getId(), "DELIVERED");
-             long failedCount = orderRepository.countByShipperIdAndStatus(shipperDetails.getId(), "FAILED_DELIVERY");
-             ShipperStatsDto stats = new ShipperStatsDto(assignedCount, deliveredCount, failedCount);
+             
+             // Đơn thất bại (Bao gồm cả đang chờ trả và đã trả)
+             long failedCount = orderRepository.countByShipperIdAndStatusIn(shipperDetails.getId(), List.of("RETURN_PENDING", "RETURNED", "FAILED_DELIVERY"));
+             
+             // Tiền COD đang giữ
+             BigDecimal totalCod = orderRepository.sumTotalCodByShipperAndStatusDeliveredAndNotReconciled(shipperDetails.getId());
+             if (totalCod == null) {
+                 totalCod = BigDecimal.ZERO;
+             }
+             
+             ShipperStatsDto stats = new ShipperStatsDto(assignedCount, deliveredCount, failedCount, totalCod);
              return ResponseEntity.ok(stats);
          } catch (Exception e) {
-              return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lấy dữ liệu thống kê.");
+              return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lấy dữ liệu thống kê: " + e.getMessage());
          }
      }
 }

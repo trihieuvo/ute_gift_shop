@@ -4,12 +4,12 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/_app_layout}">
 <head>
-    <title>Shipper - Đơn hàng cần giao</title>
+    <title>Shipper - Đơn hàng đang xử lý</title>
     <style>
         .order-card {
             border: 1px solid #ddd;
             border-left-width: 5px;
-            border-left-color: #ffc107; /* Màu vàng */
+            /* border-left-color: #ffc107; (Màu vàng) Sẽ đổi theo trạng thái */
             border-radius: 5px;
             margin-bottom: 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,.05);
@@ -18,6 +18,14 @@
         .order-card:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,.1);
         }
+        /* Màu cho đơn đang giao */
+        .order-card-delivering {
+            border-left-color: #0d6efd; /* Màu xanh dương */
+        }
+        .order-card-new {
+             border-left-color: #ffc107; /* Màu vàng */
+        }
+
         .order-card-body {
             padding: 1rem;
         }
@@ -39,7 +47,7 @@
 
 <div layout:fragment="content">
     <div class="d-flex justify-content-between align-items-center mb-4">
-         <h1>Đơn hàng cần giao</h1>
+         <h1>Đơn hàng đang xử lý</h1>
          <a th:href="@{/shipper/dashboard}" class="btn btn-secondary btn-sm">
              <i class="bi bi-arrow-left-circle"></i> Quay lại
          </a>
@@ -52,13 +60,12 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
-        // Hàm định dạng tiền tệ
         const formatter = new Intl.NumberFormat('vi-VN', {
             style: 'currency',
             currency: 'VND'
         });
 
-        async function fetchAssignedOrders() {
+        async function fetchActiveOrders() {
             const token = localStorage.getItem('jwtToken');
             const container = document.getElementById('orders-list-container');
             if (!token) {
@@ -67,13 +74,12 @@
             }
 
             try {
-                // Gọi API lấy đơn hàng CHƯA GIAO
-                const response = await fetch('/api/shipper/orders/assigned', {
+                const response = await fetch('/api/shipper/orders/active', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
-                    const orders = await response.json(); 
+                    const orders = await response.json();
                     container.innerHTML = ''; // Xóa dòng "Đang tải..."
 
                     if (orders.length === 0) {
@@ -81,55 +87,77 @@
                             <div class="alert alert-success text-center">
                                 <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
                                 <h5>Tuyệt vời!</h5>
-                                <p class="mb-0">Bạn đã hoàn thành tất cả đơn hàng được giao.</p>
+                                <p class="mb-0">Bạn không có đơn hàng nào cần xử lý.</p>
                             </div>`;
                         return;
                     }
 
                     orders.forEach(order => {
                         const orderCard = document.createElement('div');
-                        orderCard.className = 'order-card';
-                        
+
+                        // Phân loại màu thẻ
+                        let cardClass = 'order-card';
+                        let statusBadge = '';
+                        if(order.status === 'DELIVERING') {
+                            cardClass += ' order-card-delivering';
+                            statusBadge = `<span class="badge bg-primary">${order.status}</span>`;
+                        } else {
+                            cardClass += ' order-card-new';
+                            statusBadge = `<span class="badge bg-warning text-dark">${order.status}</span>`;
+                        }
+                        orderCard.className = cardClass;
+
+
                         let totalAmountDisplay = order.totalAmount ? formatter.format(order.totalAmount) : 'N/A';
-                        
-                        // Thêm tag COD
+
                         let paymentTag = '';
                         if (order.paymentMethod === 'COD') {
                             paymentTag = `<span class="badge bg-danger">Thu hộ</span>`;
                         } else {
                             paymentTag = `<span class="badge bg-success">Đã thanh toán</span>`;
                         }
-                        
-                        let phoneHtml = order.recipientPhone 
+
+                        let phoneHtml = order.recipientPhone
                             ? `<a href="tel:${order.recipientPhone}" class="phone-link"><i class="bi bi-telephone-fill"></i> ${order.recipientPhone}</a>`
                             : `<span class="text-muted">Không có SĐT</span>`;
 
-                        orderCard.innerHTML = `
+                        // Tạo URL chính xác
+                        const detailUrl = `/shipper/orders/${order.id}`;
+                        // console.log(`URL được tạo cho order ${order.id}: ${detailUrl}`); // Log cũ
+
+                        // Tạo chuỗi HTML
+                        const cardHTML = `
                             <div class="order-card-body">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <h5 class="mb-1">Đơn hàng #${order.id}</h5>
-                                        <span class="badge bg-primary me-2">${order.status}</span>
-                                        <span class="text-muted small">${new Date(order.orderDate).toLocaleDateString('vi-VN')}</span>
+                                        ${statusBadge}
+                                        <span class="text-muted small ms-2">${new Date(order.orderDate).toLocaleDateString('vi-VN')}</span>
                                     </div>
                                     <strong class="text-danger fs-5">${totalAmountDisplay} ${paymentTag}</strong>
                                 </div>
                                 <hr class="my-2">
                                 <p class="mb-1">
-                                    <strong><i class="bi bi-person-fill text-muted"></i> Người nhận:</strong> 
+                                    <strong><i class="bi bi-person-fill text-muted"></i> Người nhận:</strong>
                                     ${order.recipientName || 'N/A'} (${phoneHtml})
                                 </p>
                                 <p class="mb-0">
-                                    <strong><i class="bi bi-geo-alt-fill text-muted"></i> Địa chỉ:</strong> 
+                                    <strong><i class="bi bi-geo-alt-fill text-muted"></i> Địa chỉ:</strong>
                                     ${order.shippingAddress || 'N/A'}
                                 </p>
                             </div>
                             <div class="order-card-footer text-end">
-                                <a href="/shipper/orders/${order.id}" class="btn btn-primary">
+                                <a href="${detailUrl}" class="btn btn-primary">
                                     Chi tiết & Cập nhật <i class="bi bi-arrow-right-short"></i>
                                 </a>
                             </div>
                         `;
+
+                        // === THÊM LOG MỚI ĐỂ KIỂM TRA HTML ===
+                        console.log(`HTML cho order ${order.id}:`, cardHTML);
+                        // === KẾT THÚC THÊM LOG ===
+
+                        orderCard.innerHTML = cardHTML;
                         container.appendChild(orderCard);
                     });
 
@@ -145,7 +173,7 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', fetchAssignedOrders);
+        document.addEventListener('DOMContentLoaded', fetchActiveOrders);
     </script>
 </th:block>
 

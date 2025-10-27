@@ -12,14 +12,20 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,.05);
         }
-        /* Thẻ thành công */
         .order-card-success {
             border-left-color: #198754; 
         }
-         /* Thẻ thất bại */
         .order-card-danger {
             border-left-color: #dc3545;
         }
+        /* THÊM MỚI: Trạng thái chờ trả hàng */
+        .order-card-warning {
+             border-left-color: #ffc107;
+        }
+        .order-card-dark {
+            border-left-color: #212529;
+        }
+        
         .order-card-body {
             padding: 1rem;
         }
@@ -35,6 +41,22 @@
         .phone-link i {
             margin-right: 5px;
         }
+        /* THÊM MỚI: Ghi chú */
+        .delivery-note {
+            font-style: italic;
+            font-size: 0.9rem;
+            color: #6c757d;
+            border-left: 3px solid #eee;
+            padding-left: 10px;
+            margin-top: 0.5rem;
+        }
+        /* THÊM MỚI: Phân trang */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -46,45 +68,94 @@
              <i class="bi bi-arrow-left-circle"></i> Quay lại
          </a>
     </div>
-
+    
+    <div class="card card-body mb-4">
+        <form class="row g-3 align-items-end" id="filter-form">
+            <div class="col-md-5">
+                <label for="startDate" class="form-label">Từ ngày</label>
+                <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="col-md-5">
+                <label for="endDate" class="form-label">Đến ngày</label>
+                <input type="date" class="form-control" id="endDate">
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-primary">Lọc</button>
+            </div>
+        </form>
+    </div>
     <div id="orders-list-container">
         <p class="text-center p-5">Đang tải lịch sử đơn hàng...</p>
     </div>
+    
+    <div class="pagination-controls" id="pagination-controls">
+         <button class="btn btn-outline-secondary" id="prev-page" disabled>
+             <i class="bi bi-arrow-left"></i> Trang trước
+         </button>
+         <span id="page-info">Trang 1 / 1</span>
+         <button class="btn btn-outline-secondary" id="next-page" disabled>
+             Trang sau <i class="bi bi-arrow-right"></i>
+         </button>
+    </div>
+
 </div>
 
 <th:block layout:fragment="scripts_body">
     <script>
-        // Hàm định dạng tiền tệ
         const formatter = new Intl.NumberFormat('vi-VN', {
             style: 'currency',
             currency: 'VND'
         });
 
+        // Biến toàn cục cho phân trang và lọc
+        let currentPage = 0; // API 0-indexed
+        let totalPages = 1;
+        let currentStartDate = '';
+        let currentEndDate = '';
+        
+        const token = localStorage.getItem('jwtToken');
+        const container = document.getElementById('orders-list-container');
+        const prevButton = document.getElementById('prev-page');
+        const nextButton = document.getElementById('next-page');
+        const pageInfo = document.getElementById('page-info');
+        const filterForm = document.getElementById('filter-form');
+        
+
         async function fetchCompletedOrders() {
-            const token = localStorage.getItem('jwtToken');
-            const container = document.getElementById('orders-list-container');
             if (!token) {
                 window.location.href = '/login';
                 return;
             }
+            
+            container.innerHTML = '<p class="text-center p-5">Đang tải lịch sử đơn hàng...</p>';
+            prevButton.disabled = true;
+            nextButton.disabled = true;
+            
+            // Xây dựng URL
+            let url = `/api/shipper/orders/completed?page=${currentPage}&size=10`;
+            if (currentStartDate && currentEndDate) {
+                url += `&startDate=${currentStartDate}&endDate=${currentEndDate}`;
+            }
 
             try {
-                // Gọi API lấy đơn hàng ĐÃ HOÀN THÀNH
-                const response = await fetch('/api/shipper/orders/completed', {
+                const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
-                    const orders = await response.json(); 
+                    const pageData = await response.json(); 
+                    const orders = pageData.content;
+                    
                     container.innerHTML = ''; // Xóa dòng "Đang tải..."
+                    
+                    currentPage = pageData.number; // 0-indexed
+                    totalPages = pageData.totalPages; // Tổng số trang
 
                     if (orders.length === 0) {
                         container.innerHTML = `
                             <div class="alert alert-info text-center">
-                                <i class="bi bi-info-circle-fill fs-3 d-block mb-2"></i>
-                                <p class="mb-0">Bạn chưa có đơn hàng nào đã hoàn thành.</p>
+                                <p class="mb-0">Không tìm thấy đơn hàng nào phù hợp.</p>
                             </div>`;
-                        return;
                     }
 
                     orders.forEach(order => {
@@ -92,13 +163,29 @@
                         let cardClass = 'order-card';
                         let statusBadge = '';
 
-                        if(order.status === 'DELIVERED') {
-                            cardClass += ' order-card-success';
-                            statusBadge = `<span class="badge bg-success">Đã giao thành công</span>`;
-                        } else {
-                            cardClass += ' order-card-danger';
-                            statusBadge = `<span class="badge bg-danger">Giao thất bại</span>`;
+                        // THAY ĐỔI: Thêm trạng thái mới
+                        switch(order.status) {
+                            case 'DELIVERED':
+                                cardClass += ' order-card-success';
+                                statusBadge = `<span class="badge bg-success">Đã giao thành công</span>`;
+                                break;
+                            case 'FAILED_DELIVERY':
+                                cardClass += ' order-card-danger';
+                                statusBadge = `<span class="badge bg-danger">Giao thất bại (Cũ)</span>`;
+                                break;
+                            case 'RETURN_PENDING':
+                                cardClass += ' order-card-warning';
+                                statusBadge = `<span class="badge bg-warning text-dark">Chờ trả hàng</span>`;
+                                break;
+                            case 'RETURNED':
+                                cardClass += ' order-card-dark';
+                                statusBadge = `<span class="badge bg-dark">Đã trả hàng</span>`;
+                                break;
+                            default:
+                                cardClass += ' order-card-secondary';
+                                statusBadge = `<span class="badge bg-secondary">${order.status}</span>`;
                         }
+                        
                         orderCard.className = cardClass;
                         
                         let totalAmountDisplay = order.totalAmount ? formatter.format(order.totalAmount) : 'N/A';
@@ -106,6 +193,11 @@
                         let phoneHtml = order.recipientPhone 
                             ? `<a href="tel:${order.recipientPhone}" class="phone-link"><i class="bi bi-telephone-fill"></i> ${order.recipientPhone}</a>`
                             : `<span class="text-muted">Không có SĐT</span>`;
+                            
+                        // THÊM MỚI: Hiển thị ghi chú
+                        let noteHtml = order.deliveryNote
+                            ? `<p class="delivery-note mb-0"><strong>Lý do:</strong> ${order.deliveryNote}</p>`
+                            : '';
 
                         orderCard.innerHTML = `
                             <div class="order-card-body">
@@ -126,6 +218,7 @@
                                     <strong><i class="bi bi-geo-alt-fill text-muted"></i> Địa chỉ:</strong> 
                                     ${order.shippingAddress || 'N/A'}
                                 </p>
+                                ${noteHtml}
                             </div>
                             <div class="order-card-footer text-end">
                                 <a href="/shipper/orders/${order.id}" class="btn btn-outline-secondary btn-sm">
@@ -135,6 +228,9 @@
                         `;
                         container.appendChild(orderCard);
                     });
+                    
+                    // Cập nhật nút phân trang
+                    updatePaginationControls();
 
                 } else if (response.status === 401 || response.status === 403) {
                      Swal.fire('Lỗi', 'Không có quyền truy cập hoặc phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
@@ -147,6 +243,49 @@
                  container.innerHTML = '<div class="alert alert-danger text-center">Lỗi kết nối mạng.</div>';
             }
         }
+        
+        function updatePaginationControls() {
+            pageInfo.textContent = `Trang ${currentPage + 1} / ${totalPages}`;
+            prevButton.disabled = (currentPage === 0);
+            nextButton.disabled = (currentPage + 1 >= totalPages);
+        }
+        
+        // Xử lý nút phân trang
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                fetchCompletedOrders();
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentPage + 1 < totalPages) {
+                currentPage++;
+                fetchCompletedOrders();
+            }
+        });
+        
+        // Xử lý lọc
+        filterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (startDate && !endDate) {
+                Swal.fire('Lỗi', 'Vui lòng chọn cả ngày kết thúc.', 'warning');
+                return;
+            }
+            if (!startDate && endDate) {
+                Swal.fire('Lỗi', 'Vui lòng chọn cả ngày bắt đầu.', 'warning');
+                return;
+            }
+            
+            currentStartDate = startDate;
+            currentEndDate = endDate;
+            currentPage = 0; // Reset về trang đầu khi lọc
+            fetchCompletedOrders();
+        });
+
 
         document.addEventListener('DOMContentLoaded', fetchCompletedOrders);
     </script>

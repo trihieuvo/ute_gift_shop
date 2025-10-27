@@ -3,7 +3,7 @@ package com.utegiftshop.dto.response;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import com.utegiftshop.entity.Order;
-import com.utegiftshop.entity.User; // BỔ SUNG
+import com.utegiftshop.entity.User;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,12 +18,15 @@ public class ShipperOrderDto {
     private BigDecimal totalAmount;
     private String status;
     private String paymentMethod; 
+    
+    // === BỔ SUNG: HIỂN THỊ GHI CHÚ TRÊN DANH SÁCH LỊCH SỬ ===
+    private String deliveryNote;
+    // === KẾT THÚC BỔ SUNG ===
 
     public ShipperOrderDto(Order order) {
         this.id = order.getId();
         this.orderDate = order.getOrderDate();
         
-        // === THAY ĐỔI: Lấy thông tin từ User liên kết ===
         User customer = order.getUser();
         if (customer != null) {
             this.recipientName = customer.getFullName();
@@ -32,11 +35,14 @@ public class ShipperOrderDto {
             this.recipientName = "N/A";
             this.recipientPhone = "N/A";
         }
-        // === KẾT THÚC THAY ĐỔI ===
         
         this.shippingAddress = order.getShippingAddress();
         this.totalAmount = order.getTotalAmount();
         this.status = order.getStatus();
         this.paymentMethod = order.getPaymentMethod();
+        
+        // === BỔ SUNG ===
+        this.deliveryNote = order.getDeliveryNote();
+        // === KẾT THÚC BỔ SUNG ===
     }
 }
