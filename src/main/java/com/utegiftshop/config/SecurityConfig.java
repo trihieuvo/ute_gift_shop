@@ -46,48 +46,68 @@
 	    }
 	
 	    @Bean
-	    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-	        http
-	            .csrf(csrf -> csrf.disable())
-	            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-	            .authorizeHttpRequests(auth -> auth
-	                // ===== 1. CÁC ĐƯỜNG DẪN CÔNG KHAI (KHÔNG CẦN ĐĂNG NHẬP) =====
-	                .requestMatchers(
-	                    "/", "/home", "/login", "/signup", "/activate",
-	                    "/forgot-password", "/reset-password",
-	                    "/cart", "/checkout", "/profile",
-	                    "/api/auth/**",
-	                    "/api/users/me",
+		public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+			http
+				.csrf(csrf -> csrf.disable())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+					// ===== 1. CÁC ĐƯỜNG DẪN CÔNG KHAI (KHÔNG CẦN ĐĂNG NHẬP) =====
+					.requestMatchers(
+						"/", "/home", "/login", "/signup", "/activate",
+						"/forgot-password", "/reset-password",
+						"/cart", "/checkout", "/profile",
+						"/api/auth/**",
+						"/api/products/**",
+						"/order-history", "/orders/**",
+						"/css/**", "/js/**", "/images/**", "/*.ico",
+						"/error",
+						"/api/users/me",
 						"/api/categories",
-	                    "/api/products/**", // <-- API công khai cho trang home
-	                    "/order-history", "/orders/**",
-	                    "/css/**", "/js/**", "/images/**", "/*.ico",
-	                    "/error",
-	                    "/shipper/**",
-	                    "/vendor/**", 
-	                    "/api/images/**",
-	                    "/v3/api-docs/**", "/swagger-ui/**"
-	                ).permitAll()
-	
-	                // ===== 2. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
-	                .requestMatchers(
-	                    "/api/cart/**",
-	                    "/api/addresses/**",
-	                    "/api/orders/**"
-	                ).hasAuthority("Customer")
-	
-	                // ===== 3. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
-	                .requestMatchers("/api/shipper/**").hasAuthority("Shipper")
-	
-	                // ===== 4. (THÊM MỚI) CÁC ĐƯỜNG DẪN CHO VENDOR (YÊU CẦU ROLE "Vendor") =====
-	                .requestMatchers("/api/vendor/**").hasAuthority("Vendor")
-	
-	                // ===== 5. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
-	                .anyRequest().authenticated()
-	            );
-	
-	        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-	
-	        return http.build();
-	    }
+						"/shipper/**",
+						"/vendor/**",
+						"/api/images/**",
+						"/v3/api-docs/**", "/swagger-ui/**"
+					).permitAll()
+
+					// ===== 2. API YÊU CẦU ĐĂNG NHẬP (BẤT KỲ VAI TRÒ) =====
+					.requestMatchers(
+						"/api/users/me",
+						"/api/chat/**"
+					).authenticated()
+
+					// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
+					.requestMatchers(
+						"/api/cart/**",
+						"/api/addresses/**",
+						"/api/orders/**",
+						// === BẮT ĐẦU THÊM MỚI ===
+						"/api/apply/**" // API để nộp đơn
+						// === KẾT THÚC THÊM MỚI ===
+					).hasAuthority("Customer")
+
+					// ===== 4. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
+					.requestMatchers(
+						"/api/shipper/**"
+					).hasAuthority("Shipper")
+
+					// ===== 5. CÁC ĐƯỜNG DẪN CHO VENDOR (YÊU CẦU ROLE "Vendor") =====
+					.requestMatchers(
+						"/api/vendor/**"
+					).hasAuthority("Vendor")
+
+					// ===== 6. CÁC ĐƯỜNG DẪN CHO ADMIN (YÊU CẦU ROLE "Admin") =====
+					.requestMatchers(
+						// === BẮT ĐẦU THÊM MỚI ===
+						"/api/admin/**" // API để duyệt đơn
+						// === KẾT THÚC THÊM MỚI ===
+					).hasAuthority("Admin")
+
+					// ===== 7. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
+					.anyRequest().authenticated()
+				);
+
+			http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
+			return http.build();
+		}
 	}

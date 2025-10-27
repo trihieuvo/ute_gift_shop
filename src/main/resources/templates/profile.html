@@ -38,6 +38,11 @@
             top: 1rem;
             right: 1rem;
         }
+        /* CSS cho tab đăng ký vai trò */
+        #applyRoleForm[disabled] {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -55,7 +60,10 @@
                 <a class="list-group-item list-group-item-action" data-target="change-password">
                     <i class="bi bi-shield-lock-fill"></i>Đổi mật khẩu
                 </a>
-            </div>
+                <a class="list-group-item list-group-item-action" data-target="apply-role" id="apply-role-tab">
+                    <i class="bi bi-briefcase-fill"></i>Đăng ký vai trò
+                </a>
+                </div>
         </div>
 
         <div class="col-md-9">
@@ -148,7 +156,37 @@
                     </div>
                 </div>
             </div>
-        </div>
+
+            <div id="apply-role" class="profile-section d-none">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5><i class="bi bi-briefcase-fill"></i> Đăng ký vai trò (Vendor/Shipper)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="application-status-message" class="alert alert-info d-none"></div>
+                        
+                        <form id="applyRoleForm">
+                            <p class="card-text text-muted">Chọn vai trò bạn muốn đăng ký và gửi yêu cầu để Admin xem xét.</p>
+                            <div class="mb-3">
+                                <label for="requestedRole" class="form-label">Vai trò mong muốn</label>
+                                <select class="form-select" id="requestedRole" required>
+                                    <option value="" selected disabled>-- Chọn một vai trò --</option>
+                                    <option value="Vendor">Người bán hàng (Vendor)</option>
+                                    <option value="Shipper">Người giao hàng (Shipper)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="applicationMessage" class="form-label">Lời nhắn (Lý do đăng ký)</label>
+                                <textarea class="form-control" id="applicationMessage" rows="4" placeholder="Ví dụ: Tôi muốn mở cửa hàng bán đồ thủ công..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-send-check"></i> Gửi yêu cầu
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            </div>
     </div>
 
     <div class="modal fade" id="addAddressModal" tabindex="-1">
@@ -214,6 +252,7 @@
 <script>
     const token = localStorage.getItem('jwtToken');
     let userAddresses = [];
+    let currentUserInfo = null; // Biến lưu thông tin user
 
     // === QUẢN LÝ HIỂN THỊ CÁC TAB ===
     document.querySelectorAll('.profile-nav .list-group-item').forEach(navLink => {
@@ -230,15 +269,31 @@
 
     // === LOGIC LẤY VÀ CẬP NHẬT THÔNG TIN CÁ NHÂN ===
     async function fetchCurrentUser() {
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
         const response = await fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        
+        if (!response.ok) {
+             Swal.fire('Lỗi', 'Phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
+             return;
+        }
+
         const userInfo = await response.json();
         if (userInfo.authenticated) {
+            currentUserInfo = userInfo; // Lưu thông tin user
             document.getElementById('email').value = userInfo.email;
             document.getElementById('fullName').value = userInfo.fullName || '';
             document.getElementById('phoneNumberProfile').value = userInfo.phoneNumber || '';
+
+            // === KIỂM TRA VAI TRÒ (ĐỂ ẨN/HIỆN TAB ĐĂNG KÝ) ===
+            checkUserRoleAndApplicationStatus();
+            // === KẾT THÚC ===
         }
     }
 
+    // === CẬP NHẬT HỒ SƠ ===
     document.getElementById('profileForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const response = await fetch('/api/users/me', {
@@ -257,7 +312,7 @@
         }
     });
 
-    // === LOGIC ĐỔI MẬT KHẨU ===
+    // === ĐỔI MẬT KHẨU ===
     document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const newPassword = document.getElementById('newPassword').value;
@@ -285,12 +340,11 @@
         }
     });
 
-    // === LOGIC SỔ ĐỊA CHỈ ===
+    // === LOGIC SỔ ĐỊA CHỈ (Tải và render) ===
     async function fetchAddressesForProfile() {
         const response = await fetch('/api/addresses', { headers: { 'Authorization': `Bearer ${token}` } });
         userAddresses = await response.json();
         
-        // *** THAY ĐỔI TẠI ĐÂY: SẮP XẾP MẢNG ĐỂ ĐƯA ĐỊA CHỈ MẶC ĐỊNH LÊN ĐẦU ***
         userAddresses.sort((a, b) => (b.default ? 1 : 0) - (a.default ? 1 : 0));
 
         const container = document.getElementById('address-list-profile');
@@ -333,6 +387,7 @@
         });
     }
     
+    // === SỔ ĐỊA CHỈ (Thêm) ===
     document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const response = await fetch('/api/addresses', {
@@ -356,6 +411,7 @@
         }
     });
 
+    // === SỔ ĐỊA CHỈ (Xóa) ===
     async function deleteAddress(addressId) {
         Swal.fire({
             title: 'Bạn chắc chắn muốn xóa?',
@@ -382,6 +438,7 @@
         });
     }
 
+    // === SỔ ĐỊA CHỈ (Đặt làm mặc định) ===
     async function setDefaultAddress(addressId) {
         const response = await fetch(`/api/addresses/${addressId}/set-default`, {
             method: 'PUT',
@@ -402,6 +459,7 @@
         }
     }
 
+    // === SỔ ĐỊA CHỈ (Mở Modal Sửa) ===
     function openEditModal(addressId) {
         const addressToEdit = userAddresses.find(addr => addr.id === addressId);
         if (!addressToEdit) return;
@@ -415,6 +473,7 @@
         myModal.show();
     }
 
+    // === SỔ ĐỊA CHỈ (Submit Sửa) ===
     document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const addressId = document.getElementById('editAddressId').value;
@@ -441,10 +500,103 @@
         }
     });
 
+    // === LOGIC ĐĂNG KÝ VAI TRÒ (MỚI) ===
+    
+    const applyRoleTab = document.getElementById('apply-role-tab');
+    const applyRoleForm = document.getElementById('applyRoleForm');
+    const applicationStatusMessage = document.getElementById('application-status-message');
+
+    /**
+     * Kiểm tra vai trò của user và trạng thái đơn đăng ký (nếu có)
+     */
+    async function checkUserRoleAndApplicationStatus() {
+        if (!currentUserInfo) return;
+
+        // 1. Nếu user không còn là "Customer" (đã là Vendor/Shipper/Admin)
+        if (currentUserInfo.role !== 'Customer') {
+            applyRoleTab.classList.add('d-none'); // Ẩn luôn tab đăng ký
+            document.getElementById('apply-role').classList.add('d-none'); // Ẩn nội dung
+            return;
+        }
+        
+        // 2. Nếu là Customer, kiểm tra xem có đơn đang chờ không
+        try {
+            const response = await fetch('/api/apply/my-status', { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
+            const statusData = await response.json();
+
+            if (statusData.hasPendingApplication) {
+                // Vô hiệu hóa form
+                applyRoleForm.setAttribute('disabled', 'true');
+                // Hiển thị thông báo
+                applicationStatusMessage.textContent = `Bạn đã có một đơn đăng ký vai trò "${statusData.requestedRole}" đang ở trạng thái "PENDING". Vui lòng chờ Admin duyệt.`;
+                applicationStatusMessage.classList.remove('d-none', 'alert-success');
+                applicationStatusMessage.classList.add('alert-info');
+            } else {
+                // Cho phép nộp đơn
+                applyRoleForm.removeAttribute('disabled');
+                applicationStatusMessage.classList.add('d-none');
+            }
+        } catch (error) {
+            console.error("Lỗi kiểm tra trạng thái đơn:", error);
+            applicationStatusMessage.textContent = "Lỗi khi kiểm tra trạng thái đăng ký.";
+            applicationStatusMessage.classList.add('alert-danger');
+            applicationStatusMessage.classList.remove('d-none');
+        }
+    }
+
+    /**
+     * Xử lý nộp đơn đăng ký vai trò
+     */
+    applyRoleForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const requestedRole = document.getElementById('requestedRole').value;
+        const message = document.getElementById('applicationMessage').value;
+
+        if (!requestedRole) {
+            Swal.fire('Lỗi', 'Vui lòng chọn vai trò bạn muốn đăng ký.', 'warning');
+            return;
+        }
+        
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang gửi...';
+
+        try {
+            const response = await fetch('/api/apply/role', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestedRole: requestedRole,
+                    message: message
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                Swal.fire('Thành công!', result.message, 'success');
+                checkUserRoleAndApplicationStatus(); // Cập nhật lại trạng thái (vô hiệu hóa form)
+            } else {
+                Swal.fire('Lỗi!', result.message || 'Không thể gửi đơn.', 'error');
+            }
+
+        } catch (error) {
+            Swal.fire('Lỗi!', 'Lỗi mạng, không thể gửi đơn đăng ký.', 'error');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="bi bi-send-check"></i> Gửi yêu cầu';
+        }
+    });
+    // === KẾT THÚC LOGIC MỚI ===
+
+
     // === GỌI CÁC HÀM KHỞI TẠO KHI TRANG TẢI XONG ===
     document.addEventListener('DOMContentLoaded', () => {
         fetchCurrentUser();
         fetchAddressesForProfile();
+        // (checkUserRoleAndApplicationStatus() sẽ được gọi bên trong fetchCurrentUser())
     });
 </script>
 </th:block>
