@@ -15,11 +15,10 @@
             box-shadow: 0 4px 8px rgba(0,0,0,.1);
             transform: translateY(-5px);
         }
-        /* === THAY ĐỔI Ở ĐÂY === */
         .product-card .card-img-top {
             width: 100%;
             aspect-ratio: 1 / 1; /* Đảm bảo tỉ lệ 1:1 */
-            object-fit: cover;   /* Giữ nguyên để ảnh không bị méo */
+            object-fit: cover;   /* Giữ ảnh không bị méo */
         }
         .category-sidebar {
             background: #fff;
@@ -122,7 +121,15 @@
 
                 products.forEach(product => {
                     const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
-                    const imageUrl = product.imageUrl || noImageUrl;
+                    
+                    // === PHẦN CẬP NHẬT LOGIC LẤY ẢNH ===
+                    // Lấy ảnh đầu tiên từ danh sách 'images' làm ảnh đại diện
+                    let imageUrl = noImageUrl;
+                    if (product.images && product.images.length > 0) {
+                        imageUrl = product.images[0].imageUrl || noImageUrl;
+                    }
+                    // === KẾT THÚC CẬP NHẬT ===
+
                     const productCard = `
                         <div class="col-md-4">
                             <div class="card product-card">
