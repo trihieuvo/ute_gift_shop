@@ -48,4 +48,14 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     // Thêm hàm tính tổng tiền của các đơn hàng có trạng thái "DELIVERED"
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'DELIVERED'")
     BigDecimal sumTotalAmountIfStatusDelivered();
+
+    // THÊM: Đếm tổng đơn hàng đã giao trong khoảng thời gian
+    long countByStatusAndOrderDateBetween(String status, Timestamp orderDateStart, Timestamp orderDateEnd);
+
+    // THÊM: Tính tổng doanh thu đã giao trong khoảng thời gian
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'DELIVERED' AND o.orderDate BETWEEN :startDate AND :endDate")
+    BigDecimal sumTotalAmountIfStatusDeliveredAndOrderDateBetween(
+    @Param("startDate") Timestamp startDate, 
+    @Param("endDate") Timestamp endDate
+);
 }
