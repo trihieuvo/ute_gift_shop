@@ -2,8 +2,10 @@ package com.utegiftshop.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import org.springframework.ui.Model;
 @Controller
 @RequestMapping("/admin") // URL chung đã được bảo vệ (Bước 1)
 public class AdminPageController {
@@ -55,4 +57,19 @@ public class AdminPageController {
     public String manageProducts() {
         return "admin/manage-products"; 
     }
+    // 6. Trang Quản lý Đơn hàng
+    @GetMapping("/manage-orders") 
+    public String manageOrders() {
+    return "admin/manage-orders"; 
+    }
+
+    // Trang Chi tiết Đơn hàng
+    @GetMapping("/order-detail/{orderId}") 
+    public String orderDetail(Model model, @PathVariable Long orderId) { // SỬA ĐỔI Ở ĐÂY
+    
+    // Bạn có thể bỏ dòng này vì JavaScript đã tự lấy orderId từ URL
+    // model.addAttribute("orderId", orderId); 
+    
+    return "admin/order-detail"; // Trả về file HTML order-detail.html
+}
 }

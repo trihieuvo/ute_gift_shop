@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Đơn hàng</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Đơn hàng</h1>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Khách hàng</th>
+              <th>Tổng tiền</th>
+              <th>Trạng thái</th>
+              <th>Shipper</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="order-table-body">
+            <tr>
+              <td colspan="6" class="text-center">Đang tải...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/orders";
+
+        document.addEventListener("DOMContentLoaded", initOrderManagement);
+
+        let allShippers = []; // Lưu trữ danh sách shipper
+
+        async function initOrderManagement() {
+            await fetchShippers();
+            await fetchAllOrders();
+        }
+
+        // 1. Lấy danh sách Shipper
+        async function fetchShippers() {
+            try {
+                const response = await fetch(`${API_URL}/shippers`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (response.ok) {
+                    allShippers = await response.json();
+                }
+            } catch (err) {
+                console.error("Lỗi tải danh sách shipper:", err);
+            }
+        }
+
+        // 2. Lấy danh sách Đơn hàng
+        async function fetchAllOrders() {
+            const tbody = document.getElementById("order-table-body");
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Đang tải đơn hàng...</td></tr>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) throw new Error("Lỗi tải đơn hàng");
+
+                const orders = await response.json();
+                tbody.innerHTML = "";
+
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Không có đơn hàng nào.</td></tr>';
+                }
+
+                orders.forEach((order) => {
+                    tbody.innerHTML += createOrderRow(order);
+                });
+
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu đơn hàng.</td></tr>';
+            }
+        }
+
+        // 3. Hàm tạo HTML cho mỗi dòng đơn hàng
+        function createOrderRow(order) {
+            const totalAmount = new Intl.NumberFormat('vi-VN').format(order.totalAmount);
+            const customerName = order.user ? order.user.fullName : 'Khách vãng lai';
+            
+            // Xử lý trạng thái và màu sắc
+            const statusMap = {
+                'NEW': { text: 'Đơn mới', class: 'bg-info' },
+                'CONFIRMED': { text: 'Đã xác nhận', class: 'bg-primary' },
+                'DELIVERING': { text: 'Đang giao', class: 'bg-warning' },
+                'DELIVERED': { text: 'Đã giao', class: 'bg-success' },
+                'CANCELLED': { text: 'Đã hủy', class: 'bg-danger' },
+            };
+            const statusInfo = statusMap[order.status] || { text: order.status, class: 'bg-secondary' };
+
+            // Tạo Dropdown chọn Shipper
+            let shipperOptions = allShippers.map(shipper => 
+                `<option value="${shipper.id}" ${order.shipper && order.shipper.id === shipper.id ? 'selected' : ''}>${shipper.fullName}</option>`
+            ).join('');
+            
+            let shipperSelect = `
+                <select class="form-select form-select-sm" id="shipper-select-${order.id}">
+                    <option value="">-- Chọn Shipper --</option>
+                    ${shipperOptions}
+                </select>`;
+
+            let assignButton = '';
+            // Chỉ cho phép gán shipper nếu đơn hàng chưa được giao hoặc chưa bị hủy
+            if (order.status !== 'DELIVERED' && order.status !== 'CANCELLED') {
+                assignButton = `
+                    <button class="btn btn-sm btn-primary mt-1" onclick="handleAssignShipper(${order.id})">
+                        <i class="bi bi-person-fill-add"></i> Gán
+                    </button>`;
+            } else {
+                shipperSelect = `<span class="fw-bold">${order.shipper ? order.shipper.fullName : 'N/A'}</span>`;
+            }
+            
+
+            return `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${customerName}</td>
+                    <td>${totalAmount} đ</td>
+                    <td><span class="badge ${statusInfo.class}">${statusInfo.text}</span></td>
+                    <td>
+                        ${shipperSelect}
+                    </td>
+                    <td>
+                        ${assignButton}
+                        <a href="/admin/order-detail/${order.id}" class="btn btn-sm btn-info mt-1">Chi tiết</a>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 4. Xử lý Gán Shipper
+        async function handleAssignShipper(orderId) {
+            const selectElement = document.getElementById(`shipper-select-${orderId}`);
+            const shipperId = selectElement.value;
+
+            if (!shipperId) {
+                Swal.fire('Lỗi', 'Vui lòng chọn Shipper để gán.', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${orderId}/assign-shipper/${shipperId}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (!response.ok) throw new Error("Lỗi khi gán Shipper");
+
+                Swal.fire('Thành công!', 'Đơn hàng đã được gán và chuyển sang trạng thái "Đang giao".', 'success');
+                fetchAllOrders(); // Tải lại danh sách
+            } catch (err) {
+                Swal.fire('Lỗi', 'Không thể gán Shipper. Vui lòng thử lại.', 'error');
+            }
+        }
+      </script>
+    </th:block>
+  </body>
+</html>
