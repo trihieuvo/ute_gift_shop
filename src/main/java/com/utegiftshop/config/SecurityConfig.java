@@ -67,13 +67,15 @@
 						"/shipper/**",
 						"/vendor/**",
 						"/api/images/**",
-						"/v3/api-docs/**", "/swagger-ui/**"
+						"/v3/api-docs/**", "/swagger-ui/**",
+						"/api/reviews/product/**"
 					).permitAll()
 
 					// ===== 2. API YÊU CẦU ĐĂNG NHẬP (BẤT KỲ VAI TRÒ) =====
 					.requestMatchers(
 						"/api/users/me",
-						"/api/chat/**"
+						"/api/chat/**",
+						"/api/reviews/eligibility/**"
 					).authenticated()
 
 					// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
@@ -81,9 +83,10 @@
 						"/api/cart/**",
 						"/api/addresses/**",
 						"/api/orders/**",
-						// === BẮT ĐẦU THÊM MỚI ===
-						"/api/apply/**" // API để nộp đơn
-						// === KẾT THÚC THÊM MỚI ===
+						
+						"/api/apply/**", // API để nộp đơn
+						"/api/reviews"
+						
 					).hasAuthority("Customer")
 
 					// ===== 4. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
