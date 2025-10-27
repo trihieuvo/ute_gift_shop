@@ -47,6 +47,16 @@ public class Order {
     @Column(name = "payment_method", length = 50, nullable = false)
     private String paymentMethod;
 
+    // === BỔ SUNG CÁC TRƯỜNG CHO CỔNG THANH TOÁN ===
+    @Column(name = "payment_status", length = 20)
+    private String paymentStatus; // PENDING, SUCCESS, FAILED
+
+    @Column(name = "payment_trans_id", length = 50)
+    private String paymentTransId; // Mã giao dịch của cổng thanh toán
+
+    @Column(name = "payment_request_id", length = 50)
+    private String paymentRequestId; // Mã requestId của đơn hàng
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "shipper_id")
     private User shipper; // Người giao hàng
