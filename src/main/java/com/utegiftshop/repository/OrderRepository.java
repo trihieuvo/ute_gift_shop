@@ -1,22 +1,23 @@
 package com.utegiftshop.repository;
 
 import com.utegiftshop.entity.Order;
-import org.springframework.data.domain.Page; // BỔ SUNG
-import org.springframework.data.domain.Pageable; // BỔ SUNG
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query; // BỔ SUNG
-import org.springframework.data.repository.query.Param; // BỔ SUNG
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal; // BỔ SUNG
-import java.sql.Timestamp; // BỔ SUNG
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.List;
-import java.util.Optional; 
+import java.util.Optional;
 
 @Repository
-public interface OrderRepository extends JpaRepository<Order, Long> {
-
-    // === DÙNG CHO SHIPPER (ĐÃ CÓ) ===
+public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> { // <--- ĐÃ SỬA LỖI CÚ PHÁP
+    
+    // === DÙNG CHO SHIPPER ===
     List<Order> findByShipperIdAndStatusIn(Long shipperId, List<String> statuses);
     long countByShipperIdAndStatus(Long shipperId, String status);
     long countByShipperIdAndStatusIn(Long shipperId, List<String> statuses);

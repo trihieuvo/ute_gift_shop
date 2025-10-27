@@ -12,6 +12,37 @@
     <div layout:fragment="content">
       <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Đơn hàng</h1>
 
+      <div class="card mb-4">
+          <div class="card-header">Lọc Đơn hàng</div>
+          <div class="card-body">
+              <div class="row align-items-end">
+                  <div class="col-md-3 mb-3">
+                      <label for="start-date" class="form-label">Từ ngày</label>
+                      <input type="date" class="form-control" id="start-date">
+                  </div>
+                  <div class="col-md-3 mb-3">
+                      <label for="end-date" class="form-label">Đến ngày</label>
+                      <input type="date" class="form-control" id="end-date">
+                  </div>
+                  <div class="col-md-3 mb-3">
+                      <label for="status-filter" class="form-label">Trạng thái</label>
+                      <select class="form-select" id="status-filter">
+                          <option value="">Tất cả</option>
+                          <option value="NEW">Đơn mới</option>
+                          <option value="CONFIRMED">Đã xác nhận</option>
+                          <option value="DELIVERING">Đang giao</option>
+                          <option value="DELIVERED">Đã giao</option>
+                          <option value="CANCELLED">Đã hủy</option>
+                      </select>
+                  </div>
+                  <div class="col-md-3 mb-3">
+                      <button class="btn btn-primary w-100" onclick="fetchAllOrders()">
+                          <i class="bi bi-funnel-fill"></i> Lọc
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
@@ -61,13 +92,27 @@
             }
         }
 
-        // 2. Lấy danh sách Đơn hàng
+        // 2. Lấy danh sách Đơn hàng (CÓ LỌC)
         async function fetchAllOrders() {
             const tbody = document.getElementById("order-table-body");
+            
+            // Lấy giá trị từ các bộ lọc
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const status = document.getElementById('status-filter').value;
+            
+            // Xây dựng Query Params
+            const params = new URLSearchParams();
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (status) params.append('status', status);
+            
+            const url = API_URL + '?' + params.toString(); // Gắn tham số vào URL
+
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">Đang tải đơn hàng...</td></tr>';
 
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch(url, { // Dùng URL đã có tham số
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!response.ok) throw new Error("Lỗi tải đơn hàng");
@@ -88,12 +133,19 @@
             }
         }
 
-        // 3. Hàm tạo HTML cho mỗi dòng đơn hàng
+        // 3. Hàm tạo HTML cho mỗi dòng đơn hàng (Giữ nguyên)
         function createOrderRow(order) {
-            const totalAmount = new Intl.NumberFormat('vi-VN').format(order.totalAmount);
+            const formatVND = (amount) => {
+                return new Intl.NumberFormat('vi-VN', { 
+                    style: 'currency', 
+                    currency: 'VND',
+                    minimumFractionDigits: 0
+                }).format(amount);
+            };
+
+            const totalAmount = formatVND(order.totalAmount);
             const customerName = order.user ? order.user.fullName : 'Khách vãng lai';
             
-            // Xử lý trạng thái và màu sắc
             const statusMap = {
                 'NEW': { text: 'Đơn mới', class: 'bg-info' },
                 'CONFIRMED': { text: 'Đã xác nhận', class: 'bg-primary' },
@@ -130,7 +182,7 @@
                 <tr>
                     <td>${order.id}</td>
                     <td>${customerName}</td>
-                    <td>${totalAmount} đ</td>
+                    <td>${totalAmount}</td>
                     <td><span class="badge ${statusInfo.class}">${statusInfo.text}</span></td>
                     <td>
                         ${shipperSelect}
@@ -143,7 +195,7 @@
             `;
         }
 
-        // 4. Xử lý Gán Shipper
+        // 4. Xử lý Gán Shipper (Giữ nguyên)
         async function handleAssignShipper(orderId) {
             const selectElement = document.getElementById(`shipper-select-${orderId}`);
             const shipperId = selectElement.value;

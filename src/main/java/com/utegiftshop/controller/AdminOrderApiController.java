@@ -4,9 +4,12 @@ import com.utegiftshop.entity.Order;
 import com.utegiftshop.entity.User;
 import com.utegiftshop.repository.OrderRepository;
 import com.utegiftshop.repository.UserRepository;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.persistence.criteria.Predicate;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,14 +25,50 @@ public class AdminOrderApiController {
         this.userRepository = userRepository;
     }
 
-    // API 1: Lấy tất cả đơn hàng
+    // API 1: Lấy tất cả đơn hàng (ĐÃ THÊM BỘ LỌC)
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        // Có thể cần dùng DTO nếu Entity Order quá phức tạp
-        List<Order> orders = orderRepository.findAll();
+    public ResponseEntity<List<Order>> getAllOrders(
+        @RequestParam(required = false) String startDate,
+        @RequestParam(required = false) String endDate,
+        @RequestParam(required = false) String status
+    ) {
+        // Xây dựng Specification (tiêu chí lọc)
+        Specification<Order> spec = (root, query, criteriaBuilder) -> {
+            Predicate predicate = criteriaBuilder.conjunction();
+            
+            // Lọc theo Trạng thái
+            if (status != null && !status.isEmpty()) {
+                predicate = criteriaBuilder.and(predicate, criteriaBuilder.equal(root.get("status"), status));
+            }
+            
+            // Lọc theo Ngày Bắt đầu
+            if (startDate != null && !startDate.isEmpty()) {
+                try {
+                    // Chuyển đổi ngày yyyy-MM-dd thành Timestamp lúc 00:00:00
+                    Timestamp startTimestamp = Timestamp.valueOf(startDate + " 00:00:00");
+                    predicate = criteriaBuilder.and(predicate, criteriaBuilder.greaterThanOrEqualTo(root.get("orderDate"), startTimestamp));
+                } catch (IllegalArgumentException ignored) {} 
+            }
+            
+            // Lọc theo Ngày Kết thúc
+            if (endDate != null && !endDate.isEmpty()) {
+                try {
+                    // Chuyển đổi ngày yyyy-MM-dd thành Timestamp lúc 23:59:59
+                    Timestamp endTimestamp = Timestamp.valueOf(endDate + " 23:59:59");
+                    predicate = criteriaBuilder.and(predicate, criteriaBuilder.lessThanOrEqualTo(root.get("orderDate"), endTimestamp));
+                } catch (IllegalArgumentException ignored) {} 
+            }
+
+            // Sắp xếp theo ngày mới nhất
+            query.orderBy(criteriaBuilder.desc(root.get("orderDate")));
+
+            return predicate;
+        };
+
+        // Sử dụng findAll(Specification) để lọc
+        List<Order> orders = orderRepository.findAll(spec);
         return ResponseEntity.ok(orders);
     }
-    
     // API 2: Lấy danh sách Shipper
     @GetMapping("/shippers")
     public ResponseEntity<List<User>> getAllShippers() {
