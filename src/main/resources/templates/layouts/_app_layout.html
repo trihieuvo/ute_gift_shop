@@ -42,6 +42,86 @@
         padding: 1rem 0;
         text-align: center;
       }
+
+      /* === CSS CHO CHATBOT (Giữ nguyên ở đây) === */
+      .chat-widget {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1050;
+      }
+      .chat-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 28px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+      .chat-popup {
+        display: none;
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        width: 350px;
+        max-height: 500px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .chat-header {
+        background: #0d6efd;
+        color: white;
+        padding: 1rem;
+        font-weight: bold;
+      }
+      .chat-body {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .chat-message {
+        padding: 8px 12px;
+        border-radius: 18px;
+        max-width: 80%;
+        word-wrap: break-word;
+      }
+      .user-message {
+        background: #e9ecef;
+        align-self: flex-end;
+      }
+      .bot-message {
+        background: #0d6efd;
+        color: white;
+        align-self: flex-start;
+      }
+      .chat-footer {
+        border-top: 1px solid #eee;
+        padding: 0.5rem;
+        display: flex;
+      }
+      .chat-footer input {
+        flex: 1;
+        border: none;
+        outline: none;
+        box-shadow: none;
+      }
+      /* === KẾT THÚC CSS CHATBOT === */
+
+      /* === BỔ SUNG MỚI: CSS CHO DROPDOWN KHI HOVER === */
+      /* Chỉ áp dụng cho màn hình desktop (rộng hơn 992px) */
+      @media (min-width: 992px) {
+        /* Khi rê chuột vào thẻ li.dropdown, hiển thị menu con (.dropdown-menu) */
+        .category-sidebar .nav-item.dropdown:hover > .dropdown-menu {
+          display: block;
+          margin-top: 0; /* Ghi đè margin của Bootstrap để menu sát hơn */
+        }
+      }
+      /* === KẾT THÚC BỔ SUNG MỚI === */
     </style>
     <th:block layout:fragment="styles"></th:block>
     <th:block layout:fragment="scripts_head"></th:block>
@@ -88,6 +168,31 @@
       </div>
     </footer>
 
+    <div class="chat-widget">
+      <button class="btn btn-primary chat-btn" id="toggle-chat-btn">
+        <i class="bi bi-chat-dots-fill"></i>
+      </button>
+
+      <div class="chat-popup" id="chat-popup">
+        <div class="chat-header">UTE GiftShop Assistant</div>
+        <div class="chat-body" id="chat-body">
+          <div class="chat-message bot-message">
+            Chào bạn! Tôi có thể giúp gì?
+          </div>
+        </div>
+        <div class="chat-footer">
+          <input
+            type="text"
+            class="form-control"
+            id="chat-input"
+            placeholder="Nhập tin nhắn..."
+          />
+          <button class="btn btn-link" id="chat-send-btn">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -109,7 +214,7 @@
         if (userGreetingElem && userMenu) {
           userGreetingElem.textContent = "Tài khoản";
           userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
-                                      <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
+                                <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
         }
       }
 
@@ -153,21 +258,20 @@
               }`;
 
               let menuItems = `<li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
-                                         <li><a class="dropdown-item" href="/order-history">Lịch sử đơn hàng</a></li>`;
+                               <li><a class="dropdown-item" href="/order-history">Lịch sử đơn hàng</a></li>`;
 
-              // === SỬA LẠI ĐOẠN NÀY ===
+              // === Logic phân quyền cho các vai trò ===
               if (userInfo.role === "Admin") {
-                // 1. THÊM KIỂM TRA ADMIN
                 menuItems += `<li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>`;
               } else if (userInfo.role === "Vendor") {
-                menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard">Trang bán hàng</a></li>`; // 2. (Sửa link dashboard cho Vendor)
+                menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard">Trang bán hàng</a></li>`;
               } else if (userInfo.role === "Shipper") {
                 menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
               }
-              // === KẾT THÚC SỬA ===
+              // === Kết thúc logic phân quyền ===
 
               menuItems += `<li><hr class="dropdown-divider"></li>
-                                      <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
+                            <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
               userMenu.innerHTML = menuItems;
               console.log("Giao diện đã được cập nhật.");
             }
@@ -190,6 +294,159 @@
 
       document.addEventListener("DOMContentLoaded", checkLoginStatus);
     </script>
+
     <th:block layout:fragment="scripts_body"></th:block>
+
+    <script>
+      // Các biến DOM
+      const chatPopup = document.getElementById("chat-popup");
+      const toggleChatBtn = document.getElementById("toggle-chat-btn");
+      const chatInput = document.getElementById("chat-input");
+      const chatSendBtn = document.getElementById("chat-send-btn");
+      const chatBody = document.getElementById("chat-body");
+
+      let isChatbotInitialized = false;
+
+      // Mở/Đóng chat
+      toggleChatBtn.addEventListener("click", () => {
+        if (chatPopup.style.display === "flex") {
+          chatPopup.style.display = "none";
+        } else {
+          const token = localStorage.getItem("jwtToken");
+          if (!token && !isChatbotInitialized) {
+            Swal.fire(
+              "Vui lòng đăng nhập",
+              "Bạn cần đăng nhập để sử dụng trợ lý ảo.",
+              "info"
+            ).then(() => (window.location.href = "/login"));
+            return;
+          }
+          isChatbotInitialized = true;
+          chatPopup.style.display = "flex";
+        }
+      });
+
+      // Gửi tin nhắn
+      chatSendBtn.addEventListener("click", sendMessage);
+      chatInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+      async function sendMessage() {
+        const messageText = chatInput.value.trim();
+        if (messageText === "") return;
+
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+          Swal.fire(
+            "Lỗi",
+            "Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang.",
+            "error"
+          );
+          return;
+        }
+
+        addMessageToChat(messageText, "user");
+        chatInput.value = "";
+        addMessageToChat("...", "bot-typing");
+
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message: messageText }),
+          });
+
+          removeTypingIndicator();
+
+          if (response.ok) {
+            const chatResponse = await response.json();
+            addMessageToChat(chatResponse.reply, "bot");
+          } else {
+            addMessageToChat("Xin lỗi, đã có lỗi xảy ra.", "bot");
+          }
+        } catch (error) {
+          removeTypingIndicator();
+          addMessageToChat("Lỗi kết nối. Vui lòng thử lại.", "bot");
+        }
+      }
+
+      // === BẮT ĐẦU CẬP NHẬT LỖI FORMATTING ===
+
+      /**
+       * Hàm helper để chuyển đổi text an toàn sang HTML (Chống XSS)
+       */
+      function escapeHTML(str) {
+        if (!str) return "";
+        return str.replace(/[&<>"']/g, function (m) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[m];
+        });
+      }
+
+      /**
+       * Hàm helper để định dạng message của Bot (Sau khi đã escape an toàn)
+       */
+      function formatBotMessage(text) {
+        let escapedText = escapeHTML(text);
+
+        // 1. Chuyển đổi **bold** thành <strong>bold</strong>
+        // (Regex này bắt 2 literal asterisks)
+        let formattedText = escapedText.replace(
+          /\*\*(.*?)\*\*/g,
+          "<strong>$1</strong>"
+        );
+
+        // 2. Chuyển đổi \*\*bold\*\* thành <strong>bold</strong>
+        // (Regex này bắt backslash-escaped asterisks)
+        formattedText = formattedText.replace(
+          /\\\*\\\*(.*?)\\\*\\\*/g,
+          "<strong>$1</strong>"
+        );
+
+        // 3. Chuyển \n (xuống dòng) thành <br>
+        formattedText = formattedText.replace(/\n/g, "<br>");
+
+        return formattedText;
+      }
+
+      function addMessageToChat(text, type) {
+        const messageDiv = document.createElement("div");
+
+        if (type === "user") {
+          messageDiv.className = "chat-message user-message";
+          messageDiv.textContent = text; // User input
+        } else if (type === "bot") {
+          messageDiv.className = "chat-message bot-message";
+          messageDiv.innerHTML = formatBotMessage(text); // Bot output
+        } else if (type === "bot-typing") {
+          messageDiv.className = "chat-message bot-message";
+          messageDiv.id = "bot-typing-indicator";
+          messageDiv.textContent = text;
+        }
+
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+
+      // === KẾT THÚC CẬP NHẬT LỖI FORMATTING ===
+
+      function removeTypingIndicator() {
+        const typingIndicator = document.getElementById("bot-typing-indicator");
+        if (typingIndicator) {
+          chatBody.removeChild(typingIndicator);
+        }
+      }
+    </script>
   </body>
 </html>
