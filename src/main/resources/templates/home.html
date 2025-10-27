@@ -17,8 +17,8 @@
         }
         .product-card .card-img-top {
             width: 100%;
-            aspect-ratio: 1 / 1; /* Đảm bảo tỉ lệ 1:1 */
-            object-fit: cover;   /* Giữ ảnh không bị méo */
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
         }
         .category-sidebar {
             background: #fff;
@@ -26,14 +26,11 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,.1);
         }
-        .category-sidebar .nav-link {
+        .category-sidebar .nav-link,
+        .category-sidebar .dropdown-item {
             color: #333;
             cursor: pointer;
-        }
-         .category-sidebar .nav-item .nav-link,
-         .category-sidebar .dropdown-item {
             font-weight: 500;
-            cursor: pointer;
         }
         .category-sidebar .nav-item .nav-link:hover,
         .category-sidebar .dropdown-item:hover {
@@ -49,6 +46,40 @@
             border: none;
             box-shadow: 0 4px 6px rgba(0,0,0,.1);
         }
+
+        /* === CSS MỚI CHO NÚT XEM ẢNH === */
+        .product-img-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .img-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .product-img-container:hover .img-nav-btn {
+            opacity: 1;
+        }
+        .img-prev {
+            left: 10px;
+        }
+        .img-next {
+            right: 10px;
+        }
+        /* === KẾT THÚC CSS MỚI === */
     </style>
 </head>
 <body>
@@ -93,6 +124,36 @@
         const categoryMenu = document.getElementById('category-menu');
         const productsTitle = document.getElementById('products-title');
 
+        /**
+         * 🔄 Hàm mới để chuyển đổi ảnh trên card sản phẩm
+         * @param {number} productId - ID của sản phẩm
+         * @param {number} direction - Hướng chuyển (-1 cho ảnh trước, 1 cho ảnh sau)
+         */
+        function changeImage(productId, direction) {
+            const card = document.getElementById(`product-card-${productId}`);
+            const img = document.getElementById(`product-img-${productId}`);
+            
+            if (!card || !img) return;
+
+            // Lấy danh sách URL ảnh từ data attribute
+            const images = JSON.parse(card.dataset.images);
+            let currentIndex = parseInt(img.dataset.currentIndex, 10);
+            
+            // Tính toán index ảnh mới
+            currentIndex += direction;
+
+            // Xử lý xoay vòng (nếu đến cuối thì quay về đầu và ngược lại)
+            if (currentIndex >= images.length) {
+                currentIndex = 0;
+            } else if (currentIndex < 0) {
+                currentIndex = images.length - 1;
+            }
+
+            // Cập nhật ảnh và lưu lại index hiện tại
+            img.src = images[currentIndex];
+            img.dataset.currentIndex = currentIndex;
+        }
+
         async function fetchAndDisplayProducts(categoryId = null) {
             let url = '/api/products';
             if (categoryId) {
@@ -121,19 +182,43 @@
 
                 products.forEach(product => {
                     const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
-                    
-                    // === PHẦN CẬP NHẬT LOGIC LẤY ẢNH ===
-                    // Lấy ảnh đầu tiên từ danh sách 'images' làm ảnh đại diện
-                    let imageUrl = noImageUrl;
+                    let initialImageUrl = noImageUrl;
+                    let initialImageIndex = 0;
+                    let allImageUrls = [];
+                    let imageNavigationButtons = '';
+
+                    // Chuẩn bị dữ liệu ảnh
                     if (product.images && product.images.length > 0) {
-                        imageUrl = product.images[0].imageUrl || noImageUrl;
+                        allImageUrls = product.images.map(img => img.imageUrl);
+                        
+                        // ✨ Tính năng 1: Lấy ảnh ngẫu nhiên khi tải trang
+                        initialImageIndex = Math.floor(Math.random() * allImageUrls.length);
+                        initialImageUrl = allImageUrls[initialImageIndex] || noImageUrl;
+
+                        // ✨ Tính năng 2: Tạo nút bấm nếu có nhiều hơn 1 ảnh
+                        if (allImageUrls.length > 1) {
+                            imageNavigationButtons = `
+                                <button class="img-nav-btn img-prev" onclick="event.stopPropagation(); changeImage(${product.id}, -1)">&#10094;</button>
+                                <button class="img-nav-btn img-next" onclick="event.stopPropagation(); changeImage(${product.id}, 1)">&#10095;</button>
+                            `;
+                        }
                     }
-                    // === KẾT THÚC CẬP NHẬT ===
+
+                    // Chuyển mảng URL thành chuỗi JSON để lưu vào data attribute
+                    const imagesData = JSON.stringify(allImageUrls);
 
                     const productCard = `
                         <div class="col-md-4">
-                            <div class="card product-card">
-                                <img src="${imageUrl}" class="card-img-top" alt="${product.name}" onerror="this.onerror=null;this.src='${noImageUrl}';">
+                            <div class="card product-card" id="product-card-${product.id}" data-images='${imagesData}'>
+                                <div class="product-img-container">
+                                    <img src="${initialImageUrl}" 
+                                         class="card-img-top" 
+                                         alt="${product.name}" 
+                                         id="product-img-${product.id}"
+                                         data-current-index="${initialImageIndex}"
+                                         onerror="this.onerror=null;this.src='${noImageUrl}';">
+                                    ${imageNavigationButtons}
+                                </div>
                                 <div class="card-body">
                                     <h5 class="card-title">${product.name}</h5>
                                     <p class="card-text fw-bold">${product.price.toLocaleString('vi-VN')} đ</p>
