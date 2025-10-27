@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_vendor_layout}">
+<head>
+    <title>Quản lý Cửa hàng</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">s
+        <h1 class="h2">Quản lý Cửa hàng</h1>
+        {/* Button Save Changes could go here later */}
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <p class="text-muted">Chỉnh sửa thông tin cửa hàng của bạn tại đây.</p>
+            {/* Form fields for shop name, description, logo, etc. will go here */}
+             <div class="alert alert-info">Nội dung chức năng Quản lý Cửa hàng sẽ được thêm vào đây.</div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    {/* Page specific scripts will go here */}
+</th:block>
+
+</body>
+</html>

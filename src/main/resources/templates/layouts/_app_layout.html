@@ -140,6 +140,9 @@
                         if (userInfo.role === 'Shipper') {
                              menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
                         }
+                        else if (userInfo.role === 'Vendor') {
+                            menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard">Trang bán hàng</a></li>`;
+                        }
                         menuItems += `<li><hr class="dropdown-divider"></li>
                                       <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
                         userMenu.innerHTML = menuItems;

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_vendor_layout}">
+<head>
+    <title>Tương tác Khách hàng</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Tương tác Khách hàng</h1>
+        {/* Maybe a filter for unread messages */}
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <p class="text-muted">Trả lời tin nhắn và câu hỏi từ khách hàng.</p>
+            {/* Messaging interface will go here */}
+            <div class="alert alert-info">Nội dung chức năng Tương tác Khách hàng sẽ được thêm vào đây.</div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    {/* Page specific scripts will go here */}
+</th:block>
+
+</body>
+</html>

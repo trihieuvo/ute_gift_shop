@@ -5,24 +5,67 @@
       layout:decorate="~{layouts/_app_layout}">
 <head>
     <title>Shipper - Bảng điều khiển</title>
+    <style>
+        .refresh-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            opacity: 0.7;
+        }
+        .card {
+            position: relative; /* Cho refresh button */
+            /* === THÊM MỚI: Đảm bảo card dãn hết chiều cao cột === */
+            height: 100%;
+        }
+        /* === THÊM MỚI: Đảm bảo các cột trong row này bằng nhau === */
+        .equal-height-row {
+            display: flex;
+            flex-wrap: wrap; /* Cho phép xuống dòng trên màn hình nhỏ */
+        }
+        .equal-height-row > [class*='col-'] {
+            display: flex; /* Làm cho cột trở thành flex container */
+            flex-direction: column; /* Sắp xếp nội dung cột theo chiều dọc */
+        }
+        .equal-height-row > [class*='col-'] > .card {
+             flex-grow: 1; /* Cho phép card dãn ra để lấp đầy không gian */
+        }
+        /* === KẾT THÚC THÊM MỚI === */
+    </style>
 </head>
 <body>
 
 <div layout:fragment="content">
-    <h1 class="mb-4">Bảng điều khiển Shipper</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Bảng điều khiển Shipper</h1>
+        <button class="btn btn-outline-primary" id="refresh-button" onclick="fetchAllStats()">
+            <i class="bi bi-arrow-clockwise"></i> Tải lại
+        </button>
+    </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card text-bg-warning shadow-sm"> <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="row g-4 mb-4 equal-height-row">
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-bg-warning shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title">Đơn đang chờ/giao</h5>
+                        <h5 class="card-title">Đơn đang xử lý</h5>
                         <p class="card-text fs-2 fw-bold" id="assigned-count">...</p>
                     </div>
                     <i class="bi bi-box-seam-fill" style="font-size: 3rem; opacity: 0.5;"></i>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-bg-danger shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">Tiền COD đang giữ</h5>
+                        <p class="card-text fs-4 fw-bold" id="cod-holding">...</p>
+                    </div>
+                    <i class="bi bi-cash-coin" style="font-size: 3rem; opacity: 0.5;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
             <div class="card text-bg-success shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
@@ -33,11 +76,11 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-bg-danger shadow-sm">
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-bg-secondary shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title">Đơn giao thất bại</h5>
+                        <h5 class="card-title">Đơn thất bại/Trả</h5>
                         <p class="card-text fs-2 fw-bold" id="failed-count">...</p>
                     </div>
                     <i class="bi bi-x-circle-fill" style="font-size: 3rem; opacity: 0.5;"></i>
@@ -45,20 +88,19 @@
             </div>
         </div>
     </div>
-
     <h4>Tác vụ nhanh</h4>
     <div class="list-group">
         <a th:href="@{/shipper/orders}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="mb-1"><i class="bi bi-list-task text-primary"></i> Xem đơn hàng cần giao</h5>
-                <p class="mb-0 text-muted">Xem danh sách các đơn hàng mới được gán cho bạn.</p>
+                <h5 class="mb-1"><i class="bi bi-list-task text-primary"></i> Xem đơn hàng đang xử lý</h5>
+                <p class="mb-0 text-muted">Xem danh sách các đơn hàng (mới, đang giao).</p>
             </div>
             <span class="badge bg-primary rounded-pill" id="assigned-badge-count">...</span>
         </a>
         <a th:href="@{/shipper/orders/completed}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
             <div>
                 <h5 class="mb-1"><i class="bi bi-clock-history text-success"></i> Lịch sử đơn hàng</h5>
-                <p class="mb-0 text-muted">Xem lại các đơn hàng đã giao thành công hoặc thất bại.</p>
+                <p class="mb-0 text-muted">Xem lại các đơn hàng đã giao hoặc thất bại.</p>
             </div>
             <i class="bi bi-chevron-right"></i>
         </a>
@@ -68,13 +110,25 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            const token = localStorage.getItem('jwtToken');
+        // Hàm định dạng tiền tệ
+        const formatter = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        });
+
+        const token = localStorage.getItem('jwtToken');
+        let pollingInterval;
+
+        async function fetchAllStats() {
             if (!token) {
                 window.location.href = '/login';
                 return;
             }
             
+            const refreshButton = document.getElementById('refresh-button');
+            refreshButton.disabled = true;
+            refreshButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tải...`;
+
             try {
                 // Gọi API lấy thống kê
                 const response = await fetch('/api/shipper/stats', {
@@ -86,23 +140,46 @@
                     document.getElementById('assigned-count').textContent = stats.assigned || 0;
                     document.getElementById('delivered-count').textContent = stats.delivered || 0;
                     document.getElementById('failed-count').textContent = stats.failed || 0;
+                    document.getElementById('cod-holding').textContent = formatter.format(stats.totalCodHolding || 0);
+                    
                     // Cập nhật badge
                     document.getElementById('assigned-badge-count').textContent = stats.assigned || 0;
 
                 } else if (response.status === 401 || response.status === 403) {
                      Swal.fire('Lỗi', 'Không có quyền truy cập hoặc phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
+                     clearInterval(pollingInterval); // Dừng polling nếu lỗi
                 }
                  else {
                     console.error('Lỗi lấy thống kê:', response.statusText);
                     document.getElementById('assigned-count').textContent = 'Lỗi';
                     document.getElementById('delivered-count').textContent = 'Lỗi';
                     document.getElementById('failed-count').textContent = 'Lỗi';
+                    document.getElementById('cod-holding').textContent = 'Lỗi';
                 }
             } catch (error) {
                 console.error('Lỗi mạng:', error);
-                Swal.fire('Lỗi', 'Lỗi kết nối mạng.', 'error');
+                // Không hiển thị Swal lỗi khi polling tự động
+                if (!pollingInterval) {
+                     Swal.fire('Lỗi', 'Lỗi kết nối mạng.', 'error');
+                }
+            } finally {
+                refreshButton.disabled = false;
+                refreshButton.innerHTML = `<i class="bi bi-arrow-clockwise"></i> Tải lại`;
             }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAllStats(); // Tải lần đầu
+
+            // BỔ SUNG: Tự động tải lại (Polling) mỗi 30 giây
+            pollingInterval = setInterval(fetchAllStats, 30000); 
         });
+        
+        // Đảm bảo dừng polling khi rời khỏi trang
+        window.addEventListener('beforeunload', function() {
+            clearInterval(pollingInterval);
+        });
+
     </script>
 </th:block>
 
