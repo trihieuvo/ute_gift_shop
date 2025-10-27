@@ -27,7 +27,14 @@ public class ProductVendorDto {
         
         // === THAY ĐỔI: Lấy ảnh đầu tiên làm ảnh đại diện ===
         if (product.getImages() != null && !product.getImages().isEmpty()) {
-            this.imageUrl = product.getImages().get(0).getImageUrl();
+            // Lấy URL gốc từ ảnh đầu tiên
+            String originalUrl = product.getImages().get(0).getImageUrl();
+            if (originalUrl != null && !originalUrl.isBlank()) {
+                // **THÊM TIMESTAMP VÀO ĐÂY**
+                this.imageUrl = originalUrl + "?t=" + System.currentTimeMillis();
+            } else {
+                 this.imageUrl = null; // Hoặc ảnh mặc định
+            }
         } else {
             this.imageUrl = null; // Hoặc một URL ảnh mặc định
         }
