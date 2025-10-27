@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Dashboard</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Dashboard</h1>
+      <p>Chào mừng Admin!</p>
+
+      <div class="row" id="stats-container">
+        <p>Đang tải dữ liệu thống kê...</p>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+
+        document.addEventListener("DOMContentLoaded", () => {
+          fetchDashboardStats();
+        });
+
+        async function fetchDashboardStats() {
+          const statsContainer = document.getElementById("stats-container");
+          try {
+            // Bạn sẽ cần tạo API này ở backend
+            // const response = await fetch("/api/v1/admin/stats", {
+            //     headers: { 'Authorization': `Bearer ${token}` }
+            // });
+            // const stats = await response.json();
+
+            // (Tạm thời hiển thị text)
+            statsContainer.innerHTML =
+              "<p>Dữ liệu thống kê sẽ được hiển thị ở đây.</p>";
+          } catch (err) {
+            statsContainer.innerHTML =
+              '<p class="text-danger">Lỗi tải dữ liệu thống kê.</p>';
+          }
+        }
+      </script>
+    </th:block>
+  </body>
+</html>
