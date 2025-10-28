@@ -98,7 +98,7 @@ public class OrderController {
             // Tạo mã thanh toán ngẫu nhiên và duy nhất
             paymentCode = "UTE" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
             order.setPaymentCode(paymentCode);
-            order.setStatus("PENDING_PAYMENT"); // Trạng thái mới: Chờ thanh toán
+            order.setStatus("NEW"); 
         }
         // ===============================================
 

@@ -5,14 +5,106 @@
       layout:decorate="~{layouts/_app_layout}">
 <head>
     <title>Thanh toán</title>
-    <!-- Các style cũ có thể giữ nguyên nếu cần -->
+    <style>
+        /* Style cho địa chỉ */
+        .address-list-item {
+            border: 1px solid #dee2e6; /* Màu border mặc định */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+            position: relative; /* Cho badge Mặc định */
+        }
+        .address-list-item:hover {
+            border-color: #0d6efd;
+        }
+        .address-list-item input[type="radio"] {
+            margin-top: 0.3rem;
+            float: left;
+            margin-right: 0.75rem;
+        }
+        .address-list-item label {
+            display: block;
+            overflow: hidden; /* Quan trọng để label không bị đẩy xuống */
+            padding-right: 50px; /* Chừa không gian cho badge Mặc định */
+        }
+         .address-list-item.selected {
+             border-color: #0d6efd;
+             border-width: 2px;
+             background-color: #e7f1ff;
+         }
+         .default-badge {
+             position: absolute;
+             top: 1rem;
+             right: 1rem;
+             font-size: 0.75rem;
+         }
+
+         /* Style cho phương thức thanh toán */
+         .payment-method-item {
+             border: 1px solid #dee2e6;
+             padding: 1rem;
+             border-radius: 0.375rem;
+             margin-bottom: 1rem;
+             cursor: pointer;
+             transition: border-color 0.2s, background-color 0.2s;
+         }
+         .payment-method-item:hover {
+             border-color: #0d6efd;
+         }
+         .payment-method-item input[type="radio"] {
+             margin-top: 0.3rem;
+             float: left;
+             margin-right: 0.75rem;
+         }
+         .payment-method-item label {
+             display: block;
+             overflow: hidden;
+         }
+         .payment-method-item.selected {
+             border-color: #0d6efd;
+             border-width: 2px;
+             background-color: #e7f1ff;
+         }
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+         /* Style nút loading */
+         .btn-loading {
+            position: relative;
+            pointer-events: none;
+            color: transparent !important;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            height: 1.2rem;
+            width: 1.2rem;
+            margin-left: -0.6rem;
+            margin-top: -0.6rem;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: spinner-border .75s linear infinite;
+            color: white !important;
+        }
+        @keyframes spinner-border { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
 <div layout:fragment="content">
     <h1 class="mb-4">Thanh toán đơn hàng</h1>
-    <div class="row g-4"> {/* Thêm g-4 để có khoảng cách giữa các cột */}
-        <div class="col-lg-7"> {/* Sử dụng col-lg-7 cho màn hình lớn */}
-            <div class="card shadow-sm mb-4"> {/* Bọc địa chỉ trong card */}
+    {/* --- Cấu trúc HTML đã sửa --- */}
+    <div class="row g-4">
+        {/* === CỘT BÊN TRÁI === */}
+        <div class="col-lg-7">
+            {/* --- Card Địa chỉ --- */}
+            <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light">
                     <h5 class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Chọn địa chỉ giao hàng</h5>
                 </div>
@@ -20,45 +112,46 @@
                     <div id="address-list" class="mb-3">
                         <p class="text-center p-3 text-muted">Đang tải địa chỉ...</p>
                     </div>
-                     {/* Nút thêm địa chỉ có thể đặt ở đây nếu muốn */}
-                     <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModalCheckout">
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModalCheckout">
                         <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
                     </button>
                 </div>
             </div>
 
-             <div class="card shadow-sm"> {/* Bọc phương thức TT trong card */}
-                 <div class="card-header bg-light">
-                     <h5 class="mb-0"><i class="bi bi-credit-card-fill me-2"></i>Chọn phương thức thanh toán</h5>
-                 </div>
-                 <div class="card-body">
-                    <div class="form-check mb-2"> {/* Thêm mb-2 */}
+            {/* --- Card Phương thức Thanh toán --- */}
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-credit-card-fill me-2"></i>Chọn phương thức thanh toán</h5>
+                </div>
+                <div class="card-body" id="payment-methods-container">
+                    {/* COD */}
+                    <div class="payment-method-item form-check selected mb-2" onclick="selectPaymentItem(this)"> {/* Thêm mb-2 */}
                         <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
-                        <label class="form-check-label" for="cod">
+                        <label class="form-check-label w-100" for="cod">
                             <i class="bi bi-cash-coin me-1"></i> Thanh toán khi nhận hàng (COD)
                         </label>
                     </div>
-                    {/* THÊM LỰA CHỌN THANH TOÁN QR */}
-                    <div class="form-check">
+                    {/* QR SePay */}
+                    <div class="payment-method-item form-check" onclick="selectPaymentItem(this)">
                         <input class="form-check-input" type="radio" name="paymentMethod" id="sepay_qr" value="SEPAY_QR">
-                        <label class="form-check-label" for="sepay_qr">
+                        <label class="form-check-label w-100" for="sepay_qr">
                            <i class="bi bi-qr-code me-1"></i> Thanh toán qua mã QR (Chuyển khoản - SePay)
                         </label>
                     </div>
-                 </div>
-             </div>
+                </div>
+            </div>
         </div>
 
-        <div class="col-lg-5"> {/* Sử dụng col-lg-5 */}
-            <div class="card shadow-sm sticky-top" style="top: 80px;"> {/* Thêm sticky-top */}
+        {/* === CỘT BÊN PHẢI === */}
+        <div class="col-lg-5">
+            <div class="card shadow-sm sticky-top" style="top: 80px;">
                 <div class="card-header bg-light">
                      <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Tóm tắt đơn hàng</h5>
                 </div>
                 <div class="card-body">
-                    <div id="order-summary" class="mb-3">
+                    <div id="order-summary" class="mb-3" style="max-height: 250px; overflow-y: auto;">
                          <p class="text-center text-muted">Đang tải tóm tắt...</p>
                     </div>
-                    {/* Thêm tổng tiền và phí vận chuyển rõ ràng hơn */}
                     <ul class="list-group list-group-flush mb-3">
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Tạm tính:</span>
@@ -66,22 +159,23 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Phí vận chuyển:</span>
-                            <strong>Miễn phí</strong> {/* Hoặc tính toán nếu có */}
+                            <strong>Miễn phí</strong>
                         </li>
                         <li class="list-group-item d-flex justify-content-between bg-light">
                             <strong class="text-danger">Tổng cộng:</strong>
                             <strong id="summary-total" class="text-danger fs-5">0 đ</strong>
                         </li>
                     </ul>
-                    <button class="btn btn-success w-100 btn-lg" onclick="placeOrder()"> {/* Thêm btn-lg */}
+                    <button class="btn btn-success w-100 btn-lg" id="placeOrderBtn" onclick="placeOrder()">
                         <i class="bi bi-bag-check-fill me-2"></i> Đặt hàng
                     </button>
                 </div>
             </div>
         </div>
     </div>
+    {/* --- Kết thúc cấu trúc HTML --- */}
 
-    {/* Modal Thêm địa chỉ - Copy từ profile.html nếu cần */}
+    {/* === MODAL THÊM ĐỊA CHỈ (Giữ nguyên) === */}
     <div class="modal fade" id="addAddressModalCheckout" tabindex="-1">
          <div class="modal-dialog modal-dialog-centered">
              <div class="modal-content">
@@ -92,18 +186,20 @@
                  <div class="modal-body">
                      <form id="addAddressFormCheckout">
                          <div class="mb-3">
-                             <label for="recipientNameCheckout" class="form-label">Tên người nhận</label>
+                             <label for="recipientNameCheckout" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
                              <input type="text" class="form-control" id="recipientNameCheckout" required>
                          </div>
                          <div class="mb-3">
-                             <label for="phoneNumberAddressCheckout" class="form-label">Số điện thoại</label>
-                             <input type="text" class="form-control" id="phoneNumberAddressCheckout" required>
+                             <label for="phoneNumberAddressCheckout" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                             <input type="text" class="form-control" id="phoneNumberAddressCheckout" required pattern="[0-9]{10,11}" title="Số điện thoại gồm 10-11 chữ số">
                          </div>
                          <div class="mb-3">
-                             <label for="fullAddressCheckout" class="form-label">Địa chỉ chi tiết</label>
-                             <input type="text" class="form-control" id="fullAddressCheckout" required placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố">
+                             <label for="fullAddressCheckout" class="form-label">Địa chỉ chi tiết <span class="text-danger">*</span></label>
+                             <textarea class="form-control" id="fullAddressCheckout" required rows="3" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"></textarea>
                          </div>
-                         <button type="submit" class="btn btn-primary w-100">Lưu địa chỉ</button>
+                         <button type="submit" class="btn btn-primary w-100" id="saveAddressBtn">
+                             <i class="bi bi-save"></i> Lưu địa chỉ
+                         </button>
                      </form>
                  </div>
              </div>
@@ -113,112 +209,171 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
+        // === KHAI BÁO BIẾN (Giữ nguyên) ===
         const token = localStorage.getItem('jwtToken');
         const orderSummaryContainer = document.getElementById('order-summary');
         const addressListContainer = document.getElementById('address-list');
         const summarySubtotalEl = document.getElementById('summary-subtotal');
         const summaryTotalEl = document.getElementById('summary-total');
-        let currentTotalAmount = 0; // Biến lưu tổng tiền
+        const placeOrderButton = document.getElementById('placeOrderBtn');
+        let currentTotalAmount = 0;
+        let addAddressModalInstance = null;
 
+        // === DOMContentLoaded (Giữ nguyên) ===
         document.addEventListener('DOMContentLoaded', () => {
              if (!token) {
-                window.location.href = '/login'; // Chuyển hướng nếu chưa đăng nhập
+                window.location.href = window.location.origin + '/login';
                 return;
             }
             fetchAddresses();
             fetchOrderSummary();
+             const modalElement = document.getElementById('addAddressModalCheckout');
+             if (modalElement) {
+                 addAddressModalInstance = new bootstrap.Modal(modalElement);
+             }
         });
 
-        // Hàm fetchAddresses giữ nguyên logic nhưng có cải tiến nhỏ
+        // === fetchAddresses (Đã sửa logic chọn mặc định) ===
         async function fetchAddresses() {
             if (!addressListContainer) return;
             addressListContainer.innerHTML = '<p class="text-center p-3 text-muted">Đang tải địa chỉ...</p>';
             try {
                 const response = await fetch('/api/addresses', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!response.ok) throw new Error('Không thể tải địa chỉ');
+                 if (!response.ok) throw new Error(`Không thể tải địa chỉ (${response.status})`);
                 const addresses = await response.json();
+                console.log("Addresses loaded:", addresses);
 
-                addressListContainer.innerHTML = ''; // Xóa loading
+                addressListContainer.innerHTML = '';
                 if (addresses.length === 0) {
                      addressListContainer.innerHTML = '<p class="text-warning">Bạn chưa có địa chỉ nào. Vui lòng thêm địa chỉ mới.</p>';
+                     if(placeOrderButton) placeOrderButton.disabled = true;
+                     return; // Dừng lại nếu không có địa chỉ
+                } else {
+                     if(placeOrderButton) placeOrderButton.disabled = false;
                 }
 
-                addresses.forEach((addr, index) => {
-                    const isChecked = addr.isDefault || (!addresses.some(a => a.isDefault) && index === 0); // Ưu tiên default, nếu không có thì check cái đầu tiên
-                    addressListContainer.innerHTML += `
-                        <div class="form-check border p-3 rounded mb-2"> {/* Thêm style cho dễ nhìn */}
-                            <input class="form-check-input" type="radio" name="address" id="addr-${addr.id}" value="${addr.id}" ${isChecked ? 'checked' : ''}>
-                            <label class="form-check-label w-100" for="addr-${addr.id}"> {/* Thêm w-100 */}
-                                <div class="d-flex justify-content-between">
-                                    <span><strong>${addr.recipientName}</strong> - ${addr.phoneNumber}</span>
-                                     ${addr.isDefault ? '<span class="badge bg-primary">Mặc định</span>' : ''}
-                                </div>
-                                <div class="text-muted small">${addr.fullAddress}</div>
-                            </label>
-                        </div>
+                // Tìm địa chỉ mặc định hoặc địa chỉ đầu tiên
+                let defaultAddressId = null;
+                const defaultAddress = addresses.find(addr => addr.isDefault === true || addr.isDefault === 'true' || addr.isDefault === 1);
+                if (defaultAddress) {
+                    defaultAddressId = defaultAddress.id;
+                    console.log("Default address found:", defaultAddressId);
+                } else if (addresses.length > 0) {
+                    defaultAddressId = addresses[0].id; // Chọn cái đầu tiên nếu không có mặc định
+                     console.log("No default address, selecting first:", defaultAddressId);
+                }
+
+                addresses.forEach((addr) => {
+                    const isChecked = (addr.id === defaultAddressId); // Kiểm tra ID để chọn
+                    const isDefaultBadge = (addr.isDefault === true || addr.isDefault === 'true' || addr.isDefault === 1);
+
+                    const div = document.createElement('div');
+                    // Sử dụng addr.id thay vì index
+                    div.className = `address-list-item form-check mb-2 ${isChecked ? 'selected' : ''}`;
+                    div.onclick = () => selectAddressItem(div);
+
+                    div.innerHTML = `
+                        <input class="form-check-input" type="radio" name="address" id="addr-${addr.id}" value="${addr.id}" ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label w-100" for="addr-${addr.id}">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${addr.recipientName}</strong> - ${addr.phoneNumber}</span>
+                                 ${isDefaultBadge ? '<span class="badge bg-primary default-badge">Mặc định</span>' : ''} {/* Thêm class default-badge */}
+                            </div>
+                            <div class="text-muted small">${addr.fullAddress}</div>
+                        </label>
                     `;
+                    addressListContainer.appendChild(div);
                 });
+
+                 // Đảm bảo nút radio được check tương ứng với div.selected
+                 const selectedDiv = addressListContainer.querySelector('.address-list-item.selected');
+                 if (selectedDiv) {
+                    const radioInside = selectedDiv.querySelector('input[type="radio"]');
+                    if (radioInside) radioInside.checked = true;
+                 }
+
+
             } catch (error) {
                 console.error("Lỗi khi tải địa chỉ:", error);
-                addressListContainer.innerHTML = '<p class="text-danger">Lỗi tải danh sách địa chỉ.</p>';
+                addressListContainer.innerHTML = `<p class="text-danger">Lỗi tải danh sách địa chỉ: ${error.message}</p>`;
+                if(placeOrderButton) placeOrderButton.disabled = true;
             }
         }
 
-        // Hàm fetchOrderSummary giữ nguyên logic nhưng cập nhật cả tổng tiền
+        // === selectAddressItem (Giữ nguyên) ===
+        function selectAddressItem(selectedDiv) {
+            document.querySelectorAll('.address-list-item').forEach(item => item.classList.remove('selected'));
+            selectedDiv.classList.add('selected');
+            const radioInside = selectedDiv.querySelector('input[type="radio"]');
+            if (radioInside) radioInside.checked = true;
+        }
+
+        // === selectPaymentItem (Giữ nguyên) ===
+        function selectPaymentItem(selectedDiv) {
+            document.querySelectorAll('.payment-method-item').forEach(item => item.classList.remove('selected'));
+            selectedDiv.classList.add('selected');
+            const radioInside = selectedDiv.querySelector('input[type="radio"]');
+            if (radioInside) radioInside.checked = true;
+        }
+
+        // === fetchOrderSummary (Giữ nguyên) ===
         async function fetchOrderSummary() {
-            if (!orderSummaryContainer) return;
+            if (!orderSummaryContainer || !summarySubtotalEl || !summaryTotalEl) return;
             orderSummaryContainer.innerHTML = '<p class="text-center text-muted">Đang tải tóm tắt...</p>';
+            summarySubtotalEl.textContent = '...';
+            summaryTotalEl.textContent = '...';
+             if(placeOrderButton) placeOrderButton.disabled = true;
+
             try {
                 const response = await fetch('/api/cart', { headers: { 'Authorization': `Bearer ${token}` } });
-                 if (!response.ok) throw new Error('Không thể tải giỏ hàng');
+                 if (!response.ok) throw new Error(`Không thể tải giỏ hàng (${response.status})`);
                 const items = await response.json();
+                console.log("Cart items loaded:", items);
 
                 let total = 0;
-                orderSummaryContainer.innerHTML = ''; // Xóa loading
+                orderSummaryContainer.innerHTML = '';
                  if (items.length === 0) {
                      orderSummaryContainer.innerHTML = '<p class="text-center text-muted">Giỏ hàng trống.</p>';
-                     document.querySelector('button[onclick="placeOrder()"]').disabled = true; // Vô hiệu hóa nút Đặt hàng
+                     summarySubtotalEl.textContent = '0 đ';
+                     summaryTotalEl.textContent = '0 đ';
+                     if(placeOrderButton) placeOrderButton.disabled = true;
                      return;
                  }
 
                 items.forEach(item => {
-                    const itemTotal = item.product.price * item.quantity;
+                    const itemTotal = (item.product?.price || 0) * (item.quantity || 0); // Kiểm tra product tồn tại
                     total += itemTotal;
                     orderSummaryContainer.innerHTML += `
                      <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>${item.product.name} (x${item.quantity})</span>
-                        <span class="text-muted">${itemTotal.toLocaleString('vi-VN')} đ</span>
+                        <span class="small">${item.product?.name || 'Sản phẩm lỗi'} (x${item.quantity || 0})</span>
+                        <span class="text-muted small">${itemTotal.toLocaleString('vi-VN')} đ</span>
                     </div>`;
                 });
-                currentTotalAmount = total; // Lưu tổng tiền vào biến global
-                // Cập nhật tổng tiền ở phần tóm tắt riêng
-                if(summarySubtotalEl) summarySubtotalEl.textContent = total.toLocaleString('vi-VN') + ' đ';
-                if(summaryTotalEl) summaryTotalEl.textContent = total.toLocaleString('vi-VN') + ' đ'; // Giả sử phí VC = 0
-                document.querySelector('button[onclick="placeOrder()"]').disabled = false; // Bật nút Đặt hàng
+                currentTotalAmount = total;
+                const formattedTotal = total.toLocaleString('vi-VN') + ' đ';
+                summarySubtotalEl.textContent = formattedTotal;
+                summaryTotalEl.textContent = formattedTotal;
+                if(placeOrderButton) placeOrderButton.disabled = false;
             } catch(error){
                  console.error("Lỗi khi tải tóm tắt đơn hàng:", error);
-                 orderSummaryContainer.innerHTML = '<p class="text-danger">Lỗi tải tóm tắt đơn hàng.</p>';
-                 document.querySelector('button[onclick="placeOrder()"]').disabled = true;
+                 orderSummaryContainer.innerHTML = `<p class="text-danger">Lỗi tải tóm tắt: ${error.message}</p>`;
+                 summarySubtotalEl.textContent = 'Lỗi';
+                 summaryTotalEl.textContent = 'Lỗi';
+                 if(placeOrderButton) placeOrderButton.disabled = true;
             }
         }
 
-        // Hàm placeOrder đã được cập nhật logic
+        // === placeOrder (Giữ nguyên) ===
         async function placeOrder() {
             const selectedAddress = document.querySelector('input[name="address"]:checked');
             const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
-            const placeOrderButton = document.querySelector('button[onclick="placeOrder()"]');
 
-            if (!selectedAddress) {
-                Swal.fire('Lỗi', 'Vui lòng chọn địa chỉ giao hàng.', 'warning');
-                return;
-            }
-            if (!selectedPayment){
-                 Swal.fire('Lỗi', 'Vui lòng chọn phương thức thanh toán.', 'warning');
-                 return;
-            }
+            if (!selectedAddress) { Swal.fire('Thiếu thông tin', 'Vui lòng chọn hoặc thêm địa chỉ giao hàng.', 'warning'); return; }
+            if (!selectedPayment){ Swal.fire('Thiếu thông tin', 'Vui lòng chọn phương thức thanh toán.', 'warning'); return; }
+            if (!placeOrderButton) return;
 
-            placeOrderButton.disabled = true; // Vô hiệu hóa nút khi đang xử lý
-            placeOrderButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+            placeOrderButton.disabled = true;
+            placeOrderButton.classList.add('btn-loading');
 
             try {
                 const response = await fetch('/api/orders/checkout', {
@@ -230,51 +385,45 @@
                     })
                 });
 
-                // Xử lý lỗi từ server (ví dụ: hết hàng,...)
                 if (!response.ok) {
                     let errorMsg = "Đặt hàng thất bại.";
-                    try {
-                         const errorData = await response.json(); // Thử đọc JSON lỗi
-                         errorMsg = errorData.message || errorData || errorMsg; // Lấy message nếu có
-                    } catch (e) {
-                         errorMsg = await response.text() || errorMsg; // Đọc text nếu không phải JSON
-                    }
+                    try { const errorData = await response.json(); errorMsg = errorData.message || errorData || errorMsg; }
+                    catch (e) { errorMsg = await response.text() || errorMsg; }
                     throw new Error(errorMsg);
                 }
 
                 const result = await response.json();
+                console.log("Checkout response:", result);
 
                 if (result.paymentMethod === 'COD') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Đặt hàng thành công!',
-                        text: 'Đơn hàng của bạn đã được ghi nhận. Cảm ơn bạn đã mua hàng!',
+                     Swal.fire({
+                        icon: 'success', title: 'Đặt hàng thành công!',
+                        text: 'Đơn hàng COD của bạn đã được ghi nhận. Cảm ơn bạn!',
                         confirmButtonText: 'Xem lịch sử đơn hàng'
-                    }).then(() => {
-                        window.location.href = '/order-history';
-                    });
-                } else if (result.paymentMethod === 'SEPAY_QR') {
-                    // Lưu thông tin vào sessionStorage để trang thanh toán có thể lấy
-                    sessionStorage.setItem('paymentInfo', JSON.stringify({
+                     }).then(() => {
+                         window.location.href = window.location.origin + '/order-history';
+                      });
+                } else if (result.paymentMethod === 'SEPAY_QR' && result.paymentCode && result.orderId) {
+                     sessionStorage.setItem('paymentInfo', JSON.stringify({
                         orderId: result.orderId,
                         paymentCode: result.paymentCode,
-                        totalAmount: result.totalAmount // Đảm bảo backend trả về totalAmount
+                        totalAmount: result.totalAmount // Đảm bảo backend trả về đúng tên trường này
                     }));
-                    // Chuyển hướng đến trang thanh toán QR
-                     window.location.href = `/payment/${result.orderId}`;
-                     // Không cần Swal ở đây vì trang payment sẽ xử lý tiếp
+                     window.location.href = window.location.origin + `/payment/${result.orderId}`;
+                } else {
+                     throw new Error("Phản hồi từ server không hợp lệ sau khi đặt hàng.");
                 }
 
             } catch (error) {
                 console.error("Lỗi khi đặt hàng:", error);
                 Swal.fire('Lỗi!', `Không thể đặt hàng: ${error.message}`, 'error');
-                // Bật lại nút nếu có lỗi
-                 placeOrderButton.disabled = false;
+                placeOrderButton.disabled = false;
+                placeOrderButton.classList.remove('btn-loading');
                  placeOrderButton.innerHTML = '<i class="bi bi-bag-check-fill me-2"></i> Đặt hàng';
             }
         }
 
-        // --- Logic cho Modal Thêm địa chỉ ---
+        // === Logic Modal Thêm địa chỉ (Giữ nguyên) ===
          const addAddressFormCheckout = document.getElementById('addAddressFormCheckout');
          if(addAddressFormCheckout){
             addAddressFormCheckout.addEventListener('submit', async function(e) {
@@ -282,12 +431,13 @@
                 const recipientName = document.getElementById('recipientNameCheckout').value;
                 const phoneNumber = document.getElementById('phoneNumberAddressCheckout').value;
                 const fullAddress = document.getElementById('fullAddressCheckout').value;
-                const modalElement = document.getElementById('addAddressModalCheckout');
-                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                const submitButton = this.querySelector('button[type="submit"]');
+                const submitButton = this.querySelector('#saveAddressBtn');
+
+                 if (!recipientName.trim() || !phoneNumber.trim() || !fullAddress.trim()) { Swal.fire('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin địa chỉ.', 'warning'); return; }
+                  if (!/^[0-9]{10,11}$/.test(phoneNumber)) { Swal.fire('Sai định dạng', 'Số điện thoại không hợp lệ.', 'warning'); return; }
 
                  submitButton.disabled = true;
-                 submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+                 submitButton.classList.add('btn-loading');
 
                 try {
                     const response = await fetch('/api/addresses', {
@@ -295,24 +445,22 @@
                         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ recipientName, phoneNumber, fullAddress })
                     });
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(errorText || 'Không thể thêm địa chỉ');
-                    }
-                    Swal.fire('Thành công', 'Thêm địa chỉ mới thành công!', 'success');
-                    await fetchAddresses(); // Tải lại danh sách để hiển thị địa chỉ mới
-                    if(modalInstance) modalInstance.hide(); // Đóng modal
+                    if (!response.ok) { const errorText = await response.text(); throw new Error(errorText || 'Không thể thêm địa chỉ'); }
+                    // Bỏ Swal để tránh làm phiền, chỉ tải lại
+                    await fetchAddresses(); // Tải lại danh sách
+                    if(addAddressModalInstance) addAddressModalInstance.hide(); // Đóng modal
                     this.reset(); // Xóa form
                 } catch (error) {
                     Swal.fire('Lỗi', `Lỗi khi thêm địa chỉ: ${error.message}`, 'error');
                 } finally {
                      submitButton.disabled = false;
-                     submitButton.innerHTML = 'Lưu địa chỉ';
+                     submitButton.classList.remove('btn-loading');
+                     submitButton.innerHTML = '<i class="bi bi-save"></i> Lưu địa chỉ';
                 }
             });
          }
-
     </script>
 </th:block>
 </body>
 </html>
+
