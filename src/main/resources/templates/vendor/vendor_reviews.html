@@ -5,26 +5,499 @@
       layout:decorate="~{layouts/_vendor_layout}">
 <head>
     <title>Quản lý Đánh giá</title>
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-weight: 700;
+        }
+        
+        .review-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .review-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .reviewer-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .reviewer-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .reviewer-details h5 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .review-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.25rem;
+        }
+        
+        .review-meta span {
+            font-size: 0.875rem;
+            color: #666;
+        }
+        
+        .star-rating {
+            color: #ffc107;
+            font-size: 1.1rem;
+        }
+        
+        .star-rating .bi-star {
+            color: #e9ecef;
+        }
+        
+        .review-content {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #444;
+            white-space: pre-wrap;
+        }
+        
+        .review-reply {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+        }
+        
+        .reply-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .reply-content {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        
+        .reply-form {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .reply-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+        
+        .reply-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .reply-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .btn-reply {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-reply:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-reply:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .btn-action {
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary-outline {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .btn-primary-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 3rem;
+        }
+    </style>
 </head>
 <body>
 
 <div layout:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Quản lý Đánh giá</h1>
-        {/* Filters (by product, rating) could go here */}
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-body">
-             <p class="text-muted">Xem và phản hồi đánh giá của khách hàng.</p>
-            {/* List of reviews will go here */}
-            <div class="alert alert-info">Nội dung chức năng Quản lý Đánh giá sẽ được thêm vào đây.</div>
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2"><i class="bi bi-star-fill me-2"></i>Quản lý Đánh giá</h1>
+                <p class="mb-0 mt-2" style="opacity: 0.9;">Xem và phản hồi đánh giá từ khách hàng</p>
+            </div>
+            <button class="btn btn-light" onclick="loadReviews()">
+                <i class="bi bi-arrow-clockwise"></i> Tải lại
+            </button>
         </div>
     </div>
+
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+        </div>
+        <p class="mt-2 text-muted">Đang tải đánh giá...</p>
+    </div>
+
+    <div id="reviewsContainer"></div>
 </div>
 
 <th:block layout:fragment="scripts_body">
-    {/* Page specific scripts will go here */}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const token = localStorage.getItem('jwtToken');
+        let allReviews = [];
+
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) {
+                return parts[0][0] + parts[parts.length - 1][0];
+            }
+            return name[0];
+        }
+
+        function renderStars(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    stars += '<i class="bi bi-star-fill"></i>';
+                } else {
+                    stars += '<i class="bi bi-star"></i>';
+                }
+            }
+            return stars;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderReview(review) {
+            const hasReply = review.vendorReply && 
+                            review.vendorReply !== null && 
+                            review.vendorReply !== 'null' && 
+                            review.vendorReply.trim() !== '';
+            
+            return `
+                <div class="review-card" data-review-id="${review.reviewId}">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">
+                                ${getInitials(review.customerName)}
+                            </div>
+                            <div class="reviewer-details">
+                                <h5>${escapeHtml(review.customerName || 'Khách hàng')}</h5>
+                                <div class="review-meta">
+                                    <span class="star-rating">${renderStars(review.rating)}</span>
+                                    <span><i class="bi bi-clock"></i> ${review.createdAtFormatted || 'N/A'}</span>
+                                    ${review.productName ? `<span><i class="bi bi-box"></i> ${escapeHtml(review.productName)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            ${hasReply 
+                                ? '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Đã phản hồi</span>'
+                                : '<span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Chưa phản hồi</span>'
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="review-content">
+                        <i class="bi bi-quote"></i>
+                        ${escapeHtml(review.comment || 'Không có bình luận')}
+                    </div>
+                    
+                    ${hasReply ? `
+                        <div class="review-reply" id="reply-display-${review.reviewId}">
+                            <div class="reply-header">
+                                <i class="bi bi-reply-fill"></i>
+                                <span>Phản hồi của bạn</span>
+                                <span style="color: #999; font-weight: 400;">• ${review.repliedAtFormatted || 'N/A'}</span>
+                            </div>
+                            <div class="reply-content">${escapeHtml(review.vendorReply)}</div>
+                            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="editReply(${review.reviewId})">
+                                <i class="bi bi-pencil"></i> Sửa
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="mt-3">
+                            <button class="btn-action btn-primary-outline" onclick="showReplyForm(${review.reviewId})">
+                                <i class="bi bi-reply"></i> Phản hồi đánh giá
+                            </button>
+                        </div>
+                    `}
+                    
+                    <div id="reply-form-${review.reviewId}" class="reply-form" style="display: none;">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-chat-dots"></i> Nội dung phản hồi
+                        </label>
+                        <textarea 
+                            id="reply-textarea-${review.reviewId}" 
+                            class="reply-textarea" 
+                            placeholder="Nhập phản hồi của bạn cho khách hàng..."
+                            maxlength="1000">${hasReply ? escapeHtml(review.vendorReply) : ''}</textarea>
+                        <div class="reply-actions">
+                            <button class="btn-reply" onclick="submitReply(${review.reviewId})">
+                                <i class="bi bi-send"></i> ${hasReply ? 'Cập nhật' : 'Gửi phản hồi'}
+                            </button>
+                            <button class="btn-cancel" onclick="hideReplyForm(${review.reviewId})">
+                                <i class="bi bi-x"></i> Hủy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showReplyForm(reviewId) {
+            const form = document.getElementById(`reply-form-${reviewId}`);
+            if (form) {
+                form.style.display = 'block';
+                document.getElementById(`reply-textarea-${reviewId}`).focus();
+            }
+        }
+
+        function hideReplyForm(reviewId) {
+            const form = document.getElementById(`reply-form-${reviewId}`);
+            const display = document.getElementById(`reply-display-${reviewId}`);
+            
+            if (form) form.style.display = 'none';
+            if (display) display.style.display = 'block';
+        }
+
+        function editReply(reviewId) {
+            const display = document.getElementById(`reply-display-${reviewId}`);
+            if (display) display.style.display = 'none';
+            showReplyForm(reviewId);
+        }
+
+        async function submitReply(reviewId) {
+            const textarea = document.getElementById(`reply-textarea-${reviewId}`);
+            const replyContent = textarea.value.trim();
+            
+            if (!replyContent) {
+                Swal.fire('Lỗi', 'Vui lòng nhập nội dung phản hồi', 'warning');
+                return;
+            }
+
+            const form = document.getElementById(`reply-form-${reviewId}`);
+            const submitBtn = form.querySelector('.btn-reply');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang gửi...';
+
+            try {
+                console.log('Sending reply for review:', reviewId);
+                console.log('Reply content:', replyContent);
+                
+                const response = await fetch(`/api/vendor/reviews/${reviewId}/reply`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ replyContent: replyContent })
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    let errorMessage = 'Không thể gửi phản hồi';
+                    try {
+                        const error = await response.json();
+                        errorMessage = error.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = await response.text() || errorMessage;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const updatedReview = await response.json();
+                console.log('Reply sent successfully:', updatedReview);
+                
+                Swal.fire('Thành công', 'Phản hồi đã được gửi thành công!', 'success');
+                
+                // Reload reviews để hiển thị phản hồi mới
+                await loadReviews();
+                
+            } catch (error) {
+                console.error('Error submitting reply:', error);
+                Swal.fire('Lỗi', error.message || 'Lỗi khi gửi phản hồi', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+        async function loadReviews() {
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const reviewsContainer = document.getElementById('reviewsContainer');
+            
+            loadingSpinner.style.display = 'block';
+            reviewsContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/vendor/reviews', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Không thể tải danh sách đánh giá');
+                }
+
+                allReviews = await response.json();
+                console.log('Reviews loaded:', allReviews);
+                
+                loadingSpinner.style.display = 'none';
+                
+                if (allReviews.length === 0) {
+                    reviewsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <h4>Chưa có đánh giá nào</h4>
+                            <p>Chưa có đánh giá nào cho sản phẩm của bạn</p>
+                        </div>
+                    `;
+                } else {
+                    reviewsContainer.innerHTML = allReviews.map(review => renderReview(review)).join('');
+                }
+
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+                loadingSpinner.style.display = 'none';
+                Swal.fire('Lỗi', 'Lỗi khi tải danh sách đánh giá: ' + error.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadReviews);
+    </script>
 </th:block>
 
 </body>
