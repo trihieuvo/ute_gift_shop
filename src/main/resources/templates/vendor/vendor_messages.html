@@ -5,26 +5,476 @@
       layout:decorate="~{layouts/_vendor_layout}">
 <head>
     <title>Tương tác Khách hàng</title>
+    <style>
+        .chat-container {
+            display: flex;
+            height: 70vh;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .conversations-list {
+            width: 30%;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+        }
+        .chat-window {
+            width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            background-color: #fff;
+        }
+        .chat-input-area {
+            padding: 1rem;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 0.5rem;
+            background-color: #f8f9fa;
+        }
+        .message {
+            padding: 0.5rem 1rem;
+            border-radius: 1.25rem;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .message.sent {
+            background-color: #0d6efd;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .message.received {
+            background-color: #e9ecef;
+            color: #212529;
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+        }
+        .message.system {
+            background-color: #fff3cd;
+            color: #664d03;
+            align-self: center;
+            font-size: 0.85rem;
+            font-style: italic;
+            border: 1px dashed #ffc107;
+        }
+        .conversation-item {
+            padding: 1rem;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .conversation-item:hover {
+            background-color: #e9ecef;
+        }
+        .conversation-item.active {
+            background-color: #cfe2ff;
+        }
+        .conversation-item .name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .conversation-item .last-message {
+            font-size: 0.85rem;
+            color: #6c757d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conversation-item .unread-badge {
+            float: right;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-connected { background-color: #28a745; }
+        .status-disconnected { background-color: #dc3545; }
+        .status-connecting { background-color: #ffc107; animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 <body>
 
 <div layout:fragment="content">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Tương tác Khách hàng</h1>
-        {/* Maybe a filter for unread messages */}
+        <h1 class="h2"><i class="bi bi-chat-dots-fill me-2"></i>Tương tác Khách hàng</h1>
+        <span id="connection-status" class="badge bg-secondary">
+            <span class="status-indicator status-connecting"></span>Đang kết nối...
+        </span>
     </div>
 
     <div class="card shadow-sm">
-        <div class="card-body">
-            <p class="text-muted">Trả lời tin nhắn và câu hỏi từ khách hàng.</p>
-            {/* Messaging interface will go here */}
-            <div class="alert alert-info">Nội dung chức năng Tương tác Khách hàng sẽ được thêm vào đây.</div>
+        <div class="card-body p-0">
+            <div class="chat-container">
+                <div class="conversations-list">
+                    <div class="p-3 border-bottom fw-bold d-flex justify-content-between align-items-center">
+                        <span>Cuộc trò chuyện</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadConversations()">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    <div id="conversationsList">
+                        <div class="p-3 text-muted small text-center">Đang tải...</div>
+                    </div>
+                </div>
+
+                <div class="chat-window">
+                    <div class="p-3 border-bottom fw-bold bg-light" id="chat-partner-name">
+                        (Chọn một cuộc trò chuyện)
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message system">Đang chờ kết nối WebSocket...</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="messageInput" class="form-control" placeholder="Nhập tin nhắn..." disabled>
+                        <button id="sendButton" class="btn btn-primary" disabled>
+                            <i class="bi bi-send-fill"></i> Gửi
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <th:block layout:fragment="scripts_body">
-    {/* Page specific scripts will go here */}
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const connectionStatus = document.getElementById('connection-status');
+        const conversationsList = document.getElementById('conversationsList');
+        const chatPartnerName = document.getElementById('chat-partner-name');
+        
+        let sock = null;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 10;
+        let reconnectDelay = 3000;
+        let pingInterval = null;
+        let currentUserId = null;
+        let currentConversation = null;
+        let currentPartnerId = null;
+
+        function updateStatus(status, state) {
+            let statusClass = 'bg-secondary';
+            let indicatorClass = 'status-connecting';
+            
+            switch(state) {
+                case 'connected':
+                    statusClass = 'bg-success';
+                    indicatorClass = 'status-connected';
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    break;
+                case 'disconnected':
+                    statusClass = 'bg-danger';
+                    indicatorClass = 'status-disconnected';
+                    messageInput.disabled = true;
+                    sendButton.disabled = true;
+                    break;
+                case 'connecting':
+                    statusClass = 'bg-warning';
+                    indicatorClass = 'status-connecting';
+                    messageInput.disabled = true;
+                    sendButton.disabled = true;
+                    break;
+            }
+            
+            connectionStatus.innerHTML = `<span class="status-indicator ${indicatorClass}"></span>${status}`;
+            connectionStatus.className = `badge ${statusClass}`;
+        }
+
+        function addMessage(type, sender, content) {
+            const messageDiv = document.createElement('div');
+            let messageClass = 'message';
+            let displayContent = '';
+
+            if (type === 'SYSTEM') {
+                messageClass += ' system';
+                displayContent = content;
+            } else if (type === 'PING' || type === 'PONG') {
+                return;
+            } else {
+                if (sender && sender.includes(currentUserId || 'unknown')) {
+                    messageClass += ' sent';
+                    displayContent = content;
+                } else {
+                    messageClass += ' received';
+                    displayContent = `<strong>${sender || 'Unknown'}:</strong> ${content}`;
+                }
+            }
+
+            messageDiv.className = messageClass;
+            messageDiv.innerHTML = displayContent;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function loadConversations() {
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch('/api/chat/conversations', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load conversations');
+                
+                const conversations = await response.json();
+                
+                if (conversations.length === 0) {
+                    conversationsList.innerHTML = '<div class="p-3 text-muted small text-center">Chưa có cuộc trò chuyện nào</div>';
+                    return;
+                }
+                
+                conversationsList.innerHTML = conversations.map(conv => `
+                    <div class="conversation-item" onclick="selectConversation('${conv.conversationId}', '${conv.partnerName}', ${conv.partnerId})">
+                        <div class="name">${conv.partnerName}</div>
+                        <div class="last-message">${conv.lastMessage || 'Chưa có tin nhắn'}</div>
+                        ${conv.unreadCount > 0 ? `<span class="unread-badge">${conv.unreadCount}</span>` : ''}
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                conversationsList.innerHTML = '<div class="p-3 text-danger small text-center">Lỗi tải danh sách</div>';
+            }
+        }
+
+        async function selectConversation(conversationId, partnerName, partnerId) {
+            currentConversation = conversationId;
+            currentPartnerId = partnerId;
+            chatPartnerName.textContent = partnerName;
+            
+            // Remove active class from all items
+            document.querySelectorAll('.conversation-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Load message history
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch(`/api/chat/messages/${conversationId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load messages');
+                
+                const messages = await response.json();
+                
+                // Clear current messages
+                chatMessages.innerHTML = '';
+                
+                // Display all messages
+                messages.forEach(msg => {
+                    const isSent = msg.senderId == currentUserId;
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+                    messageDiv.textContent = msg.content;
+                    chatMessages.appendChild(messageDiv);
+                });
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Mark messages as read
+                await fetch(`/api/chat/messages/read?receiverId=${currentUserId}&conversationId=${conversationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                addMessage('SYSTEM', null, 'Lỗi tải tin nhắn');
+            }
+        }
+
+        function startPingInterval() {
+            if (pingInterval) clearInterval(pingInterval);
+            
+            pingInterval = setInterval(() => {
+                if (sock && sock.readyState === SockJS.OPEN) {
+                    try {
+                        sock.send(JSON.stringify({
+                            type: 'PING',
+                            timestamp: Date.now()
+                        }));
+                        console.log('Sent ping');
+                    } catch (e) {
+                        console.error('Error sending ping:', e);
+                    }
+                }
+            }, 30000);
+        }
+
+        function stopPingInterval() {
+            if (pingInterval) {
+                clearInterval(pingInterval);
+                pingInterval = null;
+            }
+        }
+
+        function connectWebSocket() {
+            if (sock && sock.readyState === SockJS.OPEN) {
+                console.log('Already connected');
+                return;
+            }
+
+            updateStatus('Đang kết nối...', 'connecting');
+            console.log('Attempting to connect to WebSocket...');
+
+            try {
+                sock = new SockJS('/ws/vendor/chat');
+
+                sock.onopen = function() {
+                    console.log('WebSocket connection opened');
+                    reconnectAttempts = 0;
+                    updateStatus('Đã kết nối', 'connected');
+                    addMessage('SYSTEM', null, 'Đã kết nối với máy chủ chat.');
+                    startPingInterval();
+                    loadConversations(); // Load conversations after connection
+                };
+
+                sock.onmessage = function(e) {
+                    try {
+                        const msgData = JSON.parse(e.data);
+                        console.log('Message received:', msgData);
+                        
+                        if (msgData.type !== 'PING' && msgData.type !== 'PONG') {
+                            addMessage(msgData.type || 'MESSAGE', msgData.sender, msgData.content);
+                            
+                            // Reload conversations list if new message
+                            if (msgData.type === 'MESSAGE') {
+                                loadConversations();
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Failed to parse message JSON:", error);
+                        addMessage('SYSTEM', null, `Lỗi nhận dữ liệu: ${e.data}`);
+                    }
+                };
+
+                sock.onclose = function(e) {
+                    console.log('WebSocket connection closed', e);
+                    stopPingInterval();
+                    updateStatus('Đã ngắt kết nối', 'disconnected');
+                    
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        const delay = reconnectDelay * Math.min(reconnectAttempts, 5);
+                        addMessage('SYSTEM', null, `Đã mất kết nối. Thử kết nối lại sau ${delay/1000}s... (Lần ${reconnectAttempts}/${maxReconnectAttempts})`);
+                        setTimeout(connectWebSocket, delay);
+                    } else {
+                        addMessage('SYSTEM', null, 'Không thể kết nối lại. Vui lòng tải lại trang.');
+                    }
+                };
+
+                sock.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    stopPingInterval();
+                    updateStatus('Lỗi kết nối', 'disconnected');
+                };
+                
+            } catch (error) {
+                console.error('Error creating WebSocket:', error);
+                updateStatus('Lỗi kết nối', 'disconnected');
+                addMessage('SYSTEM', null, `Lỗi tạo kết nối: ${error.message}`);
+            }
+        }
+
+        function sendMessage() {
+            if (!currentConversation || !currentPartnerId) {
+                Swal.fire('Lỗi', 'Vui lòng chọn cuộc trò chuyện trước', 'warning');
+                return;
+            }
+            
+            if (sock && sock.readyState === SockJS.OPEN) {
+                const message = messageInput.value.trim();
+                if (message) {
+                    try {
+                        const messageData = {
+                            type: 'MESSAGE',
+                            content: message,
+                            senderId: currentUserId,
+                            receiverId: currentPartnerId,
+                            senderRole: 'VENDOR',
+                            timestamp: Date.now()
+                        };
+                        
+                        sock.send(JSON.stringify(messageData));
+                        console.log('Message sent:', messageData);
+                        
+                        // Display sent message immediately
+                        addMessage('MESSAGE', currentUserId, message);
+                        messageInput.value = '';
+                    } catch (e) {
+                        console.error('Error sending message:', e);
+                        addMessage('SYSTEM', null, 'Lỗi gửi tin nhắn. Vui lòng thử lại.');
+                    }
+                }
+            } else {
+                console.error('WebSocket is not connected.');
+                addMessage('SYSTEM', null, 'Chưa kết nối đến máy chủ chat.');
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initial connection
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('jwtToken');
+            if (token) {
+                // Extract user ID from token
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    currentUserId = payload.userId || payload.sub || payload.username || 'vendor';
+                } catch (e) {
+                    currentUserId = 'vendor';
+                }
+                connectWebSocket();
+            } else {
+                updateStatus('Chưa đăng nhập', 'disconnected');
+                addMessage('SYSTEM', null, 'Vui lòng đăng nhập để sử dụng chat.');
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopPingInterval();
+            if (sock && sock.readyState === SockJS.OPEN) {
+                sock.close();
+            }
+        });
+    </script>
 </th:block>
 
 </body>
