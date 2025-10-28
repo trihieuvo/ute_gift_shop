@@ -274,7 +274,7 @@
             const stock = productDto.stockQuantity != null ? productDto.stockQuantity : 0;
 
             let statusBadge;
-            if (productDto.isActive) {
+            if (productDto.active) {
                 statusBadge = `<span class="badge bg-success">Đang bán</span>`;
             } else {
                 statusBadge = `<span class="badge bg-secondary">Đã ẩn</span>`;
@@ -512,7 +512,7 @@
                 stockQuantity: parseInt(productStockInput.value),
                 imageUrls: finalImageUrls,
                 description: productDescriptionInput.value || null,
-                isActive: productIsActiveInput.checked
+                active: productIsActiveInput.checked
             };
 
             if (!requestBody.name || !requestBody.categoryId || isNaN(requestBody.price) || isNaN(requestBody.stockQuantity)) {

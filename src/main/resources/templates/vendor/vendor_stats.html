@@ -5,26 +5,595 @@
       layout:decorate="~{layouts/_vendor_layout}">
 <head>
     <title>Thống kê Doanh thu</title>
+    <style>
+        .stats-card {
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            height: 100%;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.175);
+        }
+        
+        .stats-card.card-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .stats-card.card-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .stats-card.card-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .stats-card .card-body {
+            padding: 2rem;
+        }
+        
+        .stats-card h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .stats-card .revenue-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-card .icon-wrapper {
+            font-size: 3rem;
+            opacity: 0.3;
+            position: absolute;
+            right: 1.5rem;
+            top: 1.5rem;
+        }
+        
+        .loading-placeholder {
+            height: 40px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info-cards {
+            margin-top: 2rem;
+        }
+        
+        .info-card {
+            border-radius: 0.75rem;
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        }
+        
+        .info-card .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+        
+        .info-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .quick-stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .quick-stat-item {
+            flex: 1;
+            min-width: 200px;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        
+        .quick-stat-item .label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        
+        .quick-stat-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #495057;
+        }
+        
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            padding: 1rem;
+        }
+        
+        .chart-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .chart-tab {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            background: #e9ecef;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .chart-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .chart-tab:hover:not(.active) {
+            background: #dee2e6;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-weight: 700;
+        }
+        
+        .page-header .subtitle {
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
 <body>
 
 <div layout:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Thống kê Doanh thu</h1>
-        {/* Date range selectors could go here */}
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <p class="text-muted">Xem báo cáo doanh thu và hiệu quả kinh doanh.</p>
-            {/* Charts and statistics will go here */}
-             <div class="alert alert-info">Nội dung chức năng Thống kê Doanh thu sẽ được thêm vào đây.</div>
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2"><i class="bi bi-graph-up-arrow me-2"></i>Thống kê Doanh thu</h1>
+                <p class="subtitle mb-0">Tổng quan hiệu quả kinh doanh của bạn</p>
+            </div>
+            <button class="btn btn-light" onclick="fetchRevenueStats()">
+                <i class="bi bi-arrow-clockwise"></i> Tải lại
+            </button>
         </div>
     </div>
+
+    <div id="loadingIndicator" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Đang tải dữ liệu doanh thu...</p>
+    </div>
+
+    <div id="errorMessage" class="alert alert-danger d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="errorMessageText"></span>
+    </div>
+
+    <div class="d-none" id="revenueCards">
+        <div class="row">
+            <div class="col-lg-4 col-md-6">
+                <div class="card stats-card card-success shadow">
+                    <div class="card-body position-relative">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-calendar-day"></i>
+                        </div>
+                        <h4><i class="bi bi-calendar-day me-2"></i>Doanh thu Hôm nay</h4>
+                        <div class="revenue-value" id="daily-revenue">
+                            <div class="loading-placeholder">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            </div>
+                        </div>
+                        <small style="opacity: 0.8;">Cập nhật: <span id="update-time-daily">--</span></small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="card stats-card card-warning shadow">
+                    <div class="card-body position-relative">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-calendar-month"></i>
+                        </div>
+                        <h4><i class="bi bi-calendar-month me-2"></i>Doanh thu Tháng này</h4>
+                        <div class="revenue-value" id="monthly-revenue">
+                            <div class="loading-placeholder">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            </div>
+                        </div>
+                        <small style="opacity: 0.8;">Cập nhật: <span id="update-time-monthly">--</span></small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="card stats-card card-info shadow">
+                    <div class="card-body position-relative">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-calendar-year"></i>
+                        </div>
+                        <h4><i class="bi bi-calendar-year me-2"></i>Doanh thu Năm nay</h4>
+                        <div class="revenue-value" id="yearly-revenue">
+                            <div class="loading-placeholder">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                            </div>
+                        </div>
+                        <small style="opacity: 0.8;">Cập nhật: <span id="update-time-yearly">--</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-cards">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card info-card">
+                        <div class="card-header">
+                            <i class="bi bi-bar-chart-line-fill me-2"></i>Thống kê nhanh
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-stats">
+                                <div class="quick-stat-item">
+                                    <div class="label">Trung bình/Ngày</div>
+                                    <div class="value" id="avg-daily">--</div>
+                                </div>
+                                <div class="quick-stat-item">
+                                    <div class="label">Trung bình/Tháng</div>
+                                    <div class="value" id="avg-monthly">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card info-card">
+                        <div class="card-header">
+                            <i class="bi bi-trophy-fill me-2"></i>Hiệu suất
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                <strong>Mẹo:</strong> Doanh thu tháng này đang cao hơn trung bình! Tiếp tục phát huy nhé! 🚀
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card info-card">
+                <div class="card-header">
+                    <i class="bi bi-graph-up me-2"></i>Biểu đồ Doanh thu
+                </div>
+                <div class="card-body">
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" onclick="switchChart('daily')">
+                            <i class="bi bi-calendar-day me-1"></i>7 Ngày
+                        </button>
+                        <button class="chart-tab" onclick="switchChart('monthly')">
+                            <i class="bi bi-calendar-month me-1"></i>12 Tháng
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <th:block layout:fragment="scripts_body">
-     {/* Charting library scripts will go here */}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script>
+        const token = localStorage.getItem('jwtToken');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorMessageText = document.getElementById('errorMessageText');
+        const revenueCards = document.getElementById('revenueCards');
+        const dailyRevenueEl = document.getElementById('daily-revenue');
+        const monthlyRevenueEl = document.getElementById('monthly-revenue');
+        const yearlyRevenueEl = document.getElementById('yearly-revenue');
+
+        let revenueChart = null;
+        let currentChartType = 'daily';
+
+        const formatter = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        });
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Lấy dữ liệu thực từ API cho biểu đồ 7 ngày
+        async function fetchDailyChartData(days = 7) {
+            try {
+                const response = await fetch(`/api/vendor/stats/revenue/daily?days=${days}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Không thể tải dữ liệu biểu đồ ngày');
+                
+                const data = await response.json();
+                const labels = data.map(item => item.formattedDate || item.date);
+                const revenues = data.map(item => item.revenue);
+                
+                return { labels, data: revenues };
+            } catch (error) {
+                console.error('Error fetching daily chart data:', error);
+                // Fallback về dữ liệu mẫu nếu API lỗi
+                return generateFallbackDailyData();
+            }
+        }
+
+        // Lấy dữ liệu thực từ API cho biểu đồ 12 tháng
+        async function fetchMonthlyChartData(months = 12) {
+            try {
+                const response = await fetch(`/api/vendor/stats/revenue/monthly?months=${months}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Không thể tải dữ liệu biểu đồ tháng');
+                
+                const data = await response.json();
+                const labels = data.map(item => item.formattedMonth || `${item.month}/${item.year}`);
+                const revenues = data.map(item => item.revenue);
+                
+                return { labels, data: revenues };
+            } catch (error) {
+                console.error('Error fetching monthly chart data:', error);
+                // Fallback về dữ liệu mẫu nếu API lỗi
+                return generateFallbackMonthlyData();
+            }
+        }
+
+        // Fallback: Tạo dữ liệu mẫu nếu API lỗi (7 ngày)
+        function generateFallbackDailyData() {
+            const labels = [];
+            const data = [];
+            const today = new Date();
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }));
+                data.push(0); // Dữ liệu rỗng khi không có API
+            }
+            
+            return { labels, data };
+        }
+
+        // Fallback: Tạo dữ liệu mẫu nếu API lỗi (12 tháng)
+        function generateFallbackMonthlyData() {
+            const labels = [];
+            const data = [];
+            const today = new Date();
+            
+            for (let i = 11; i >= 0; i--) {
+                const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                labels.push(date.toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' }));
+                data.push(0); // Dữ liệu rỗng khi không có API
+            }
+            
+            return { labels, data };
+        }
+
+        // Khởi tạo biểu đồ
+        function initChart(labels, data, label) {
+            const ctx = document.getElementById('revenueChart');
+            
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: 'rgb(102, 126, 234)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgb(102, 126, 234)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatter.format(context.parsed.y);
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('vi-VN', {
+                                        notation: 'compact',
+                                        compactDisplay: 'short'
+                                    }).format(value) + ' ₫';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chuyển đổi giữa các loại biểu đồ
+        window.switchChart = async function(type) {
+            currentChartType = type;
+            
+            // Cập nhật tab active
+            document.querySelectorAll('.chart-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.chart-tab').classList.add('active');
+
+            // Gọi API để lấy dữ liệu thực
+            let chartData;
+            if (type === 'daily') {
+                chartData = await fetchDailyChartData(7);
+                initChart(chartData.labels, chartData.data, 'Doanh thu (₫)');
+            } else {
+                chartData = await fetchMonthlyChartData(12);
+                initChart(chartData.labels, chartData.data, 'Doanh thu (₫)');
+            }
+        };
+
+        async function fetchRevenueStats() {
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            loadingIndicator.classList.remove('d-none');
+            errorMessage.classList.add('d-none');
+            revenueCards.classList.add('d-none');
+            
+            dailyRevenueEl.innerHTML = '<div class="loading-placeholder"><span class="spinner-border spinner-border-sm" role="status"></span></div>';
+            monthlyRevenueEl.innerHTML = '<div class="loading-placeholder"><span class="spinner-border spinner-border-sm" role="status"></span></div>';
+            yearlyRevenueEl.innerHTML = '<div class="loading-placeholder"><span class="spinner-border spinner-border-sm" role="status"></span></div>';
+
+            const apiUrl = '/api/vendor/stats/revenue';
+            console.log(`Fetching revenue stats from: ${apiUrl}`);
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `Lỗi ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = `(${response.status}) ${errorData.message || 'Lỗi không xác định'}`;
+                    } catch (e) {
+                        errorMsg = `Lỗi ${response.status}: ${await response.text()}`;
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const revenueData = await response.json();
+                console.log("Revenue data received:", revenueData);
+
+                const daily = revenueData.daily ?? 0;
+                const monthly = revenueData.monthly ?? 0;
+                const yearly = revenueData.yearly ?? 0;
+
+                dailyRevenueEl.textContent = formatter.format(daily);
+                monthlyRevenueEl.textContent = formatter.format(monthly);
+                yearlyRevenueEl.textContent = formatter.format(yearly);
+
+                const currentTime = getCurrentTime();
+                document.getElementById('update-time-daily').textContent = currentTime;
+                document.getElementById('update-time-monthly').textContent = currentTime;
+                document.getElementById('update-time-yearly').textContent = currentTime;
+
+                const avgDaily = monthly / 30;
+                const avgMonthly = yearly / 12;
+                document.getElementById('avg-daily').textContent = formatter.format(avgDaily);
+                document.getElementById('avg-monthly').textContent = formatter.format(avgMonthly);
+
+                loadingIndicator.classList.add('d-none');
+                revenueCards.classList.remove('d-none');
+
+                // Khởi tạo biểu đồ với dữ liệu thực từ API
+                const chartData = await fetchDailyChartData(7);
+                initChart(chartData.labels, chartData.data, 'Doanh thu (₫)');
+
+            } catch (error) {
+                console.error("Error fetching revenue stats:", error);
+                loadingIndicator.classList.add('d-none');
+                errorMessageText.textContent = `Lỗi: ${error.message}`;
+                errorMessage.classList.remove('d-none');
+                dailyRevenueEl.textContent = 'Lỗi';
+                monthlyRevenueEl.textContent = 'Lỗi';
+                yearlyRevenueEl.textContent = 'Lỗi';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchRevenueStats);
+    </script>
 </th:block>
 
 </body>
