@@ -62,4 +62,9 @@ public class VendorViewController {
          model.addAttribute("activePage", "messages");
         return "vendor/vendor_messages"; // <-- Update file name
     }
+    @GetMapping("/register")
+    public String showRegisterShopPage(Model model) {
+        model.addAttribute("activePage", "register"); // Đặt activePage nếu cần
+        return "vendor/vendor_register_shop"; // Trỏ đến file HTML mới
+    }
 }

@@ -1,10 +1,12 @@
 package com.utegiftshop.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
-import com.utegiftshop.entity.Product;
-import java.util.List; // <-- BỔ SUNG
-import java.util.Optional; // <-- BỔ SUNG
+import org.springframework.data.jpa.repository.JpaRepository; // <-- BỔ SUNG
+
+import com.utegiftshop.entity.Product; // <-- BỔ SUNG
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     
@@ -17,4 +19,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      * BỔ SUNG: Tìm một sản phẩm cụ thể theo ID VÀ ID cửa hàng (dùng để kiểm tra bảo mật)
      */
     Optional<Product> findByIdAndShopId(Long productId, Long shopId);
+    List<Product> findByCategoryIdIn(List<Integer> categoryIds);
+    
+    // Lọc theo khoảng giá
+    List<Product> findByPriceBetween(BigDecimal minPrice, BigDecimal maxPrice);
+
+    // Lọc theo danh mục VÀ khoảng giá
+    List<Product> findByCategoryIdInAndPriceBetween(List<Integer> categoryIds, BigDecimal minPrice, BigDecimal maxPrice);
+    //Tìm kiếm theo tên sản phẩm (dùng cho chức năng tìm kiếm)
+    List<Product> findByNameContainingIgnoreCase(String name);
 }

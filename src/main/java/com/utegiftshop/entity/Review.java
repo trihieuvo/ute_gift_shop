@@ -47,4 +47,12 @@ public class Review {
 
     @Column(name = "created_at", updatable = false)
     private Timestamp createdAt = new Timestamp(System.currentTimeMillis());
+    
+    @Column(name = "updated_at")
+        private Timestamp updatedAt; // Sẽ được cập nhật khi người dùng sửa đánh giá
+
+    @Column(name = "vendor_reply", columnDefinition = "TEXT", nullable = true)
+    private String vendorReply; // Nội dung phản hồi của vendor
+    @Column(name = "replied_at", nullable = true)
+    private Timestamp repliedAt;
 }

@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/applications")
-@PreAuthorize("hasAuthority('Admin')") // Chỉ Admin mới được truy cập
 public class AdminApplicationController {
 
     @Autowired private RoleApplicationRepository applicationRepository;

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Chi tiết sản phẩm</title>
+    <style>
+        /* CSS cho gallery ảnh */
+        .product-gallery-main { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
+        .product-gallery-thumbnails { display: flex; gap: 10px; flex-wrap: wrap; }
+        .thumbnail-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.3s; }
+        .thumbnail-img.active { border-color: #0d6efd; }
+
+        /* CSS cho sidebar danh mục - UPDATED */
+        .category-sidebar { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1); position: sticky; top: 90px; z-index: 100; }
+        .category-sidebar .nav-link, .category-sidebar .dropdown-item { color: #333; cursor: pointer; font-weight: 500; }
+        .category-sidebar .nav-item .nav-link:hover, 
+        .category-sidebar .nav-item .nav-link.active:hover,
+        .category-sidebar .dropdown-item:hover { 
+            color: #0d6efd; 
+            background-color: #f8f9fa; 
+        }
+        .category-sidebar .nav-link.active, .category-sidebar .dropdown-item.active { color: #fff; background-color: #0d6efd; border-radius: 0.25rem; }
+        .category-sidebar .dropdown-menu { border: none; box-shadow: 0 4px 6px rgba(0,0,0,.1); padding: 0.5rem 0; }
+        .category-sidebar .dropdown-item { padding: 0.5rem 1rem; }
+
+        /* --- CSS CHO DROPDOWN KHI HOVER (Dropdown ngang - Fixed UX) --- */
+        .category-sidebar .nav-item.dropdown {
+             position: relative;
+             z-index: 1002;
+        }
+        .category-sidebar .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%;
+            min-width: 200px;
+            z-index: 1003;
+            margin-left: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+            pointer-events: none;
+        }
+        
+        /* Tạo vùng cầu nối invisible */
+        .category-sidebar .nav-item.dropdown::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 100%;
+            width: 0.5rem;
+            height: 100%;
+            z-index: 1002;
+        }
+        
+        /* Hiển thị menu con khi hover */
+        .category-sidebar .nav-item.dropdown:hover > .dropdown-menu,
+        .category-sidebar .dropdown-menu:hover {
+            display: block;
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 0s;
+            pointer-events: auto;
+        }
+
+        /* Đảm bảo dropdown-toggle có mũi tên */
+        .category-sidebar .nav-link.dropdown-toggle {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+        }
+        
+        .category-sidebar .nav-link.dropdown-toggle::after {
+            content: '›';
+            border: none;
+            margin-left: auto;
+            font-size: 1.2rem;
+        }
+        /* --- KẾT THÚC CSS HOVER --- */
+
+        /* CSS cho đánh giá */
+        .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+        .star-rating input[type="radio"] { display: none; }
+        .star-rating label { font-size: 2rem; color: #ddd; cursor: pointer; transition: color 0.2s; }
+        .star-rating input[type="radio"]:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label { color: #ffc107; }
+
+        .review-item { border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1rem; }
+        .review-item:last-child { border-bottom: none; }
+        .review-stars .bi-star-fill { color: #ffc107; }
+        .review-stars .bi-star { color: #ddd; }
+        .edit-review-btn { font-size: 0.8rem; padding: 0.2rem 0.5rem; }
+        #review-form-container.editing { border: 2px dashed #0d6efd; background-color: #e7f1ff; }
+        #review-form-container.editing h5 { color: #0d6efd; }
+        .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+        .review-user-info { flex-grow: 1; }
+        .review-actions { flex-shrink: 0; margin-left: 1rem; text-align: right; }
+        .review-meta { font-size: 0.8rem; color: #6c757d; margin-top: 0.25rem; }
+        .vendor-reply { margin-top: 1rem; padding: 0.75rem 1rem; background-color: #f0f8ff; border-left: 4px solid #0d6efd; border-radius: 4px; }
+        .vendor-reply strong { color: #0a58ca; }
+        .vendor-reply p { margin-bottom: 0.25rem; font-size: 0.9rem; }
+        .vendor-reply .reply-time { font-size: 0.75rem; color: #6c757d; display: block; margin-top: 0.25rem; }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="mb-4">
+        <a th:href="@{/home}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Quay lại trang chủ</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="category-sidebar">
+                <h4 class="mb-3">Danh mục</h4>
+                <nav id="category-menu" class="nav flex-column"><p>Đang tải...</p></nav>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div id="product-detail-container">
+                <div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải...</p></div>
+            </div>
+
+            <hr class="my-5">
+            <div class="row">
+                <div class="col-12">
+                    <h3 class="mb-4">Đánh giá sản phẩm</h3>
+
+                    <!-- Form viết/sửa đánh giá -->
+                    <div id="review-form-container" class="card card-body mb-4 d-none">
+                        <h5 id="review-form-title">Viết đánh giá của bạn</h5>
+                        <form id="review-form">
+                            <input type="hidden" id="review-order-detail-id">
+                            <input type="hidden" id="review-id-to-edit">
+                            <div class="mb-3">
+                                <label class="form-label">Xếp hạng của bạn:</label>
+                                <div class="star-rating">
+                                    <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 sao"><i class="bi bi-star-fill"></i></label>
+                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 sao"><i class="bi bi-star-fill"></i></label>
+                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 sao"><i class="bi bi-star-fill"></i></label>
+                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 sao"><i class="bi bi-star-fill"></i></label>
+                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 sao"><i class="bi bi-star-fill"></i></label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="review-comment" class="form-label">Bình luận (tùy chọn):</label>
+                                <textarea id="review-comment" class="form-control" rows="4" placeholder="Sản phẩm này tuyệt vời..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="submit-review-btn">Gửi đánh giá</button>
+                            <button type="button" class="btn btn-secondary d-none" id="cancel-edit-btn" onclick="cancelEditReview()">Hủy chỉnh sửa</button>
+                        </form>
+                    </div>
+
+                    <!-- Thông báo điều kiện đánh giá -->
+                    <div id="review-eligibility-message" class="alert alert-info d-none"></div>
+
+                    <!-- Danh sách đánh giá -->
+                    <div id="review-list-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const productId = /*[[${productId}]]*/ '0';
+        const token = localStorage.getItem('jwtToken');
+        let currentUserId = null;
+        let allReviewsData = [];
+        /*]]>*/
+
+        // === DOM ELEMENTS ===
+        const productDetailContainer = document.getElementById('product-detail-container');
+        const categoryMenu = document.getElementById('category-menu');
+        const reviewFormContainer = document.getElementById('review-form-container');
+        const reviewEligibilityMsg = document.getElementById('review-eligibility-message');
+        const reviewListContainer = document.getElementById('review-list-container');
+        const reviewForm = document.getElementById('review-form');
+        const reviewFormTitle = document.getElementById('review-form-title');
+        const reviewIdToEditInput = document.getElementById('review-id-to-edit');
+        const submitReviewBtn = document.getElementById('submit-review-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const orderDetailIdInput = document.getElementById('review-order-detail-id');
+        const reviewCommentInput = document.getElementById('review-comment');
+        const ratingInputs = document.querySelectorAll('input[name="rating"]');
+
+        // === INITIALIZATION ===
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCurrentUserId();
+            fetchProductDetails();
+            fetchAndDisplayCategories();
+            fetchAndRenderReviews();
+            checkReviewEligibility();
+
+            reviewForm.addEventListener('submit', handleReviewSubmit);
+        });
+
+        async function fetchCurrentUserId() {
+            if (!token) return;
+            try {
+                const response = await fetch('/api/reviews/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.authenticated) {
+                        currentUserId = data.userId;
+                        console.log("Current User ID:", currentUserId);
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching current user ID:", e);
+            }
+        }
+
+        // ===============================================
+        // SECTION 1: PRODUCT DETAILS & CORE ACTIONS
+        // ===============================================
+        async function fetchProductDetails() {
+             try {
+                 const response = await fetch(`/api/products/${productId}`);
+                 if (!response.ok) throw new Error('Không tìm thấy sản phẩm');
+                 const product = await response.json();
+                 renderProductDetails(product);
+             } catch (error) {
+                 productDetailContainer.innerHTML = `<p class="text-danger text-center">${error.message}</p>`;
+             }
+         }
+
+         function renderProductDetails(product) {
+             document.title = product.name;
+             let galleryHtml = '<p>Không có hình ảnh.</p>';
+             if (product.images && product.images.length > 0) {
+                 const mainImage = product.images[0].imageUrl;
+                 const thumbnails = product.images.map((img, index) => `
+                     <img src="${img.imageUrl}" alt="Thumbnail ${index+1}" class="thumbnail-img ${index === 0 ? 'active' : ''}" onclick="changeMainImage(this, '${img.imageUrl}')">
+                 `).join('');
+                 galleryHtml = `
+                     <img src="${mainImage}" id="main-product-image" class="product-gallery-main" alt="Ảnh chính">
+                     <div class="product-gallery-thumbnails">${thumbnails}</div>
+                 `;
+             }
+             productDetailContainer.innerHTML = `
+                 <div class="row">
+                     <div class="col-md-6">${galleryHtml}</div>
+                     <div class="col-md-6">
+                         <h2>${product.name}</h2>
+                         <h3 class="text-danger">${product.price.toLocaleString('vi-VN')} đ</h3>
+                         <p class="text-muted">Tình trạng: <strong>Còn hàng</strong></p>
+                         <hr>
+                         <p>${product.description || 'Chưa có mô tả cho sản phẩm này.'}</p>
+                         <hr>
+                         <div class="d-flex align-items-center gap-3">
+                             <label for="quantity">Số lượng:</label>
+                             <input type="number" id="quantity" class="form-control" value="1" min="1" style="width: 80px;">
+                             <button class="btn btn-primary" onclick="addToCart()">
+                                 <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+             `;
+         }
+
+         function changeMainImage(thumbnailElement, newSrc) {
+             const mainImage = document.getElementById('main-product-image');
+             if (mainImage) mainImage.src = newSrc;
+             document.querySelectorAll('.thumbnail-img').forEach(img => img.classList.remove('active'));
+             thumbnailElement.classList.add('active');
+         }
+
+        async function addToCart() {
+             if (!token) {
+                 Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để thêm sản phẩm.', 'info').then(() => window.location.href = '/login');
+                 return;
+             }
+             const quantityInput = document.getElementById('quantity');
+             const quantity = quantityInput ? quantityInput.value : 1;
+             try {
+                 const response = await fetch('/api/cart', {
+                     method: 'POST',
+                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ productId: productId, quantity: parseInt(quantity) })
+                 });
+                 if (response.ok) {
+                     Swal.fire('Thành công!', 'Đã thêm sản phẩm vào giỏ hàng.', 'success');
+                     if (typeof updateCartCount === 'function') updateCartCount();
+                 } else {
+                     const error = await response.text();
+                     Swal.fire('Lỗi!', `Không thể thêm: ${error}`, 'error');
+                 }
+             } catch (e) {
+                 Swal.fire('Lỗi', 'Lỗi mạng khi thêm sản phẩm.', 'error');
+             }
+         }
+
+        // ===============================================
+        // SECTION 2: CATEGORY SIDEBAR - UPDATED WITH HOVER LOGIC
+        // ===============================================
+        async function fetchAndDisplayCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                if (!response.ok) throw new Error('Lỗi khi tải danh mục');
+                const categories = await response.json();
+                categoryMenu.innerHTML = '';
+
+                // Render "Tất cả sản phẩm"
+                categoryMenu.innerHTML += `
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="filterProductsByCategory(null)">
+                            Tất cả sản phẩm
+                        </a>
+                    </li>`;
+
+                // Render categories and subcategories with hover support
+                categories.forEach(category => {
+                    let childrenHtml = '';
+
+                    if (category.children && category.children.length > 0) {
+                        childrenHtml = category.children.map(child => `
+                            <li>
+                                <a class="dropdown-item" onclick="filterProductsByCategory(${child.id})">
+                                    ${escapeHtml(child.name)}
+                                </a>
+                            </li>`).join('');
+                    }
+
+                    if (childrenHtml) {
+                        // Render as dropdown with hover
+                        categoryMenu.innerHTML += `
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" aria-expanded="false">
+                                     ${escapeHtml(category.name)}
+                                </a>
+                                <ul class="dropdown-menu">
+                                    ${childrenHtml}
+                                </ul>
+                            </li>`;
+                    } else {
+                        // Render as simple link
+                        categoryMenu.innerHTML += `
+                            <li class="nav-item">
+                                <a class="nav-link" onclick="filterProductsByCategory(${category.id})">
+                                    ${escapeHtml(category.name)}
+                                </a>
+                            </li>`;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Lỗi tải danh mục:", error);
+                categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
+            }
+        }
+
+        function filterProductsByCategory(categoryId) { 
+            window.location.href = `/home${categoryId ? '?category=' + categoryId : ''}`; 
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // ===============================================
+        // SECTION 3: REVIEWS
+        // ===============================================
+        async function fetchAndRenderReviews() {
+            reviewListContainer.innerHTML = '<p>Đang tải đánh giá...</p>';
+            try {
+                const response = await fetch(`/api/reviews/product/${productId}`);
+                if (!response.ok) throw new Error('Không thể tải đánh giá');
+                allReviewsData = await response.json();
+
+                if (allReviewsData.length === 0) {
+                    reviewListContainer.innerHTML = '<p class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>';
+                    return;
+                }
+
+                reviewListContainer.innerHTML = '';
+                allReviewsData.forEach(review => {
+                    reviewListContainer.innerHTML += renderSingleReview(review);
+                });
+            } catch(e) {
+                reviewListContainer.innerHTML = '<p class="text-danger">Lỗi khi tải đánh giá.</p>';
+            }
+        }
+
+        function renderSingleReview(review) {
+            let starsHtml = Array(5).fill(0).map((_, i) =>
+                `<i class="bi ${i < review.rating ? 'bi-star-fill' : 'bi-star'}"></i>`
+            ).join('');
+
+            const isAuthor = currentUserId && review.userId === currentUserId;
+            const isEdited = !!review.updatedAt;
+
+            const editButtonHtml = isAuthor ?
+                `<button class="btn btn-outline-secondary btn-sm edit-review-btn" onclick="showEditReviewForm(${review.id})">
+                    <i class="bi bi-pencil-fill"></i> Sửa
+                 </button>` : '';
+
+            const vendorReplyHtml = (review.vendorReply && review.vendorReply.trim() !== '') ? `
+                <div class="vendor-reply">
+                    <strong><i class="bi bi-shop-window"></i> Phản hồi từ cửa hàng:</strong>
+                    <p>${review.vendorReply.replace(/\n/g, '<br>')}</p>
+                    <span class="reply-time"><i class="bi bi-clock"></i> ${review.repliedAtFormatted || 'N/A'}</span>
+                </div>
+            ` : '';
+
+            return `
+                 <div class="review-item" id="review-${review.id}">
+                     <div class="review-header">
+                         <div class="review-user-info">
+                             <strong class="text-dark">${review.userFullName}</strong>
+                             <div class="review-meta">
+                                 <span><i class="bi bi-clock"></i> ${review.createdAt}</span>
+                                 ${isEdited ? `<span>(Đã sửa lúc: ${review.updatedAt})</span>` : ''}
+                             </div>
+                         </div>
+                         <div class="review-actions">
+                            ${editButtonHtml}
+                         </div>
+                     </div>
+                     <div class="review-stars mb-2">${starsHtml}</div>
+                     <p class="mb-2">${review.comment || ''}</p>
+                     ${vendorReplyHtml}
+                 </div>
+             `;
+        }
+
+        async function checkReviewEligibility() {
+             reviewFormContainer.classList.add('d-none');
+             reviewEligibilityMsg.classList.add('d-none');
+             if (!token) {
+                 reviewEligibilityMsg.textContent = 'Bạn cần đăng nhập để có thể đánh giá sản phẩm.';
+                 reviewEligibilityMsg.classList.remove('d-none');
+                 return;
+             }
+             try {
+                 const response = await fetch(`/api/reviews/eligibility/${productId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                 const data = await response.json();
+
+                 reviewEligibilityMsg.textContent = data.message;
+                 reviewEligibilityMsg.classList.remove('d-none');
+
+                 if (data.eligible) {
+                     reviewFormContainer.classList.remove('d-none');
+                     orderDetailIdInput.value = data.orderDetailId;
+                     resetReviewForm();
+                 }
+             } catch(e) {
+                 console.error("Lỗi khi kiểm tra điều kiện đánh giá:", e);
+                 reviewEligibilityMsg.textContent = "Lỗi khi kiểm tra điều kiện đánh giá.";
+                 reviewEligibilityMsg.classList.remove('d-none');
+             }
+         }
+
+        function showEditReviewForm(reviewId) {
+            const reviewToEdit = allReviewsData.find(r => r.id === reviewId);
+            if (!reviewToEdit) {
+                Swal.fire('Lỗi', 'Không tìm thấy dữ liệu đánh giá để sửa.', 'error');
+                return;
+            }
+
+            reviewFormContainer.classList.remove('d-none');
+            reviewFormContainer.classList.add('editing');
+            reviewFormTitle.textContent = "Chỉnh sửa đánh giá của bạn";
+            reviewIdToEditInput.value = reviewId;
+
+            ratingInputs.forEach(input => {
+                input.checked = (parseInt(input.value) === reviewToEdit.rating);
+            });
+
+            reviewCommentInput.value = reviewToEdit.comment || '';
+            submitReviewBtn.textContent = "Lưu thay đổi";
+            cancelEditBtn.classList.remove('d-none');
+            reviewFormContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEditReview() {
+            resetReviewForm();
+            checkReviewEligibility();
+        }
+
+        function resetReviewForm() {
+            reviewForm.reset();
+            reviewFormContainer.classList.remove('editing');
+            reviewFormTitle.textContent = "Viết đánh giá của bạn";
+            reviewIdToEditInput.value = '';
+            submitReviewBtn.textContent = "Gửi đánh giá";
+            cancelEditBtn.classList.add('d-none');
+            ratingInputs.forEach(input => input.checked = false);
+        }
+
+        async function handleReviewSubmit(event) {
+            event.preventDefault();
+            const ratingChecked = document.querySelector('input[name="rating"]:checked');
+            if (!ratingChecked) {
+                Swal.fire('Lỗi', 'Vui lòng chọn số sao.', 'warning');
+                return;
+            }
+
+            const reviewIdToEdit = reviewIdToEditInput.value;
+            const isEditing = !!reviewIdToEdit;
+
+            const requestBody = {
+                rating: parseInt(ratingChecked.value),
+                comment: reviewCommentInput.value.trim()
+            };
+
+            if (!isEditing) {
+                requestBody.productId = parseInt(productId);
+                requestBody.orderDetailId = parseInt(orderDetailIdInput.value);
+            }
+
+            const url = isEditing ? `/api/reviews/${reviewIdToEdit}` : '/api/reviews';
+            const method = isEditing ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    Swal.fire('Thành công', isEditing ? 'Đã cập nhật đánh giá!' : 'Cảm ơn bạn đã gửi đánh giá!', 'success');
+                    resetReviewForm();
+                    reviewFormContainer.classList.add('d-none');
+                    reviewEligibilityMsg.textContent = 'Bạn đã đánh giá sản phẩm này.';
+                    reviewEligibilityMsg.classList.remove('d-none');
+                    fetchAndRenderReviews();
+                } else {
+                    Swal.fire('Lỗi', result.message || (isEditing ? 'Không thể cập nhật.' : 'Không thể gửi.'), 'error');
+                }
+            } catch(e) {
+                console.error("Lỗi submit review:", e);
+                Swal.fire('Lỗi', 'Lỗi mạng, vui lòng thử lại.', 'error');
+            }
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

@@ -1,11 +1,15 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.dto.request.ChatRequest;
-import com.utegiftshop.dto.response.ChatResponse;
-import com.utegiftshop.service.ChatbotService; // Giả sử bạn tạo service
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping; // Giả sử bạn tạo service
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.utegiftshop.dto.request.ChatRequest;
+import com.utegiftshop.dto.response.ChatResponse;
+import com.utegiftshop.service.ChatbotService;
 
 @RestController
 @RequestMapping("/api/chat")

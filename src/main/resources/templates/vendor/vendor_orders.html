@@ -35,72 +35,78 @@
 <body>
 
 <div layout:fragment="content">
-    
+
     <h1 class="h2 mb-4">Quản lý Đơn hàng</h1>
 
     <!-- Thống kê tổng quan -->
     <div class="row mb-4" id="statistics-row">
-        <div class="col-md-3">
-            <div class="card stats-card border-0 shadow-sm">
+        <div class="col-xl col-lg-4 col-md-6 mb-3">
+            <div class="card stats-card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Tổng đơn hàng</p>
                             <h3 class="mb-0" id="stat-total">0</h3>
                         </div>
-                        <div class="text-primary">
-                            <i class="bi bi-cart3 fs-1"></i>
-                        </div>
+                        <div class="text-primary"><i class="bi bi-cart3 fs-1"></i></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stats-card border-0 shadow-sm">
+        <div class="col-xl col-lg-4 col-md-6 mb-3">
+            <div class="card stats-card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Chờ xử lý</p>
                             <h3 class="mb-0 text-warning" id="stat-new">0</h3>
                         </div>
-                        <div class="text-warning">
-                            <i class="bi bi-clock-history fs-1"></i>
-                        </div>
+                        <div class="text-warning"><i class="bi bi-clock-history fs-1"></i></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stats-card border-0 shadow-sm">
+        <div class="col-xl col-lg-4 col-md-6 mb-3">
+            <div class="card stats-card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Hoàn thành</p>
                             <h3 class="mb-0 text-success" id="stat-delivered">0</h3>
                         </div>
-                        <div class="text-success">
-                            <i class="bi bi-check-circle fs-1"></i>
-                        </div>
+                        <div class="text-success"><i class="bi bi-check-circle fs-1"></i></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stats-card border-0 shadow-sm">
+        <div class="col-xl col-lg-6 col-md-6 mb-3">
+            <div class="card stats-card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Trả hàng</p>
+                            <h3 class="mb-0 text-danger" id="stat-returned">0</h3>
+                        </div>
+                        <div class="text-danger"><i class="bi bi-arrow-return-left fs-1"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-6 col-md-12 mb-3">
+            <div class="card stats-card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted mb-1">Doanh thu</p>
                             <h3 class="mb-0 text-info" id="stat-revenue">0 đ</h3>
                         </div>
-                        <div class="text-info">
-                            <i class="bi bi-currency-dollar fs-1"></i>
-                        </div>
+                        <div class="text-info"><i class="bi bi-currency-dollar fs-1"></i></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Bộ lọc trạng thái -->
     <div class="card shadow-sm mb-3">
@@ -127,7 +133,10 @@
                 <button class="btn btn-outline-success" data-filter="DELIVERED" onclick="filterOrders('DELIVERED')">
                     <i class="bi bi-check-circle"></i> Hoàn thành
                 </button>
-                <button class="btn btn-outline-danger" data-filter="CANCELLED" onclick="filterOrders('CANCELLED')">
+                <button class="btn btn-outline-danger" data-filter="RETURNED" onclick="filterOrders('RETURNED')">
+                    <i class="bi bi-arrow-return-left"></i> Đã trả hàng
+                </button>
+                <button class="btn btn-outline-dark" data-filter="CANCELLED" onclick="filterOrders('CANCELLED')">
                     <i class="bi bi-x-circle"></i> Đã hủy
                 </button>
             </div>
@@ -140,25 +149,25 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
-                        <tr>
-                            <th>Mã đơn</th>
-                            <th>Khách hàng</th>
-                            <th>Ngày đặt</th>
-                            <th>Sản phẩm</th>
-                            <th>Tổng tiền</th>
-                            <th>Trạng thái</th>
-                            <th>Hành động</th>
-                        </tr>
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách hàng</th>
+                        <th>Ngày đặt</th>
+                        <th>Sản phẩm</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
                     </thead>
                     <tbody id="orders-table-body">
-                        <tr>
-                            <td colspan="7" class="text-center p-5">
-                                <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <span class="ms-2">Đang tải đơn hàng...</span>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="7" class="text-center p-5">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span class="ms-2">Đang tải đơn hàng...</span>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
@@ -193,64 +202,64 @@
 </div>
 
 <th:block layout:fragment="scripts_body">
-<script>
-    // ==================== GLOBAL VARIABLES ====================
-    let token;
-    let ordersTableBody;
-    let orderDetailModal;
-    let allOrders = [];
-    let currentFilter = 'ALL';
-    let formatter;
-    let currentOrderDetail = null;
+    <script>
+        // ==================== GLOBAL VARIABLES ====================
+        let token;
+        let ordersTableBody;
+        let orderDetailModal;
+        let allOrders = [];
+        let currentFilter = 'ALL';
+        let formatter;
+        let currentOrderDetail = null;
 
-    // ==================== INITIALIZATION ====================
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('📦 Initializing Vendor Orders Management...');
-        
-        token = localStorage.getItem('jwtToken');
-        if (!token) {
-            window.location.href = '/login';
-            return;
-        }
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📦 Initializing Vendor Orders Management...');
 
-        ordersTableBody = document.getElementById('orders-table-body');
-        const orderDetailModalEl = document.getElementById('orderDetailModal');
-        if (orderDetailModalEl) {
-            orderDetailModal = new bootstrap.Modal(orderDetailModalEl);
-        }
-
-        formatter = new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        });
-
-        fetchOrders();
-        fetchStatistics();
-    });
-
-    // ==================== FETCH ORDERS ====================
-    async function fetchOrders() {
-        try {
-            const response = await fetch('/api/vendor/orders', {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Error response:', errorText);
-                throw new Error('Không thể tải đơn hàng: ' + response.status);
+            token = localStorage.getItem('jwtToken');
+            if (!token) {
+                window.location.href = '/login';
+                return;
             }
 
-            allOrders = await response.json();
-            console.log('✅ Loaded orders:', allOrders.length, allOrders);
-            renderOrdersTable();
+            ordersTableBody = document.getElementById('orders-table-body');
+            const orderDetailModalEl = document.getElementById('orderDetailModal');
+            if (orderDetailModalEl) {
+                orderDetailModal = new bootstrap.Modal(orderDetailModalEl);
+            }
 
-        } catch (error) {
-            console.error('❌ Error fetching orders:', error);
-            ordersTableBody.innerHTML = `
+            formatter = new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            });
+
+            fetchOrders();
+            fetchStatistics();
+        });
+
+        // ==================== FETCH ORDERS ====================
+        async function fetchOrders() {
+            try {
+                const response = await fetch('/api/vendor/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Error response:', errorText);
+                    throw new Error('Không thể tải đơn hàng: ' + response.status);
+                }
+
+                allOrders = await response.json();
+                console.log('✅ Loaded orders:', allOrders.length, allOrders);
+                renderOrdersTable();
+
+            } catch (error) {
+                console.error('❌ Error fetching orders:', error);
+                ordersTableBody.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center text-danger p-5">
                         <i class="bi bi-exclamation-triangle fs-3"></i>
@@ -263,44 +272,45 @@
                     </td>
                 </tr>
             `;
+            }
         }
-    }
 
-    // ==================== FETCH STATISTICS ====================
-    async function fetchStatistics() {
-        try {
-            const response = await fetch('/api/vendor/orders/statistics', {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
+        // ==================== FETCH STATISTICS ====================
+        async function fetchStatistics() {
+            try {
+                const response = await fetch('/api/vendor/orders/statistics', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
 
-            if (!response.ok) return;
+                if (!response.ok) return;
 
-            const stats = await response.json();
-            console.log('📊 Statistics:', stats);
-            
-            document.getElementById('stat-total').textContent = stats.totalOrders || 0;
-            document.getElementById('stat-new').textContent = stats.newOrders || 0;
-            document.getElementById('stat-delivered').textContent = stats.deliveredOrders || 0;
-            document.getElementById('stat-revenue').textContent = formatter.format(stats.totalRevenue || 0);
+                const stats = await response.json();
+                console.log('📊 Statistics:', stats);
 
-        } catch (error) {
-            console.error('❌ Error fetching statistics:', error);
+                document.getElementById('stat-total').textContent = stats.totalOrders || 0;
+                document.getElementById('stat-new').textContent = stats.newOrders || 0;
+                document.getElementById('stat-delivered').textContent = stats.deliveredOrders || 0;
+                document.getElementById('stat-returned').textContent = stats.returnedOrders || 0;
+                document.getElementById('stat-revenue').textContent = formatter.format(stats.totalRevenue || 0);
+
+            } catch (error) {
+                console.error('❌ Error fetching statistics:', error);
+            }
         }
-    }
 
-    // ==================== RENDER ORDERS TABLE ====================
-    function renderOrdersTable() {
-        const filteredOrders = currentFilter === 'ALL' 
-            ? allOrders 
-            : allOrders.filter(order => order.status === currentFilter);
+        // ==================== RENDER ORDERS TABLE ====================
+        function renderOrdersTable() {
+            const filteredOrders = currentFilter === 'ALL'
+                ? allOrders
+                : allOrders.filter(order => order.status === currentFilter);
 
-        ordersTableBody.innerHTML = '';
+            ordersTableBody.innerHTML = '';
 
-        if (filteredOrders.length === 0) {
-            ordersTableBody.innerHTML = `
+            if (filteredOrders.length === 0) {
+                ordersTableBody.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center p-5">
                         <i class="bi bi-inbox fs-1 text-muted"></i>
@@ -308,14 +318,14 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
+                return;
+            }
 
-        filteredOrders.forEach(order => {
-            const statusBadge = getStatusBadge(order.status);
-            const orderDate = formatDate(order.orderDate);
-            
-            const row = `
+            filteredOrders.forEach(order => {
+                const statusBadge = getStatusBadge(order.status);
+                const orderDate = formatDate(order.orderDate);
+
+                const row = `
                 <tr>
                     <td><strong>#${order.orderId}</strong></td>
                     <td>
@@ -333,115 +343,116 @@
                     </td>
                 </tr>
             `;
-            ordersTableBody.innerHTML += row;
-        });
-    }
-
-    // ==================== FORMAT DATE ====================
-    function formatDate(dateString) {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleString('vi-VN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
+                ordersTableBody.innerHTML += row;
             });
-        } catch (e) {
-            return dateString;
         }
-    }
 
-    // ==================== GET STATUS BADGE ====================
-    function getStatusBadge(status) {
-        const badges = {
-            'NEW': '<span class="badge bg-secondary order-status-badge">Mới</span>',
-            'CONFIRMED': '<span class="badge bg-info order-status-badge">Đã xác nhận</span>',
-            'PREPARING': '<span class="badge bg-warning order-status-badge">Đang chuẩn bị</span>',
-            'READY_FOR_SHIPMENT': '<span class="badge bg-primary order-status-badge">Sẵn sàng giao</span>',
-            'DELIVERING': '<span class="badge bg-info order-status-badge">Đang giao</span>',
-            'DELIVERED': '<span class="badge bg-success order-status-badge">Hoàn thành</span>',
-            'FAILED_DELIVERY': '<span class="badge bg-danger order-status-badge">Giao thất bại</span>',
-            'CANCELLED': '<span class="badge bg-dark order-status-badge">Đã hủy</span>'
+        // ==================== FORMAT DATE ====================
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('vi-VN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        // ==================== GET STATUS BADGE ====================
+        function getStatusBadge(status) {
+            const badges = {
+                'NEW': '<span class="badge bg-secondary order-status-badge">Mới</span>',
+                'CONFIRMED': '<span class="badge bg-info order-status-badge">Đã xác nhận</span>',
+                'PREPARING': '<span class="badge bg-warning order-status-badge">Đang chuẩn bị</span>',
+                'READY_FOR_SHIPMENT': '<span class="badge bg-primary order-status-badge">Sẵn sàng giao</span>',
+                'DELIVERING': '<span class="badge bg-info order-status-badge">Đang giao</span>',
+                'DELIVERED': '<span class="badge bg-success order-status-badge">Hoàn thành</span>',
+                'FAILED_DELIVERY': '<span class="badge bg-danger order-status-badge">Giao thất bại</span>',
+                'CANCELLED': '<span class="badge bg-dark order-status-badge">Đã hủy</span>',
+                'RETURNED': '<span class="badge bg-danger order-status-badge">Đã trả hàng</span>'
+            };
+            return badges[status] || `<span class="badge bg-secondary order-status-badge">${status}</span>`;
+        }
+
+        // ==================== FILTER ORDERS ====================
+        window.filterOrders = function(status) {
+            currentFilter = status;
+
+            // Update button states
+            document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.querySelector(`[data-filter="${status}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            renderOrdersTable();
         };
-        return badges[status] || `<span class="badge bg-secondary order-status-badge">${status}</span>`;
-    }
 
-    // ==================== FILTER ORDERS ====================
-    window.filterOrders = function(status) {
-        currentFilter = status;
-        
-        // Update button states
-        document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        const activeBtn = document.querySelector(`[data-filter="${status}"]`);
-        if (activeBtn) activeBtn.classList.add('active');
-        
-        renderOrdersTable();
-    };
+        // ==================== VIEW ORDER DETAIL ====================
+        window.viewOrderDetail = async function(orderId) {
+            console.log('👁️ Viewing order detail:', orderId);
 
-    // ==================== VIEW ORDER DETAIL ====================
-    window.viewOrderDetail = async function(orderId) {
-        console.log('👁️ Viewing order detail:', orderId);
-        
-        const orderDetailContent = document.getElementById('order-detail-content');
-        orderDetailContent.innerHTML = `
+            const orderDetailContent = document.getElementById('order-detail-content');
+            orderDetailContent.innerHTML = `
             <div class="text-center p-5">
                 <div class="spinner-border" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
         `;
-        
-        orderDetailModal.show();
 
-        try {
-            const response = await fetch(`/api/vendor/orders/${orderId}`, {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
+            orderDetailModal.show();
+
+            try {
+                const response = await fetch(`/api/vendor/orders/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Không thể tải chi tiết đơn hàng');
                 }
-            });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Không thể tải chi tiết đơn hàng');
-            }
+                currentOrderDetail = await response.json();
+                console.log('📦 Order detail:', currentOrderDetail);
 
-            currentOrderDetail = await response.json();
-            console.log('📦 Order detail:', currentOrderDetail);
-            
-            document.getElementById('modal-order-id').textContent = '#' + currentOrderDetail.orderId;
-            renderOrderDetail(currentOrderDetail);
-            renderStatusActionButtons(currentOrderDetail.status, currentOrderDetail.orderId);
+                document.getElementById('modal-order-id').textContent = '#' + currentOrderDetail.orderId;
+                renderOrderDetail(currentOrderDetail);
+                renderStatusActionButtons(currentOrderDetail.status, currentOrderDetail.orderId);
 
-        } catch (error) {
-            console.error('❌ Error loading order detail:', error);
-            orderDetailContent.innerHTML = `
+            } catch (error) {
+                console.error('❌ Error loading order detail:', error);
+                orderDetailContent.innerHTML = `
                 <div class="alert alert-danger" role="alert">
                     <i class="bi bi-exclamation-triangle"></i>
                     ${error.message}
                 </div>
             `;
-        }
-    };
+            }
+        };
 
-    // ==================== RENDER ORDER DETAIL ====================
-    function renderOrderDetail(orderDetail) {
-        const orderDetailContent = document.getElementById('order-detail-content');
-        
-        let productsHtml = '';
-        if (orderDetail.vendorItems && orderDetail.vendorItems.length > 0) {
-            orderDetail.vendorItems.forEach(product => {
-                const defaultImg = 'https://via.placeholder.com/50?text=No+Image';
-                productsHtml += `
+        // ==================== RENDER ORDER DETAIL ====================
+        function renderOrderDetail(orderDetail) {
+            const orderDetailContent = document.getElementById('order-detail-content');
+
+            let productsHtml = '';
+            if (orderDetail.vendorItems && orderDetail.vendorItems.length > 0) {
+                orderDetail.vendorItems.forEach(product => {
+                    const defaultImg = 'https://via.placeholder.com/50?text=No+Image';
+                    productsHtml += `
                     <tr>
                         <td>
-                            <img src="${product.productImageUrl || defaultImg}" 
-                                 alt="${product.productName}" 
+                            <img src="${product.productImageUrl || defaultImg}"
+                                 alt="${product.productName}"
                                  class="product-img-small"
                                  onerror="this.src='${defaultImg}'">
                         </td>
@@ -451,12 +462,12 @@
                         <td class="text-end"><strong>${formatter.format(product.totalItemPrice || 0)}</strong></td>
                     </tr>
                 `;
-            });
-        } else {
-            productsHtml = '<tr><td colspan="5" class="text-center p-3">Không có sản phẩm</td></tr>';
-        }
+                });
+            } else {
+                productsHtml = '<tr><td colspan="5" class="text-center p-3">Không có sản phẩm</td></tr>';
+            }
 
-        orderDetailContent.innerHTML = `
+            orderDetailContent.innerHTML = `
             <div class="row">
                 <div class="col-md-6">
                     <h6 class="mb-3"><i class="bi bi-person-circle"></i> Thông tin khách hàng</h6>
@@ -479,7 +490,7 @@
                     <div class="alert alert-light">
                         ${orderDetail.shippingAddress || 'Không có thông tin địa chỉ'}
                     </div>
-                    
+
                     ${orderDetail.deliveryNote ? `
                         <h6 class="mb-3 mt-4"><i class="bi bi-chat-square-text"></i> Ghi chú</h6>
                         <div class="alert alert-info">
@@ -533,67 +544,81 @@
                 </div>
             </div>
         `;
-    }
+        }
 
-    // ==================== RENDER STATUS ACTION BUTTONS ====================
-    function renderStatusActionButtons(currentStatus, orderId) {
-        const statusActionButtons = document.getElementById('status-action-buttons');
-        let buttons = '';
+        // ==================== RENDER STATUS ACTION BUTTONS ====================
+       function renderStatusActionButtons(currentStatus, orderId) {
+            const statusActionButtons = document.getElementById('status-action-buttons');
+            let buttons = '';
 
-        const statusFlow = {
-            'NEW': { next: 'CONFIRMED', label: 'Xác nhận đơn', icon: 'check2-square', color: 'info' },
-            'CONFIRMED': { next: 'PREPARING', label: 'Bắt đầu chuẩn bị', icon: 'box-seam', color: 'warning' },
-            'PREPARING': { next: 'READY_FOR_SHIPMENT', label: 'Sẵn sàng giao hàng', icon: 'box-arrow-right', color: 'primary' }
-        };
+            const statusFlow = {
+                'NEW': { next: 'CONFIRMED', label: 'Xác nhận đơn', icon: 'check2-square', color: 'info' },
+                'CONFIRMED': { next: 'PREPARING', label: 'Bắt đầu chuẩn bị', icon: 'box-seam', color: 'warning' },
+                'PREPARING': { next: 'READY_FOR_SHIPMENT', label: 'Sẵn sàng giao hàng', icon: 'box-arrow-right', color: 'primary' }
+                // Xóa RETURNED ra khỏi statusFlow vì nó xử lý riêng
+            };
 
-        if (statusFlow[currentStatus]) {
-            const action = statusFlow[currentStatus];
-            buttons = `
+            // Hiển thị các nút chuyển tiếp trạng thái thông thường
+            if (statusFlow[currentStatus]) {
+                const action = statusFlow[currentStatus];
+                buttons = `
                 <button class="btn btn-${action.color}" onclick="updateOrderStatus(${orderId}, '${action.next}')">
                     <i class="bi bi-${action.icon}"></i> ${action.label}
                 </button>
             `;
-        }
-
-        statusActionButtons.innerHTML = buttons;
-    }
-
-    // ==================== UPDATE ORDER STATUS ====================
-    window.updateOrderStatus = async function(orderId, newStatus) {
-        if (!confirm(`Bạn có chắc muốn chuyển đơn hàng sang trạng thái "${newStatus}"?`)) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/vendor/orders/${orderId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ newStatus: newStatus })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Không thể cập nhật trạng thái');
             }
 
-            await Swal.fire('Thành công!', 'Đã cập nhật trạng thái đơn hàng', 'success');
-            
-            // Refresh data
-            orderDetailModal.hide();
-            await fetchOrders();
-            await fetchStatistics();
+            // *** THAY ĐỔI Ở ĐÂY ***
+            // Hiển thị nút "Đánh dấu đã trả hàng" khi trạng thái là RETURN_PENDING hoặc DELIVERED
+            if (currentStatus === 'RETURN_PENDING' || currentStatus === 'DELIVERED') {
+                 buttons += `
+                <button class="btn btn-danger ms-2" onclick="updateOrderStatus(${orderId}, 'RETURNED')">
+                    <i class="bi bi-arrow-return-left"></i> Đánh dấu đã trả hàng
+                </button>
+            `;
+            }
+            // *** KẾT THÚC THAY ĐỔI ***
 
-        } catch (error) {
-            console.error('❌ Error updating status:', error);
-            Swal.fire('Lỗi', error.message, 'error');
+
+            statusActionButtons.innerHTML = buttons;
         }
-    };
 
-</script>
+        // ==================== UPDATE ORDER STATUS ====================
+        window.updateOrderStatus = async function(orderId, newStatus) {
+            if (!confirm(`Bạn có chắc muốn chuyển đơn hàng sang trạng thái "${newStatus}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/vendor/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ newStatus: newStatus })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Không thể cập nhật trạng thái');
+                }
+
+                await Swal.fire('Thành công!', 'Đã cập nhật trạng thái đơn hàng', 'success');
+
+                // Refresh data
+                orderDetailModal.hide();
+                await fetchOrders();
+                await fetchStatistics();
+
+            } catch (error) {
+                console.error('❌ Error updating status:', error);
+                Swal.fire('Lỗi', error.message, 'error');
+            }
+        };
+
+    </script>
 </th:block>
 
 </body>

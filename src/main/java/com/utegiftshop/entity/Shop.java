@@ -2,15 +2,7 @@ package com.utegiftshop.entity;
 
 import java.sql.Timestamp;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*; // Sử dụng jakarta.persistence thay vì javax.persistence
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -41,9 +33,32 @@ public class Shop {
     @Column(length = 50, nullable = false)
     private String status; // PENDING, ACTIVE, REJECTED
 
+    // --- THÊM CÁC TRƯỜNG LIÊN HỆ ---
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
+
+    @Column(name = "contact_email", length = 255)
+    private String contactEmail;
+
+    @Column(name = "address_detail", columnDefinition = "TEXT")
+    private String addressDetail;
+
+    @Column(name = "facebook_url", length = 512)
+    private String facebookUrl;
+
+    @Column(name = "instagram_url", length = 512)
+    private String instagramUrl;
+    // --- KẾT THÚC THÊM ---
+
     @Column(name = "created_at", updatable = false)
     private Timestamp createdAt = new Timestamp(System.currentTimeMillis());
 
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+
+    // Thêm @PreUpdate để tự động cập nhật updatedAt
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = new Timestamp(System.currentTimeMillis());
+    }
 }

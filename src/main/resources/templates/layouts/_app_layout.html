@@ -2,6 +2,7 @@
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,38 +16,44 @@
             flex-direction: column;
             min-height: 100vh;
             padding-top: 70px;
+            /* Điều chỉnh nếu cần */
         }
+
         .content-wrapper {
             flex: 1;
             padding-top: 2rem;
             padding-bottom: 2rem;
         }
+
         .main-content-card {
             background: #fff;
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
         }
+
         footer {
             background-color: #f8f9fa;
             padding: 1rem 0;
             text-align: center;
         }
 
-        /* === CSS CHO CHATBOT (Giữ nguyên ở đây) === */
+        /* === CSS CHO CHATBOT === */
         .chat-widget {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 1050;
         }
+
         .chat-btn {
             width: 60px;
             height: 60px;
             border-radius: 50%;
             font-size: 28px;
-            box-shadow: 0 4px 8px rgba(0,0,0,.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
         }
+
         .chat-popup {
             display: none;
             position: fixed;
@@ -56,16 +63,18 @@
             max-height: 500px;
             background: #fff;
             border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .3);
             flex-direction: column;
             overflow: hidden;
         }
+
         .chat-header {
             background: #0d6efd;
             color: white;
             padding: 1rem;
             font-weight: bold;
         }
+
         .chat-body {
             flex: 1;
             padding: 1rem;
@@ -74,38 +83,65 @@
             flex-direction: column;
             gap: 10px;
         }
+
         .chat-message {
             padding: 8px 12px;
             border-radius: 18px;
             max-width: 80%;
             word-wrap: break-word;
         }
+
         .user-message {
             background: #e9ecef;
             align-self: flex-end;
         }
+
         .bot-message {
             background: #0d6efd;
             color: white;
             align-self: flex-start;
         }
+
         .chat-footer {
             border-top: 1px solid #eee;
             padding: 0.5rem;
             display: flex;
         }
+
         .chat-footer input {
             flex: 1;
             border: none;
             outline: none;
             box-shadow: none;
         }
+
         /* === KẾT THÚC CSS CHATBOT === */
 
+        /* === CSS MỚI CHO NAVBAR AVATAR === */
+        .navbar-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 8px;
+            /* Khoảng cách với tên */
+            border: 1px solid #dee2e6;
+        }
+
+        /* === KẾT THÚC CSS MỚI === */
+
+        /* --> THÊM CSS CHO BADGE GIỎ HÀNG <-- */
+        #cart-item-count {
+            font-size: 0.75rem; /* Kích thước chữ nhỏ hơn */
+            padding: 0.2em 0.5em; /* Padding nhỏ hơn */
+            vertical-align: top; /* Căn chỉnh badge lên trên một chút */
+            /* Các class position-absolute... đã xử lý vị trí */
+        }
     </style>
     <th:block layout:fragment="styles"></th:block>
     <th:block layout:fragment="scripts_head"></th:block>
 </head>
+
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
@@ -114,15 +150,21 @@
                 <i class="bi bi-shop"></i> UTE GiftShop
             </a>
             <div class="d-flex align-items-center">
-                <a class="nav-link me-3" th:href="@{/cart}">
+                <a class="nav-link me-3 position-relative" th:href="@{/cart}">
                     <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
+                    <span class="badge bg-danger ms-1 position-absolute top-0 start-100 translate-middle" id="cart-item-count" style="display: none;">0</span>
                 </a>
                 <div class="dropdown">
-                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle fs-5"></i> <span id="userGreeting">Tài khoản</span>
+                    <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        <img src="/images/placeholder-avatar-small.png" alt="User Avatar" class="navbar-avatar"
+                             id="navbarUserAvatar">
+                        <span id="userGreeting">Tài khoản</span>
                     </a>
                     <ul id="user-menu" class="dropdown-menu dropdown-menu-end">
-                        </ul>
+                        <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
+                        <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -130,15 +172,48 @@
 
     <div class="content-wrapper">
         <div class="container">
-             <div class="main-content-card">
-                 <th:block layout:fragment="content"></th:block>
-             </div>
+            <div class="main-content-card">
+                <th:block layout:fragment="content"></th:block>
+            </div>
         </div>
     </div>
 
-    <footer>
+    <footer class="site-footer mt-auto py-5">
         <div class="container">
-            <span class="text-muted">© 2025 UTE GiftShop</span>
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                    <h5>Về UTE Gift Shop</h5>
+                    <p class="small text-muted">Dự án môn học Lập trình Web, xây dựng website thương mại điện tử đa nhà cung cấp.</p>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                    <h5>Sinh viên thực hiện</h5>
+                    <ul class="list-unstyled small">
+                        <li>Võ Trí Hiệu - 23110219 </li>
+                        <li>Lê Ngô Nhựt Tân - 23110315 </li>
+                        <li>Nguyễn Bảo Lợi - 23110256 </li>
+                        <li>Huỳnh Ngọc Tài - 23110305</li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                    <h5>Thông tin liên hệ</h5>
+                    <ul class="list-unstyled small">
+                        <li><i class="bi bi-telephone-fill me-2"></i> 0372008321</li>
+                        <li><i class="bi bi-envelope-fill me-2"></i> hieu981.vn@gmail.com</li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <h5>Liên kết</h5>
+                    <div class="social-icons">
+                        <a href="https://github.com/trihieuvo" title="Võ Trí Hiệu"><i class="bi bi-github"></i></a>
+                        <a href="https://github.com/Okarin2507" title="Lê Ngô Nhựt Tân"><i class="bi bi-github"></i></a>
+                        <a href="https://github.com/LoiNguyen2k5" title="Nguyễn Bảo Lợi"><i class="bi bi-github"></i></a>
+                        <a href="https://github.com/KickHuynh" title="Huỳnh Ngọc Tài"><i class="bi bi-github"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom text-center text-muted">
+                &copy; 2025 UTE GiftShop. All Rights Reserved.
+            </div>
         </div>
     </footer>
 
@@ -146,11 +221,8 @@
         <button class="btn btn-primary chat-btn" id="toggle-chat-btn">
             <i class="bi bi-chat-dots-fill"></i>
         </button>
-
         <div class="chat-popup" id="chat-popup">
-            <div class="chat-header">
-                UTE GiftShop Assistant
-            </div>
+            <div class="chat-header">UTE GiftShop Assistant</div>
             <div class="chat-body" id="chat-body">
                 <div class="chat-message bot-message">Chào bạn! Tôi có thể giúp gì?</div>
             </div>
@@ -163,34 +235,99 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // === HÀM GLOBAL (ĐỂ CÓ THỂ GỌI TỪ profile.html nếu cần) ===
+        // Lưu ý: Đảm bảo các hàm này được định nghĩa trước khi DOMContentLoaded hoàn tất nếu gọi từ bên ngoài
+        let globalUserInfo = null; // Biến lưu trữ thông tin người dùng
+
         function logout() {
             localStorage.removeItem('jwtToken');
+            globalUserInfo = null; // Clear user info on logout
             Swal.fire({
-                title: 'Đã đăng xuất',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => {
-                 window.location.href = '/login';
-            });
+                    title: 'Đã đăng xuất',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                })
+                .then(() => {
+                    window.location.href = '/login';
+                });
         }
+
+        // --> THÊM HÀM CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG <--
+        async function updateCartCount() {
+            const token = localStorage.getItem('jwtToken');
+            const cartCountBadge = document.getElementById('cart-item-count');
+
+            if (!token || !cartCountBadge) {
+                if(cartCountBadge) cartCountBadge.style.display = 'none'; // Ẩn nếu không đăng nhập hoặc không tìm thấy badge
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/cart', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const items = await response.json();
+                    // Đếm số lượng item khác nhau, hoặc tổng số lượng sản phẩm tùy logic bạn muốn
+                    // Ở đây đếm số lượng item khác nhau (số dòng trong giỏ hàng)
+                    const count = items.length;
+                    cartCountBadge.textContent = count;
+                    if (count > 0) {
+                        cartCountBadge.style.display = 'inline-block'; // Hiện badge nếu có hàng
+                    } else {
+                        cartCountBadge.style.display = 'none'; // Ẩn nếu giỏ trống
+                    }
+                } else {
+                    // Xử lý lỗi (ví dụ: token hết hạn)
+                    console.error("Lỗi khi lấy giỏ hàng để cập nhật số lượng:", response.status);
+                    cartCountBadge.style.display = 'none'; // Ẩn nếu có lỗi
+                }
+            } catch (error) {
+                console.error("Lỗi mạng khi lấy số lượng giỏ hàng:", error);
+                cartCountBadge.style.display = 'none'; // Ẩn nếu có lỗi mạng
+            }
+        }
+        // --> KẾT THÚC HÀM MỚI <--
+
 
         function renderGuestMenu() {
             const userGreetingElem = document.getElementById('userGreeting');
             const userMenu = document.getElementById('user-menu');
-            if (userGreetingElem && userMenu) {
+            const navbarAvatar = document.getElementById('navbarUserAvatar');
+            const cartCountBadge = document.getElementById('cart-item-count'); // --> Lấy badge
+
+            if (userGreetingElem && userMenu && navbarAvatar) {
                 userGreetingElem.textContent = 'Tài khoản';
+                navbarAvatar.src = '/images/placeholder-avatar-small.png'; // Cần tạo ảnh này
+                navbarAvatar.alt = 'Guest Avatar';
                 userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
                                       <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
+                if(cartCountBadge) cartCountBadge.style.display = 'none'; // --> Ẩn badge khi là khách
+            } else {
+                console.error("renderGuestMenu: Navbar elements not found!");
             }
         }
 
         async function checkLoginStatus() {
             console.log("Bắt đầu kiểm tra trạng thái đăng nhập...");
             const token = localStorage.getItem('jwtToken');
-            
+            const navbarAvatar = document.getElementById('navbarUserAvatar');
+
+            // --- Đảm bảo các element tồn tại trước khi tiếp tục ---
+            const userGreetingElem = document.getElementById('userGreeting');
+            const userMenu = document.getElementById('user-menu');
+            if (!userGreetingElem || !userMenu || !navbarAvatar) {
+                console.error("checkLoginStatus: Navbar elements not found!");
+                renderGuestMenu(); // Hiển thị menu khách nếu lỗi DOM
+                return; // Dừng nếu không tìm thấy element
+            }
+            // --- Kết thúc kiểm tra ---
+
+
             if (!token) {
                 console.log("Không tìm thấy token. Hiển thị menu khách.");
+                globalUserInfo = null;
                 renderGuestMenu();
                 return;
             }
@@ -198,14 +335,21 @@
             try {
                 console.log("Đã tìm thấy token. Đang gọi API /api/users/me...");
                 const response = await fetch('/api/users/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
-
                 console.log("Phản hồi từ API:", response.status);
 
                 if (!response.ok) {
-                    console.error("Yêu cầu API thất bại, token có thể không hợp lệ. Đăng xuất...");
-                    logout();
+                    if (response.status === 401 || response.status === 403) {
+                        console.error("Token không hợp lệ hoặc hết hạn. Đăng xuất...");
+                        logout(); // Gọi logout để xóa token cũ
+                    } else {
+                        console.error(`Lỗi server (${response.status}) khi gọi API /me. Hiển thị menu khách.`);
+                        globalUserInfo = null;
+                        renderGuestMenu(); // Hiển thị menu khách nếu lỗi server khác
+                    }
                     return;
                 }
 
@@ -213,90 +357,97 @@
                 console.log("Dữ liệu người dùng:", userInfo);
 
                 if (userInfo && userInfo.authenticated) {
+                    globalUserInfo = userInfo; // Cập nhật global user info
                     console.log("Xác thực thành công. Đang cập nhật giao diện...");
-                    const userGreetingElem = document.getElementById('userGreeting');
-                    const userMenu = document.getElementById('user-menu');
-                    if(userGreetingElem && userMenu) {
-                        userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
-                        
-                        let menuItems = `<li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
-                                         <li><a class="dropdown-item" href="/order-history">Lịch sử đơn hàng</a></li>`;
-                                         
-                        if (userInfo.role === 'Shipper') {
-                             menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
-                        }
-                        else if (userInfo.role === 'Vendor') {
-                            menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard">Trang bán hàng</a></li>`;
-                        }
-                        menuItems += `<li><hr class="dropdown-divider"></li>
-                                      <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
-                        userMenu.innerHTML = menuItems;
-                        console.log("Giao diện đã được cập nhật.");
+
+                    userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
+
+                    // === CẬP NHẬT AVATAR NAVBAR ===
+                    if (userInfo.avatarUrl) {
+                        navbarAvatar.src = userInfo.avatarUrl + '?t=' + new Date().getTime(); // Thêm timestamp
+                        navbarAvatar.alt = userInfo.fullName + ' Avatar';
+                    } else {
+                        navbarAvatar.src = '/images/placeholder-avatar-small.png'; // Ảnh mặc định nhỏ
+                        navbarAvatar.alt = 'Default Avatar';
                     }
+                    // === KẾT THÚC CẬP NHẬT ===
+
+                    let menuItems = `<li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
+                                     <li><a class="dropdown-item" href="/order-history">Lịch sử đơn hàng</a></li>`;
+
+                    if (userInfo.role === 'Shipper') {
+                        menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
+                    } else if (userInfo.role === 'Vendor') {
+                        menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard">Trang bán hàng</a></li>`;
+                    }
+                    menuItems += `<li><hr class="dropdown-divider"></li>
+                                  <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
+                    userMenu.innerHTML = menuItems;
+                    console.log("Giao diện đã được cập nhật.");
+
+                    // --> GỌI HÀM CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG KHI ĐĂNG NHẬP THÀNH CÔNG <--
+                    updateCartCount();
+
                 } else {
                     console.log("API trả về không xác thực. Đăng xuất...");
-                    logout();
+                    logout(); // Gọi logout nếu API nói không authenticated
                 }
             } catch (error) {
                 console.error("Đã xảy ra lỗi mạng trong quá trình xác thực:", error);
                 Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
-                renderGuestMenu(); 
+                globalUserInfo = null;
+                renderGuestMenu(); // Hiển thị menu khách nếu lỗi mạng
             }
         }
 
+        // Gọi hàm kiểm tra khi trang tải xong
         document.addEventListener('DOMContentLoaded', checkLoginStatus);
+        // === KẾT THÚC HÀM GLOBAL ===
     </script>
-    
+
     <th:block layout:fragment="scripts_body"></th:block>
 
     <script>
-        // Các biến DOM
+        // === CHATBOT CODE ===
         const chatPopup = document.getElementById('chat-popup');
         const toggleChatBtn = document.getElementById('toggle-chat-btn');
         const chatInput = document.getElementById('chat-input');
         const chatSendBtn = document.getElementById('chat-send-btn');
         const chatBody = document.getElementById('chat-body');
-        
-        let isChatbotInitialized = false; 
+        let isChatbotInitialized = false;
 
-        // Mở/Đóng chat
-        toggleChatBtn.addEventListener('click', () => {
-            if (chatPopup.style.display === 'flex') {
+        if (toggleChatBtn) toggleChatBtn.addEventListener('click', () => {
+            if (chatPopup && chatPopup.style.display === 'flex') {
                 chatPopup.style.display = 'none';
             } else {
                 const token = localStorage.getItem('jwtToken');
                 if (!token && !isChatbotInitialized) {
-                    Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để sử dụng trợ lý ảo.', 'info')
-                        .then(() => window.location.href = '/login');
+                    Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để sử dụng trợ lý ảo.', 'info').then(() => window.location.href = '/login');
                     return;
                 }
                 isChatbotInitialized = true;
-                chatPopup.style.display = 'flex';
+                if (chatPopup) chatPopup.style.display = 'flex';
             }
         });
-
-        // Gửi tin nhắn
-        chatSendBtn.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', function(e) {
+        if (chatSendBtn) chatSendBtn.addEventListener('click', sendMessage);
+        if (chatInput) chatInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
 
         async function sendMessage() {
+            if (!chatInput || !chatBody) return;
             const messageText = chatInput.value.trim();
             if (messageText === '') return;
-
             const token = localStorage.getItem('jwtToken');
             if (!token) {
-                Swal.fire('Lỗi', 'Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang.', 'error');
+                Swal.fire('Lỗi', 'Phiên đăng nhập đã hết hạn.', 'error');
                 return;
             }
-
             addMessageToChat(messageText, 'user');
             chatInput.value = '';
             addMessageToChat('...', 'bot-typing');
-
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
@@ -304,29 +455,23 @@
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: messageText })
+                    body: JSON.stringify({
+                        message: messageText
+                    })
                 });
-
                 removeTypingIndicator();
-
                 if (response.ok) {
                     const chatResponse = await response.json();
                     addMessageToChat(chatResponse.reply, 'bot');
                 } else {
                     addMessageToChat('Xin lỗi, đã có lỗi xảy ra.', 'bot');
                 }
-
             } catch (error) {
                 removeTypingIndicator();
-                addMessageToChat('Lỗi kết nối. Vui lòng thử lại.', 'bot');
+                addMessageToChat('Lỗi kết nối.', 'bot');
             }
         }
 
-        // === BẮT ĐẦU CẬP NHẬT LỖI FORMATTING ===
-
-        /**
-         * Hàm helper để chuyển đổi text an toàn sang HTML (Chống XSS)
-         */
         function escapeHTML(str) {
             if (!str) return '';
             return str.replace(/[&<>"']/g, function(m) {
@@ -336,58 +481,50 @@
                     '>': '&gt;',
                     '"': '&quot;',
                     "'": '&#39;'
-                }[m];
+                } [m];
             });
         }
 
-        /**
-         * Hàm helper để định dạng message của Bot (Sau khi đã escape an toàn)
-         */
         function formatBotMessage(text) {
             let escapedText = escapeHTML(text);
-            
-            // 1. Chuyển đổi **bold** thành <strong>bold</strong>
-            // (Regex này bắt 2 literal asterisks)
+            // Thay thế **bold** bằng <strong>bold</strong>
             let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            // 2. Chuyển đổi \*\*bold\*\* thành <strong>bold</strong>
-            // (Regex này bắt backslash-escaped asterisks)
+            // Xử lý trường hợp có dấu \ trước **
             formattedText = formattedText.replace(/\\\*\\\*(.*?)\\\*\\\*/g, '<strong>$1</strong>');
-            
-            // 3. Chuyển \n (xuống dòng) thành <br>
+             // Thay thế \n bằng <br>
             formattedText = formattedText.replace(/\n/g, '<br>');
-            
             return formattedText;
         }
 
-
         function addMessageToChat(text, type) {
             const messageDiv = document.createElement('div');
-            
-            if(type === 'user') {
+            if (type === 'user') {
                 messageDiv.className = 'chat-message user-message';
-                messageDiv.textContent = text; // User input
+                messageDiv.textContent = text;
             } else if (type === 'bot') {
-                 messageDiv.className = 'chat-message bot-message';
-                 messageDiv.innerHTML = formatBotMessage(text); // Bot output
+                messageDiv.className = 'chat-message bot-message';
+                messageDiv.innerHTML = formatBotMessage(text); // Sử dụng formatBotMessage
             } else if (type === 'bot-typing') {
-                 messageDiv.className = 'chat-message bot-message';
-                 messageDiv.id = 'bot-typing-indicator';
-                 messageDiv.textContent = text;
+                messageDiv.className = 'chat-message bot-message';
+                messageDiv.id = 'bot-typing-indicator';
+                messageDiv.textContent = text; // Typing indicator không cần format
             }
-            
-            chatBody.appendChild(messageDiv);
-            chatBody.scrollTop = chatBody.scrollHeight;
+            if (chatBody) {
+                chatBody.appendChild(messageDiv);
+                // Cuộn xuống tin nhắn mới nhất
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
         }
-
-        // === KẾT THÚC CẬP NHẬT LỖI FORMATTING ===
 
         function removeTypingIndicator() {
             const typingIndicator = document.getElementById('bot-typing-indicator');
-            if (typingIndicator) {
-                chatBody.removeChild(typingIndicator);
+            if (typingIndicator && chatBody) {
+                try { // Thêm try-catch để tránh lỗi nếu element đã bị xóa
+                    chatBody.removeChild(typingIndicator);
+                } catch (e) {}
             }
         }
     </script>
-    </body>
+</body>
+
 </html>

@@ -14,4 +14,5 @@ public class UserInfoResponse {
     private String fullName;
     private String phoneNumber;
     private String role;
+    private String avatarUrl; // Thêm trường avatarUrl
 }

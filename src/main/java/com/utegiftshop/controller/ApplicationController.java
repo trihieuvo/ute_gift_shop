@@ -19,7 +19,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/apply")
-@PreAuthorize("hasAuthority('Customer')") // Chỉ Customer mới được apply
 public class ApplicationController {
 
     @Autowired

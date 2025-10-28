@@ -5,7 +5,18 @@ import java.sql.Timestamp;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -36,6 +47,16 @@ public class Order {
     @Column(name = "payment_method", length = 50, nullable = false)
     private String paymentMethod;
 
+    // === BỔ SUNG CÁC TRƯỜNG CHO CỔNG THANH TOÁN ===
+    @Column(name = "payment_status", length = 20)
+    private String paymentStatus; // PENDING, SUCCESS, FAILED
+
+    @Column(name = "payment_trans_id", length = 50)
+    private String paymentTransId; // Mã giao dịch của cổng thanh toán
+
+    @Column(name = "payment_request_id", length = 50)
+    private String paymentRequestId; // Mã requestId của đơn hàng
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "shipper_id")
     private User shipper; // Người giao hàng
@@ -49,12 +70,13 @@ public class Order {
     @Column(name = "proof_of_delivery_image_url", columnDefinition = "TEXT")
     private String proofOfDeliveryImageUrl;
 
-    // === CHỈNH SỬA Ở ĐÂY ===
+
     @Column(name = "is_cod_reconciled", nullable = false, columnDefinition = "boolean default false")
     private boolean isCodReconciled = false; // Đã đối soát tiền COD hay chưa
-    // === KẾT THÚC CHỈNH SỬA ===
+  
 
     @JsonManagedReference
     @OneToMany(mappedBy = "order", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
+    
 }

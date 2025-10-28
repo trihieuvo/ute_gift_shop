@@ -9,7 +9,6 @@
         .order-card {
             border: 1px solid #ddd;
             border-left-width: 5px;
-            /* border-left-color: #ffc107; (Màu vàng) Sẽ đổi theo trạng thái */
             border-radius: 5px;
             margin-bottom: 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,.05);
@@ -18,27 +17,20 @@
         .order-card:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,.1);
         }
-        /* Màu cho đơn đang giao */
-        .order-card-delivering {
-            border-left-color: #0d6efd; /* Màu xanh dương */
-        }
-        .order-card-new {
-             border-left-color: #ffc107; /* Màu vàng */
-        }
+        .order-card-delivering { border-left-color: #0d6efd; } /* Blue */
+        .order-card-new { border-left-color: #ffc107; } /* Yellow */
 
-        .order-card-body {
-            padding: 1rem;
-        }
-        .order-card-footer {
-            background-color: #f9f9f9;
-            padding: 0.75rem 1rem;
-            border-top: 1px solid #eee;
-        }
-        .phone-link {
+        .order-card-body { padding: 1rem; }
+        .order-card-footer { background-color: #f9f9f9; padding: 0.75rem 1rem; border-top: 1px solid #eee; }
+        .phone-link, .address-link { /* Apply to both links */
             font-weight: 500;
             text-decoration: none;
+            color: #0d6efd; /* Make links blue */
         }
-        .phone-link i {
+        .phone-link:hover, .address-link:hover {
+            text-decoration: underline;
+        }
+        .phone-link i, .address-link i { /* Apply to both icons */
             margin-right: 5px;
         }
     </style>
@@ -80,7 +72,7 @@
 
                 if (response.ok) {
                     const orders = await response.json();
-                    container.innerHTML = ''; // Xóa dòng "Đang tải..."
+                    container.innerHTML = ''; // Clear loading message
 
                     if (orders.length === 0) {
                         container.innerHTML = `
@@ -95,7 +87,6 @@
                     orders.forEach(order => {
                         const orderCard = document.createElement('div');
 
-                        // Phân loại màu thẻ
                         let cardClass = 'order-card';
                         let statusBadge = '';
                         if(order.status === 'DELIVERING') {
@@ -107,7 +98,6 @@
                         }
                         orderCard.className = cardClass;
 
-
                         let totalAmountDisplay = order.totalAmount ? formatter.format(order.totalAmount) : 'N/A';
 
                         let paymentTag = '';
@@ -117,15 +107,20 @@
                             paymentTag = `<span class="badge bg-success">Đã thanh toán</span>`;
                         }
 
+                        // ---> CHỈNH SỬA PHẦN NÀY <---
+                        // Link cho số điện thoại
                         let phoneHtml = order.recipientPhone
                             ? `<a href="tel:${order.recipientPhone}" class="phone-link"><i class="bi bi-telephone-fill"></i> ${order.recipientPhone}</a>`
                             : `<span class="text-muted">Không có SĐT</span>`;
 
-                        // Tạo URL chính xác
-                        const detailUrl = `/shipper/orders/${order.id}`;
-                        // console.log(`URL được tạo cho order ${order.id}: ${detailUrl}`); // Log cũ
+                        // Link cho địa chỉ Google Maps
+                        let addressHtml = order.shippingAddress
+                            ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.shippingAddress)}" target="_blank" rel="noopener noreferrer" class="address-link"><i class="bi bi-geo-alt-fill"></i> ${order.shippingAddress}</a>`
+                            : `<span class="text-muted">Không có địa chỉ</span>`;
+                        // ---> KẾT THÚC CHỈNH SỬA <---
 
-                        // Tạo chuỗi HTML
+                        const detailUrl = `/shipper/orders/${order.id}`;
+
                         const cardHTML = `
                             <div class="order-card-body">
                                 <div class="d-flex justify-content-between align-items-start">
@@ -142,8 +137,8 @@
                                     ${order.recipientName || 'N/A'} (${phoneHtml})
                                 </p>
                                 <p class="mb-0">
-                                    <strong><i class="bi bi-geo-alt-fill text-muted"></i> Địa chỉ:</strong>
-                                    ${order.shippingAddress || 'N/A'}
+                                    <strong> Địa chỉ:</strong>
+                                    ${addressHtml} 
                                 </p>
                             </div>
                             <div class="order-card-footer text-end">
@@ -152,10 +147,6 @@
                                 </a>
                             </div>
                         `;
-
-                        // === THÊM LOG MỚI ĐỂ KIỂM TRA HTML ===
-                        console.log(`HTML cho order ${order.id}:`, cardHTML);
-                        // === KẾT THÚC THÊM LOG ===
 
                         orderCard.innerHTML = cardHTML;
                         container.appendChild(orderCard);

@@ -38,14 +38,14 @@ public class User {
     @Column(name = "phone_number", length = 20, nullable = true)
     private String phoneNumber;
 
-    @Column(name = "avatar_url", length = 255, nullable = true)
+    @Column(name = "avatar_url", length = 512, nullable = true) // Increased length slightly
     private String avatarUrl;
 
     @Column(length = 255, nullable = false)
     private String password;
 
     @Column(name = "is_active", nullable = false)
-    private boolean isActive = false; // Mặc định là false
+    private boolean isActive = false;
 
     @Column(name = "created_at", updatable = false)
     private Timestamp createdAt = new Timestamp(System.currentTimeMillis());
@@ -53,17 +53,15 @@ public class User {
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
 
-    // Dùng cho Quên mật khẩu
     @Column(name = "password_reset_otp")
     private String passwordResetOtp;
 
     @Column(name = "otp_expiry_time")
     private Timestamp otpExpiryTime;
 
-    // BỔ SUNG: Dùng cho Kích hoạt tài khoản
     @Column(name = "activation_otp")
     private String activationOtp;
 
     @Column(name = "activation_otp_expiry_time")
-    private Timestamp activationOtpExpiryTime; // Đảm bảo tên này chính xác
+    private Timestamp activationOtpExpiryTime;
 }

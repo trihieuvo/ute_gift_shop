@@ -2,6 +2,7 @@ package com.utegiftshop.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // Thêm import HttpMethod
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -46,66 +47,75 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // ===== 1. CÁC ĐƯỜNG DẪN CÔNG KHAI (KHÔNG CẦN ĐĂNG NHẬP) =====
-                .requestMatchers(
-                    "/", "/home", "/login", "/signup", "/activate",
-                    "/forgot-password", "/reset-password",
-                    "/cart", "/checkout", "/profile",
-                    "/api/auth/**",
-                    "/api/products/**",
-                    "/order-history", "/orders/**",
-                    "/css/**", "/js/**", "/images/**", "/*.ico",
-                    "/error",
-                    "/shipper/**",
-                    "/vendor/**",
-                    "/api/images/**",
-                    "/v3/api-docs/**", "/swagger-ui/**"
-                ).permitAll()
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		http
+			.csrf(csrf -> csrf.disable())
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.authorizeHttpRequests(auth -> auth
+				// ===== 1. CÁC ĐƯỜNG DẪN CÔNG KHAI (KHÔNG CẦN ĐĂNG NHẬP) =====
+				.requestMatchers(
+					"/", "/home", "/login", "/signup", "/activate",
+					"/forgot-password", "/reset-password",
+					"/cart", "/checkout", "/profile",
+					"/api/auth/**",
+					 "/api/products/**", "/api/categories", "/products/**",
+					"/order-history", "/orders/**", 
+					"/css/**", "/js/**", "/images/**", "/*.ico",
+					"/error",
+					"/shipper/**", 
+					"/vendor/**", 
+					"/api/images/**",
+					"/ws/**",
+					"/v3/api-docs/**", "/swagger-ui/**",
+					"/api/reviews/product/**",
+                    "/api/reviews/me"
+				).permitAll()
 
-                // ===== 2. API YÊU CẦU ĐĂNG NHẬP (BẤT KỲ VAI TRÒ) =====
-                .requestMatchers(
-                    "/api/users/me",
-                    "/api/chat/**"
-                ).authenticated()
+				// ===== 2. API YÊU CẦU ĐĂNG NHẬP (BẤT KỲ VAI TRÒ) =====
+				.requestMatchers(
+					"/api/users/me", 
+                    "/api/users/me/avatar", 
+                    "/api/users/me/change-password", 
+                    "/api/users/me", 
+					"/api/chat/**", 
+					"/api/addresses",
+					"/api/cart/**",
+					"/api/reviews/eligibility/**",
+					"api/orders/**"
+				).authenticated()
 
-                // ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
-                .requestMatchers(
-                    "/api/cart/**",
-                    "/api/addresses/**",
-                    "/api/orders/**",
-                    // === BẮT ĐẦU THÊM MỚI ===
-                    "/api/apply/**" // API để nộp đơn
-                    // === KẾT THÚC THÊM MỚI ===
-                ).hasAuthority("Customer")
+				// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
+				.requestMatchers(
+					"/api/cart/**", // Tất cả API giỏ hàng
+					"/api/addresses/**", // Tất cả API địa chỉ
+					"/api/orders/**", // API đặt hàng, xem lịch sử, hủy đơn
+					"/api/apply/**", // API để nộp đơn xin vai trò
+					// POST tạo đánh giá mới và PUT cập nhật đánh giá
+					"/api/reviews",
+					"/api/reviews/*" // Cho phép PUT /api/reviews/{reviewId}
+				).hasAuthority("Customer")
 
-                // ===== 4. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
-                .requestMatchers(
-                    "/api/shipper/**"
-                 ).hasAuthority("Shipper")
+				// ===== 4. CÁC ĐƯỜNG DẪN CHO SHIPPER (YÊU CẦU ROLE "Shipper") =====
+				.requestMatchers(
+					"/api/shipper/**"
+				).hasAuthority("Shipper")
 
-                // ===== 5. CÁC ĐƯỜNG DẪN CHO VENDOR (YÊU CẦU ROLE "Vendor") =====
-                .requestMatchers(
-                    "/api/vendor/**"
-                 ).hasAuthority("Vendor")
+				// ===== 5. CÁC ĐƯỜNG DẪN CHO VENDOR (YÊU CẦU ROLE "Vendor") =====
+				.requestMatchers(
+					"/api/vendor/**"
+				).hasAuthority("Vendor")
 
-                // ===== 6. CÁC ĐƯỜNG DẪN CHO ADMIN (YÊU CẦU ROLE "Admin") =====
-                .requestMatchers(
-                    // === BẮT ĐẦU THÊM MỚI ===
-                    "/api/admin/**" // API để duyệt đơn
-                    // === KẾT THÚC THÊM MỚI ===
-                ).hasAuthority("Admin")
+				// ===== 6. CÁC ĐƯỜNG DẪN CHO ADMIN (YÊU CẦU ROLE "Admin") =====
+				.requestMatchers(
+					"/api/admin/**" // API để duyệt đơn xin vai trò
+				).hasAuthority("Admin")
 
-                // ===== 7. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
-                .anyRequest().authenticated()
-            );
+				// ===== 7. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
+				.anyRequest().authenticated()
+			);
 
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+		http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+		return http.build();
+	}
 }

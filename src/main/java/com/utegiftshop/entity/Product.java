@@ -1,12 +1,13 @@
-// src/main/java/com/utegiftshop/entity/Product.java
-
 package com.utegiftshop.entity;
 
-import java.math.BigDecimal; // Thêm import này
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List; // THÊM IMPORT NÀY
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference; // THÊM IMPORT NÀY
 
+import jakarta.persistence.CascadeType; // THÊM IMPORT NÀY
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany; // THÊM IMPORT NÀY
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,13 +32,11 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // THAY ĐỔI 1: Thêm @JsonIgnore
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id", nullable = false)
     private Shop shop;
 
-    // THAY ĐỔI 2: Thêm @JsonIgnore
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
@@ -62,7 +62,13 @@ public class Product {
 
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
-    @Column(name = "image_url", length = 512)
-    private String imageUrl;
-    // === KẾT THÚC BỔ SUNG ===
+    
+    // @Column(name = "image_url", length = 512) // <-- XÓA DÒNG NÀY
+    // private String imageUrl;
+
+    // === THÊM MỚI: Mối quan hệ một-nhiều với ProductImage ===
+    @JsonManagedReference
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<ProductImage> images;
+    // === KẾT THÚC THÊM MỚI ===
 }

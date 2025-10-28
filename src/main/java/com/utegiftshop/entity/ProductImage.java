@@ -1,5 +1,7 @@
 package com.utegiftshop.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference; // THÊM IMPORT NÀY
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,6 +25,8 @@ public class ProductImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // === THÊM MỚI: @JsonBackReference ===
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
