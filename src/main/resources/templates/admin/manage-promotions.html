@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Khuyến mãi</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">
+        Quản lý Khuyến mãi Toàn trang
+      </h1>
+
+      <div class="row">
+        <div class="col-md-5">
+          <div class="card">
+            <div class="card-header">
+              <h5 id="form-title">Tạo Mã Giảm Giá Mới</h5>
+            </div>
+            <div class="card-body">
+              <input type="hidden" id="promotion-id" />
+
+              <div class="mb-3">
+                <label for="code" class="form-label">Mã Code (*)</label>
+                <input type="text" class="form-control" id="code" required />
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="discount-percent" class="form-label"
+                    >Giảm giá (%) (*)</label
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="discount-percent"
+                    required
+                    min="1"
+                    max="100"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="quantity" class="form-label"
+                    >Số lượng Mã (*)</label
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="quantity"
+                    required
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="min-order-value" class="form-label"
+                  >Đơn hàng tối thiểu (Đ)</label
+                >
+                <input
+                  type="number"
+                  class="form-control"
+                  id="min-order-value"
+                  value="0"
+                  min="0"
+                />
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="start-date" class="form-label"
+                    >Ngày Bắt đầu (*)</label
+                  >
+                  <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="start-date"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="end-date" class="form-label"
+                    >Ngày Kết thúc (*)</label
+                  >
+                  <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="end-date"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button class="btn btn-primary" onclick="handleSave()">
+                <i class="bi bi-floppy-fill"></i> Lưu Khuyến mãi
+              </button>
+              <button
+                class="btn btn-secondary"
+                onclick="clearForm()"
+                id="btn-cancel"
+                style="display: none"
+              >
+                <i class="bi bi-x-circle"></i> Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-7">
+          <div class="card">
+            <div class="card-header">Danh sách Khuyến mãi Toàn trang</div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Code</th>
+                      <th>Giảm giá</th>
+                      <th>SL còn</th>
+                      <th>Ngày KT</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody id="promotion-table-body">
+                    <tr>
+                      <td colspan="6" class="text-center">Đang tải...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/promotions";
+
+        // DOM Elements
+        const tbody = document.getElementById("promotion-table-body");
+        const formTitle = document.getElementById("form-title");
+        const promotionId = document.getElementById("promotion-id");
+        const code = document.getElementById("code");
+        const discountPercent = document.getElementById("discount-percent");
+        const quantity = document.getElementById("quantity");
+        const minOrderValue = document.getElementById("min-order-value");
+        const startDate = document.getElementById("start-date");
+        const endDate = document.getElementById("end-date");
+        const btnCancel = document.getElementById("btn-cancel");
+
+        // Helpers
+        const formatDateForInput = (dateString) => {
+          if (!dateString) return "";
+          const date = new Date(dateString);
+          date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+          return date.toISOString().slice(0, 16);
+        };
+        const formatCurrency = (amount) =>
+          new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
+            .format(amount)
+            .replace("₫", "Đ");
+
+        document.addEventListener("DOMContentLoaded", fetchPromotions);
+
+        // 1. Tải danh sách Khuyến mãi
+        async function fetchPromotions() {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center">Đang tải...</td></tr>';
+
+          try {
+            const response = await fetch(API_URL, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error("Lỗi tải dữ liệu");
+
+            const promotions = await response.json();
+            tbody.innerHTML = "";
+
+            if (promotions.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="6" class="text-center">Chưa có chương trình khuyến mãi nào.</td></tr>';
+            }
+
+            promotions.forEach((promo) => {
+              const actionButtons = `
+                <button class.="btn btn-warning btn-sm" onclick="handleEdit('${
+                  promo.id
+                }', '${promo.code}', ${promo.discountPercent}, ${
+                promo.quantity
+              }, ${promo.minOrderValue || 0}, '${promo.startDate}', '${
+                promo.endDate
+              }')">
+                  <i class="bi bi-pencil-square"></i> Sửa
+                </button>
+                <button class.="btn btn-danger btn-sm" onclick="handleDelete(${
+                  promo.id
+                })">
+                  <i class="bi bi-trash-fill"></i> Xóa
+                </button>`;
+
+              tbody.innerHTML += `
+                <tr id="row-${promo.id}">
+                  <td>${promo.id}</td>
+                  <td>${promo.code}</td>
+                  <td>${promo.discountPercent}%</td>
+                  <td>${promo.quantity}</td>
+                  <td>${new Date(promo.endDate).toLocaleDateString(
+                    "vi-VN"
+                  )}</td>
+                  <td>${actionButtons}</td>
+                </tr>
+              `;
+            });
+          } catch (err) {
+            tbody.innerHTML =
+              '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
+          }
+        }
+
+        // 2. Xóa Form
+        function clearForm() {
+          formTitle.textContent = "Tạo Mã Giảm Giá Mới";
+          promotionId.value = "";
+          code.value = "";
+          discountPercent.value = "";
+          quantity.value = "";
+          minOrderValue.value = "0";
+          startDate.value = "";
+          endDate.value = "";
+          btnCancel.style.display = "none";
+        }
+
+        // 3. Đưa dữ liệu lên Form để Sửa
+        function handleEdit(
+          id,
+          promoCode,
+          discount,
+          qty,
+          minOrder,
+          start,
+          end
+        ) {
+          formTitle.textContent = "Cập nhật Mã Giảm Giá";
+          promotionId.value = id;
+          code.value = promoCode;
+          discountPercent.value = discount;
+          quantity.value = qty;
+          minOrderValue.value = minOrder;
+          startDate.value = formatDateForInput(start);
+          endDate.value = formatDateForInput(end);
+          btnCancel.style.display = "inline-block";
+        }
+
+        // 4. Xử lý Lưu (Thêm/Cập nhật)
+        async function handleSave() {
+          const id = promotionId.value || null;
+          const promoCode = code.value.trim();
+          const discount = discountPercent.value;
+          const qty = quantity.value;
+          const minOrder = minOrderValue.value;
+          const start = startDate.value;
+          const end = endDate.value;
+
+          if (!promoCode || !discount || !qty || !start || !end) {
+            Swal.fire(
+              "Lỗi",
+              "Vui lòng nhập đầy đủ các trường bắt buộc (*)",
+              "error"
+            );
+            return;
+          }
+
+          const promotionData = {
+            id,
+            code: promoCode,
+            discountPercent: parseFloat(discount),
+            minOrderValue: parseFloat(minOrder),
+            quantity: parseInt(qty),
+            startDate: start, // ISO 8601 string, Spring Boot sẽ xử lý
+            endDate: end,
+            shopId: null, // RẤT QUAN TRỌNG: Đánh dấu là Khuyến mãi toàn trang
+          };
+
+          try {
+            const response = await fetch(API_URL, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(promotionData),
+            });
+
+            if (!response.ok) throw new Error("Lỗi khi lưu");
+
+            Swal.fire(
+              "Thành công!",
+              "Đã lưu chương trình khuyến mãi.",
+              "success"
+            );
+            clearForm();
+            fetchPromotions(); // Tải lại bảng
+          } catch (err) {
+            Swal.fire(
+              "Lỗi",
+              "Không thể lưu. Mã code có thể bị trùng.",
+              "error"
+            );
+          }
+        }
+
+        // 5. Xử lý Xóa
+        async function handleDelete(id) {
+          Swal.fire({
+            title: "Bạn chắc chắn?",
+            text: "Bạn muốn XÓA mã khuyến mãi này?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc3545",
+            cancelButtonText: "Hủy",
+            confirmButtonText: "Vâng, xóa!",
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (!response.ok) throw new Error("Lỗi khi xóa");
+
+                Swal.fire("Đã xóa!", "Đã xóa mã khuyến mãi.", "success");
+                fetchPromotions(); // Tải lại bảng
+              } catch (err) {
+                Swal.fire("Lỗi", "Không thể xóa.", "error");
+              }
+            }
+          });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

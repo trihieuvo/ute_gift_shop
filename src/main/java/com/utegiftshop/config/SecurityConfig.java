@@ -2,8 +2,7 @@ package com.utegiftshop.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // Thêm import HttpMethod
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationManager; // Thêm import HttpMethod
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -64,6 +63,7 @@ public class SecurityConfig {
 					"/error",
 					"/shipper/**", 
 					"/vendor/**", 
+                    "/admin/**",
 					"/api/images/**",
 					"/ws/**",
 					"/v3/api-docs/**", "/swagger-ui/**",
@@ -106,9 +106,7 @@ public class SecurityConfig {
 				).hasAuthority("Vendor")
 
 				// ===== 6. CÁC ĐƯỜNG DẪN CHO ADMIN (YÊU CẦU ROLE "Admin") =====
-				.requestMatchers(
-					"/api/admin/**" // API để duyệt đơn xin vai trò
-				).hasAuthority("Admin")
+				.requestMatchers("/api/v1/admin/**").hasAuthority("Admin")
 
 				// ===== 7. TẤT CẢ CÁC YÊU CẦU CÒN LẠI PHẢI ĐƯỢC XÁC THỰC =====
 				.anyRequest().authenticated()

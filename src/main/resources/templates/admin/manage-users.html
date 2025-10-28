@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Tài khoản</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Tài khoản</h1>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Họ Tên</th>
+                  <th>Email</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="user-table-body">
+                <tr>
+                  <td colspan="6" class="text-center">Đang tải...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const tableBody = document.getElementById("user-table-body");
+
+        // --- Tải danh sách khi trang được mở ---
+        document.addEventListener("DOMContentLoaded", fetchUsers);
+
+        async function fetchUsers() {
+          tableBody.innerHTML =
+            '<tr><td colspan="6" class="text-center">Đang tải...</td></tr>';
+          try {
+            const response = await fetch("/api/v1/admin/users", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const users = await response.json();
+            tableBody.innerHTML = ""; // Xóa loading
+
+            if (users.length === 0) {
+              tableBody.innerHTML =
+                '<tr><td colspan="6" class="text-center">Không có tài khoản nào.</td></tr>';
+              return;
+            }
+
+            users.forEach((user) => {
+              const roleName = user.role ? user.role.name : "N/A"; // Lấy tên Role
+              const statusBadge = user.active
+                ? '<span class="badge bg-success">Hoạt động</span>'
+                : '<span class="badge bg-danger">Đã khóa</span>';
+              const toggleButtonText = user.active ? "Khóa" : "Mở khóa";
+              const toggleButtonClass = user.active
+                ? "btn-danger"
+                : "btn-success";
+              const toggleIcon = user.active
+                ? "bi-lock-fill"
+                : "bi-unlock-fill";
+
+              tableBody.innerHTML += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.fullName || ""}</td>
+                                <td>${user.email}</td>
+                                <td>${roleName}</td>
+                                <td>${statusBadge}</td>
+                                <td>
+                                    <button class="btn btn-sm ${toggleButtonClass}" onclick="toggleUserStatus(${
+                user.id
+              })">
+                                      <i class="bi ${toggleIcon}"></i> ${toggleButtonText}
+                                    </button>
+                                    </td>
+                            </tr>
+                        `;
+            });
+          } catch (err) {
+            console.error("Lỗi tải user:", err);
+            tableBody.innerHTML =
+              '<tr><td colspan="6" class="text-center text-danger">Lỗi tải danh sách tài khoản.</td></tr>';
+          }
+        }
+
+        // --- Chức năng Khóa/Mở khóa ---
+        async function toggleUserStatus(userId) {
+          const actionText = document
+            .querySelector(`button[onclick='toggleUserStatus(${userId})']`)
+            .textContent.includes("Khóa")
+            ? "KHÓA"
+            : "MỞ KHÓA";
+
+          Swal.fire({
+            title: `Bạn chắc chắn muốn ${actionText} tài khoản này?`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: actionText === "KHÓA" ? "#dc3545" : "#198754",
+            cancelButtonText: "Hủy",
+            confirmButtonText: `Vâng, ${actionText}!`,
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              try {
+                const response = await fetch(
+                  `/api/v1/admin/users/${userId}/toggle-status`,
+                  {
+                    method: "PUT", // Dùng PUT để cập nhật trạng thái
+                    headers: { Authorization: `Bearer ${token}` },
+                  }
+                );
+                if (response.ok) {
+                  Swal.fire(
+                    "Thành công!",
+                    `Đã ${actionText.toLowerCase()} tài khoản.`,
+                    "success"
+                  );
+                  fetchUsers(); // Tải lại danh sách
+                } else {
+                  const error = await response.json();
+                  Swal.fire(
+                    "Lỗi!",
+                    error.message || "Không thể thay đổi trạng thái.",
+                    "error"
+                  );
+                }
+              } catch (err) {
+                Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
+              }
+            }
+          });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

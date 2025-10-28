@@ -6,19 +6,32 @@
 <head>
     <title>Shipper - Chi tiết Đơn hàng</title>
     <style>
-        .product-list-item { display: flex; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
-        .product-list-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 1rem; }
-        .product-info { flex-grow: 1; }
-        .product-info p { margin-bottom: 0; }
-        .product-price { text-align: right; min-width: 100px; }
-        #delivery-note-group, #pod-upload-group { display: none; }
-        /* ---> THÊM STYLE CHO LINK <--- */
-        .phone-link, .address-link {
-            text-decoration: none;
-            color: #0d6efd;
+        .product-list-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
         }
-        .phone-link:hover, .address-link:hover {
-            text-decoration: underline;
+        .product-list-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 1rem;
+        }
+        .product-info {
+            flex-grow: 1;
+        }
+        .product-info p {
+            margin-bottom: 0;
+        }
+        .product-price {
+            text-align: right;
+            min-width: 100px;
+        }
+        /* Ẩn các trường không cần thiết ban đầu */
+        #delivery-note-group, #pod-upload-group {
+            display: none;
         }
     </style>
 </head>
@@ -26,6 +39,10 @@
 
 <div layout:fragment="content">
     <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Chi tiết Đơn hàng #<span th:text="${orderId}">...</span></h1>
+        <a th:href="@{/shipper/orders}" class="btn btn-secondary btn-sm">
+             <i class="bi bi-arrow-left-circle"></i> Quay lại
+         </a>
         <h1>Chi tiết Đơn hàng #<span th:text="${orderId}">...</span></h1>
         <a th:href="@{/shipper/orders}" class="btn btn-secondary btn-sm">
              <i class="bi bi-arrow-left-circle"></i> Quay lại
@@ -38,9 +55,38 @@
         </div>
         <p class="mt-2">Đang tải chi tiết đơn hàng...</p>
     </div>
+    <div id="loading-container" class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Đang tải chi tiết đơn hàng...</p>
+    </div>
 
     <div id="details-container" class="d-none">
+    <div id="details-container" class="d-none">
         <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-person-fill text-muted"></i> Thông tin người nhận</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Tên:</strong> <span id="recipient-name">...</span></li>
+                        <li class="list-group-item"><strong>SĐT:</strong> <span id="recipient-phone">...</span></li>
+                        <li class="list-group-item"><strong>Địa chỉ:</strong> <span id="recipient-address">...</span></li>
+                    </ul>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-text-fill text-muted"></i> Thông tin đơn hàng</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Trạng thái:</strong> <span id="order-status" class="badge bg-primary fs-6">...</span></li>
+                        <li class="list-group-item"><strong>Phương thức TT:</strong> <span id="payment-method">...</span></li>
+                        <li class="list-group-item"><strong>Tổng tiền:</strong> <strong id="total-amount" class="text-danger fs-5">...</strong></li>
+                    </ul>
+                </div>
             <div class="col-lg-5">
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-light">
@@ -151,6 +197,7 @@
             detailsContainer.classList.add('d-none');
 
             try {
+                // Gọi API chi tiết đơn hàng
                 const response = await fetch(`/api/shipper/orders/${orderId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -302,6 +349,8 @@
 
             try {
                 const response = await fetch(`/api/shipper/orders/${orderId}/status`, {
+            try {
+                const response = await fetch(`/api/shipper/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -322,6 +371,7 @@
             }
         }
 
+        document.addEventListener('DOMContentLoaded', fetchOrderDetail);
         document.addEventListener('DOMContentLoaded', fetchOrderDetail);
     </script>
 </th:block>

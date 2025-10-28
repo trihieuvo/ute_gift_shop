@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Admin Dashboard</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Admin Dashboard</h1>
+
+      <div class="card mb-4">
+        <div class="card-header">Bộ lọc Dữ liệu</div>
+        <div class="card-body">
+          <div class="row align-items-end">
+            <div class="col-md-3 mb-3">
+              <label for="start-date" class="form-label">Từ ngày</label>
+              <input type="date" class="form-control" id="start-date" />
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="end-date" class="form-label">Đến ngày</label>
+              <input type="date" class="form-control" id="end-date" />
+            </div>
+            <div class="col-md-3 mb-3">
+              <button
+                class="btn btn-primary w-100"
+                onclick="fetchDashboardData()"
+              >
+                <i class="bi bi-funnel-fill"></i> Lọc Thống kê
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Tổng Doanh thu</h5>
+              <p class="card-text fs-3 fw-bold" id="total-revenue">
+                Đang tải...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Đơn hàng Đã giao</h5>
+              <p class="card-text fs-3 fw-bold" id="total-orders">
+                Đang tải...
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Người dùng Mới</h5>
+              <p class="card-text fs-3 fw-bold" id="total-users">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Shop Hoạt động</h5>
+              <p class="card-text fs-3 fw-bold" id="total-shops">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">Doanh thu theo thời gian</div>
+        <div class="card-body">
+          <canvas id="revenueChart" width="400" height="150"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const startDateInput = document.getElementById("start-date");
+        const endDateInput = document.getElementById("end-date");
+
+        let revenueChartInstance = null; // Để lưu instance của biểu đồ
+
+        // Định dạng tiền tệ
+        const formatVND = (amount) => {
+          return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+            minimumFractionDigits: 0,
+          }).format(amount);
+        };
+
+        document.addEventListener("DOMContentLoaded", fetchDashboardData);
+
+        async function fetchDashboardData() {
+          const startDate = startDateInput.value;
+          const endDate = endDateInput.value;
+
+          const params = new URLSearchParams();
+          if (startDate) params.append("startDate", startDate);
+          if (endDate) params.append("endDate", endDate);
+
+          const urlParams = "?" + params.toString();
+
+          // 1. Lấy số liệu tổng quan
+          try {
+            const response = await fetch(
+              "/api/v1/admin/stats/dashboard" + urlParams,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            const stats = await response.json();
+
+            document.getElementById("total-revenue").textContent = formatVND(
+              stats.totalRevenue
+            );
+            document.getElementById("total-orders").textContent =
+              stats.totalOrders;
+            document.getElementById("total-users").textContent =
+              stats.totalUsers; // New Users
+            document.getElementById("total-shops").textContent =
+              stats.totalActiveShops;
+          } catch (err) {
+            console.error("Lỗi tải số liệu tổng quan:", err);
+          }
+
+          // 2. Lấy dữ liệu cho biểu đồ
+          try {
+            const response = await fetch(
+              "/api/v1/admin/stats/revenue-chart" + urlParams,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            const monthlyData = await response.json();
+
+            renderRevenueChart(monthlyData);
+          } catch (err) {
+            console.error("Lỗi tải dữ liệu biểu đồ:", err);
+          }
+        }
+
+        // 3. Hàm vẽ biểu đồ
+        function renderRevenueChart(data) {
+          const ctx = document.getElementById("revenueChart").getContext("2d");
+
+          // Hủy biểu đồ cũ nếu có
+          if (revenueChartInstance) {
+            revenueChartInstance.destroy();
+          }
+
+          revenueChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: Object.keys(data),
+              datasets: [
+                {
+                  label: "Doanh thu (Đồng)",
+                  data: Object.values(data),
+                  backgroundColor: "rgba(40, 167, 69, 0.5)",
+                  borderColor: "rgba(40, 167, 69, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function (value, index, values) {
+                      return formatVND(value);
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

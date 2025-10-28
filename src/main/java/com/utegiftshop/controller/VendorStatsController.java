@@ -1,14 +1,9 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.dto.response.VendorDashboardStatsDto;
-import com.utegiftshop.entity.Shop;
-import com.utegiftshop.repository.ShopRepository;
-import com.utegiftshop.security.service.UserDetailsImpl;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +17,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-// Xóa các import không cần thiết liên quan đến Timestamp, LocalDate, LocalTime nếu chỉ tính tổng doanh thu
-// import java.sql.Timestamp;
-// import java.time.LocalDate;
-// import java.time.LocalDateTime;
-// import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.Map;
+import com.utegiftshop.dto.response.VendorDashboardStatsDto;
+import com.utegiftshop.entity.Shop;
+import com.utegiftshop.repository.ShopRepository;
+import com.utegiftshop.security.service.UserDetailsImpl;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceContext;
 
 
 @RestController

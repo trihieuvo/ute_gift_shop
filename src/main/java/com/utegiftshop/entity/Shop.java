@@ -1,8 +1,18 @@
 package com.utegiftshop.entity;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
-import jakarta.persistence.*; // Sử dụng jakarta.persistence thay vì javax.persistence
+import jakarta.persistence.Column; // Sử dụng jakarta.persistence thay vì javax.persistence
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -55,6 +65,9 @@ public class Shop {
 
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+
+    @Column(name = "commission_rate", precision = 5, scale = 2) // Ví dụ: 5.00%
+    private BigDecimal commissionRate = BigDecimal.ZERO; // Mặc định là 0
 
     // Thêm @PreUpdate để tự động cập nhật updatedAt
     @PreUpdate

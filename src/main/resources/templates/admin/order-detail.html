@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Chi tiết Đơn hàng</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">
+        Chi tiết Đơn hàng #<span id="order-id-display"></span>
+      </h1>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Thông tin Đơn hàng</div>
+            <div class="card-body">
+              <p><strong>Trạng thái:</strong> <span id="order-status" class="badge"></span></p>
+              <p><strong>Ngày đặt:</strong> <span id="order-date"></span></p>
+              <p><strong>Phương thức thanh toán:</strong> <span id="payment-method"></span></p>
+              <p><strong>Shipper:</strong> <span id="shipper-name"></span></p>
+            </div>
+          </div>
+          
+          <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">Thông tin Giao nhận</div>
+            <div class="card-body">
+              <p><strong>Người nhận:</strong> <span id="recipient-name"></span></p>
+              <p><strong>Điện thoại:</strong> <span id="recipient-phone"></span></p>
+              <p><strong>Địa chỉ:</strong> <span id="recipient-address"></span></p>
+              <p><strong>Phí Vận chuyển:</strong> <span id="shipping-fee"></span></p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-header bg-dark text-white">Tóm tắt Thanh toán</div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Tổng tiền sản phẩm:</td>
+                            <td class="text-end fw-bold" id="subtotal"></td>
+                        </tr>
+                        <tr>
+                            <td>Giảm giá (Mã KM):</td>
+                            <td class="text-end text-danger fw-bold" id="discount-amount"></td>
+                        </tr>
+                         <tr>
+                            <td>Phí vận chuyển:</td>
+                            <td class="text-end fw-bold" id="shipping-amount-summary"></td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>TỔNG THANH TOÁN:</strong></td>
+                            <td class="text-end fw-bold fs-4" id="total-amount"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">Danh sách Sản phẩm</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Shop</th>
+                            <th>Giá (đ)</th>
+                            <th>Số lượng</th>
+                            <th>Tổng (đ)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-details-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/orders";
+
+        // Lấy Order ID từ URL (ví dụ: /admin/order-detail/123)
+        const pathArray = window.location.pathname.split('/');
+        const orderId = pathArray[pathArray.length - 1];
+
+        // Định dạng tiền tệ
+        const formatVND = (amount) => {
+            if (amount === null || amount === undefined) return '0 đ';
+            return new Intl.NumberFormat('vi-VN', { 
+                style: 'currency', 
+                currency: 'VND',
+                minimumFractionDigits: 0
+            }).format(amount);
+        };
+        
+        // Map trạng thái để hiển thị badge
+        const statusMap = {
+            'NEW': { text: 'Đơn mới', class: 'bg-info' },
+            'CONFIRMED': { text: 'Đã xác nhận', class: 'bg-primary' },
+            'DELIVERING': { text: 'Đang giao', class: 'bg-warning' },
+            'DELIVERED': { text: 'Đã giao', class: 'bg-success' },
+            'CANCELLED': { text: 'Đã hủy', class: 'bg-danger' },
+        };
+
+        document.addEventListener("DOMContentLoaded", fetchOrderDetails);
+
+        async function fetchOrderDetails() {
+            document.getElementById('order-id-display').textContent = orderId;
+            
+            try {
+                const response = await fetch(`${API_URL}/${orderId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                
+                if (!response.ok) {
+                    document.getElementById('order-id-display').textContent = 'LỖI';
+                    Swal.fire('Lỗi', 'Không tìm thấy đơn hàng.', 'error');
+                    return;
+                }
+
+                const order = await response.json();
+                
+                // 1. Cập nhật Thông tin Đơn hàng
+                const statusInfo = statusMap[order.status] || { text: order.status, class: 'bg-secondary' };
+                document.getElementById('order-status').textContent = statusInfo.text;
+                document.getElementById('order-status').className = `badge ${statusInfo.class}`;
+                document.getElementById('order-date').textContent = new Date(order.orderDate).toLocaleString('vi-VN');
+                document.getElementById('payment-method').textContent = order.paymentMethod || 'COD';
+                document.getElementById('shipper-name').textContent = order.shipper ? order.shipper.fullName : 'Chưa phân công';
+
+                // 2. Cập nhật Thông tin Giao nhận
+                document.getElementById('recipient-name').textContent = order.shippingAddress.recipientName;
+                document.getElementById('recipient-phone').textContent = order.shippingAddress.phone;
+                document.getElementById('recipient-address').textContent = order.shippingAddress.fullAddress;
+                document.getElementById('shipping-fee').textContent = formatVND(order.shippingFee);
+
+
+                // 3. Cập nhật Tóm tắt Thanh toán
+                document.getElementById('subtotal').textContent = formatVND(order.subtotal);
+                document.getElementById('discount-amount').textContent = '-' + formatVND(order.discountAmount || 0);
+                document.getElementById('shipping-amount-summary').textContent = formatVND(order.shippingFee);
+                document.getElementById('total-amount').textContent = formatVND(order.totalAmount);
+
+                // 4. Cập nhật Danh sách Sản phẩm
+                const detailsBody = document.getElementById('order-details-body');
+                detailsBody.innerHTML = '';
+                
+                order.orderDetails.forEach(detail => {
+                    const productTotal = detail.unitPrice * detail.quantity;
+                    detailsBody.innerHTML += `
+                        <tr>
+                            <td>${detail.product.name}</td>
+                            <td>${detail.product.shop ? detail.product.shop.name : 'N/A'}</td>
+                            <td>${formatVND(detail.unitPrice)}</td>
+                            <td>${detail.quantity}</td>
+                            <td>${formatVND(productTotal)}</td>
+                        </tr>
+                    `;
+                });
+
+
+            } catch (err) {
+                console.error("Lỗi tải chi tiết đơn hàng:", err);
+                Swal.fire('Lỗi', 'Có lỗi xảy ra khi tải dữ liệu đơn hàng.', 'error');
+            }
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

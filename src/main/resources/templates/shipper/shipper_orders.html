@@ -81,6 +81,12 @@
                                 <h5>Tuyệt vời!</h5>
                                 <p class="mb-0">Bạn không có đơn hàng nào cần xử lý.</p>
                             </div>`;
+                        container.innerHTML = `
+                            <div class="alert alert-success text-center">
+                                <i class="bi bi-check-circle-fill fs-3 d-block mb-2"></i>
+                                <h5>Tuyệt vời!</h5>
+                                <p class="mb-0">Bạn không có đơn hàng nào cần xử lý.</p>
+                            </div>`;
                         return;
                     }
 
@@ -157,13 +163,16 @@
                 } else {
                     console.error('Lỗi lấy đơn hàng:', response.statusText);
                     container.innerHTML = '<div class="alert alert-danger text-center">Lỗi tải danh sách đơn hàng.</div>';
+                    container.innerHTML = '<div class="alert alert-danger text-center">Lỗi tải danh sách đơn hàng.</div>';
                 }
             } catch (error) {
                 console.error('Lỗi mạng:', error);
                  container.innerHTML = '<div class="alert alert-danger text-center">Lỗi kết nối mạng.</div>';
+                 container.innerHTML = '<div class="alert alert-danger text-center">Lỗi kết nối mạng.</div>';
             }
         }
 
+        document.addEventListener('DOMContentLoaded', fetchActiveOrders);
         document.addEventListener('DOMContentLoaded', fetchActiveOrders);
     </script>
 </th:block>

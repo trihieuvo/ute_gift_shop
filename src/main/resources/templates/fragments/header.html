@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <header th:fragment="header">
+      <nav
+        class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm"
+      >
+        <div class="container">
+          <a class="navbar-brand fw-bold" th:href="@{/home}">
+            <i class="bi bi-shop"></i> UTE GiftShop
+          </a>
+          <div class="d-flex align-items-center">
+            <a class="nav-link me-3" th:href="@{/cart}">
+              <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
+            </a>
+
+            <div class="dropdown">
+              <a
+                href="#"
+                class="nav-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="bi bi-person-circle fs-5"></i>
+                <span id="userGreeting">Tài khoản</span>
+              </a>
+              <ul id="user-menu" class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
+                <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <script th:inline="javascript">
+        // Hàm đăng xuất (nếu bạn muốn đặt chung ở đây)
+        function logout() {
+          localStorage.removeItem("jwtToken");
+          Swal.fire({
+            title: "Đã đăng xuất",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+          }).then(() => {
+            window.location.href = "/login";
+          });
+        }
+
+        // Hàm hiển thị menu Khách
+        function renderGuestMenu() {
+          const userGreetingElem = document.getElementById("userGreeting");
+          const userMenu = document.getElementById("user-menu");
+          if (userGreetingElem && userMenu) {
+            userGreetingElem.textContent = "Tài khoản";
+            userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
+                                  <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
+          }
+        }
+
+        // Hàm chính kiểm tra đăng nhập và cập nhật menu
+        (function checkLoginStatus() {
+          console.log("Bắt đầu kiểm tra trạng thái đăng nhập (header)...");
+          const token = localStorage.getItem("jwtToken");
+
+          if (!token) {
+            console.log("Không tìm thấy token. Hiển thị menu khách (header).");
+            renderGuestMenu();
+            return;
+          }
+
+          console.log(
+            "Đã tìm thấy token. Đang gọi API /api/users/me (header)..."
+          );
+          fetch("/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((response) => {
+              console.log("Phản hồi từ API (header):", response.status);
+              if (!response.ok) {
+                console.error("Yêu cầu API thất bại (header). Đăng xuất...");
+                logout(); // Token hỏng, đăng xuất
+                throw new Error("Token không hợp lệ"); // Dừng xử lý tiếp
+              }
+              return response.json();
+            })
+            .then((userInfo) => {
+              if (userInfo && userInfo.authenticated) {
+                console.log("Xác thực thành công (header). Dữ liệu:", userInfo);
+                const userGreetingElem =
+                  document.getElementById("userGreeting");
+                const userMenu = document.getElementById("user-menu");
+                if (userGreetingElem && userMenu) {
+                  userGreetingElem.textContent = `Chào, ${
+                    userInfo.fullName || userInfo.email
+                  }`;
+
+                  let menuItems = `<li><a class="dropdown-item" href="/profile">Thông tin cá nhân</a></li>
+                                       <li><a class="dropdown-item" href="/order-history">Lịch sử đơn hàng</a></li>`;
+
+                  // Hiển thị link dựa trên role
+                  if (userInfo.role === "Admin") {
+                    menuItems += `<li><a class="dropdown-item" href="/admin/dashboard">Admin Dashboard</a></li>`;
+                  } else if (userInfo.role === "Vendor") {
+                    menuItems += `<li><a class="dropdown-item" href="/vendor/products">Kênh Người Bán</a></li>`; // Sửa link cho Vendor
+                  } else if (userInfo.role === "Shipper") {
+                    menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard">Dashboard Shipper</a></li>`;
+                  }
+
+                  menuItems += `<li><hr class="dropdown-divider"></li>
+                                    <li><button class="dropdown-item" onclick="logout()">Đăng xuất</button></li>`;
+                  userMenu.innerHTML = menuItems;
+                  console.log("Giao diện header đã được cập nhật.");
+                }
+              } else {
+                console.log("API trả về không xác thực (header). Đăng xuất...");
+                logout();
+              }
+            })
+            .catch((error) => {
+              // Chỉ log lỗi nếu không phải là lỗi 'Token không hợp lệ' đã xử lý
+              if (error.message !== "Token không hợp lệ") {
+                console.error(
+                  "Đã xảy ra lỗi mạng trong quá trình xác thực (header):",
+                  error
+                );
+                Swal.fire(
+                  "Lỗi Mạng",
+                  "Không thể kết nối đến máy chủ để xác thực.",
+                  "error"
+                );
+                renderGuestMenu(); // Hiển thị menu khách
+              }
+            });
+        })(); // Chạy hàm ngay lập tức
+      </script>
+    </header>
+  </body>
+</html>
