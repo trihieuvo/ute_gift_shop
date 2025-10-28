@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Chiết khấu</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">
+        Quản lý Chiết khấu & Shop đang hoạt động
+      </h1>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên Shop</th>
+              <th>Chủ sở hữu (Email)</th>
+              <th>Ngày duyệt</th>
+              <th>Chiết khấu hiện tại</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="shop-table-body">
+            <tr>
+              <td colspan="6" class="text-center">Đang tải...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="modal fade"
+      id="commissionModal"
+      tabindex="-1"
+      aria-labelledby="commissionModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="commissionModalLabel">
+              Cập nhật Chiết khấu (<span id="modal-shop-name"></span>)
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="modal-shop-id" />
+            <div class="mb-3">
+              <label for="modal-commission-rate" class="form-label"
+                >Tỷ lệ Chiết khấu (%)</label
+              >
+              <input
+                type="number"
+                class="form-control"
+                id="modal-commission-rate"
+                min="0"
+                max="100"
+                step="0.01"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="handleSaveCommission()"
+            >
+              Lưu Chiết khấu
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/shops";
+
+        document.addEventListener("DOMContentLoaded", fetchActiveShops);
+
+        // 1. Tải danh sách Shop ĐANG HOẠT ĐỘNG
+        async function fetchActiveShops() {
+          const tbody = document.getElementById("shop-table-body");
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center">Đang tải...</td></tr>';
+
+          try {
+            // API /list?status=ACTIVE
+            const response = await fetch(`${API_URL}/list?status=ACTIVE`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!response.ok) throw new Error("Lỗi tải dữ liệu shop.");
+
+            const shops = await response.json();
+            tbody.innerHTML = "";
+
+            if (shops.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="6" class="text-center">Không có cửa hàng nào đang hoạt động.</td></tr>';
+            }
+
+            shops.forEach((shop) => {
+              const commissionRate = shop.commissionRate
+                ? parseFloat(shop.commissionRate).toFixed(2)
+                : "0.00";
+              const userEmail = shop.user ? shop.user.email : "N/A";
+              const approvedDate = new Date(shop.createdAt).toLocaleDateString(
+                "vi-VN"
+              );
+
+              tbody.innerHTML += `
+                        <tr>
+                            <td>${shop.id}</td>
+                            <td>${shop.name}</td>
+                            <td>${userEmail}</td>
+                            <td>${approvedDate}</td>
+                            <td>${commissionRate}%</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" 
+                                        onclick="openCommissionModal(${shop.id}, '${shop.name}', ${commissionRate})">
+                                    <i class="bi bi-pencil-square"></i> Chiết khấu
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+            });
+          } catch (err) {
+            console.error("Lỗi tải dữ liệu shop:", err);
+            tbody.innerHTML =
+              '<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
+          }
+        }
+
+        // 2. Logic Chiết khấu (Đã sửa lỗi Modal)
+        function openCommissionModal(id, name, rate) {
+          const modalShopId = document.getElementById("modal-shop-id");
+          const modalShopName = document.getElementById("modal-shop-name");
+          const modalCommissionRate = document.getElementById(
+            "modal-commission-rate"
+          );
+
+          // Kiểm tra lại ID để chắc chắn
+          if (!modalShopId || !modalShopName || !modalCommissionRate) {
+            console.error(
+              "LỖI KIỂM TRA LẠI: Không tìm thấy các ID ('modal-shop-id', 'modal-shop-name', 'modal-commission-rate') trong HTML Modal."
+            );
+            Swal.fire("Lỗi HTML", "Lỗi cấu trúc Modal Chiết khấu.", "error");
+            return;
+          }
+
+          modalShopId.value = id;
+          modalShopName.textContent = name;
+          modalCommissionRate.value = rate;
+
+          // Lệnh này giờ sẽ tìm thấy Modal vì Bootstrap JS đã được load đúng cách
+          const commissionModal = new bootstrap.Modal(
+            document.getElementById("commissionModal")
+          );
+          commissionModal.show();
+        }
+
+        async function handleSaveCommission() {
+          const shopId = document.getElementById("modal-shop-id").value;
+          const rate = document.getElementById("modal-commission-rate").value;
+
+          if (rate === "" || parseFloat(rate) < 0 || parseFloat(rate) > 100) {
+            Swal.fire("Lỗi", "Tỷ lệ chiết khấu phải từ 0% đến 100%.", "error");
+            return;
+          }
+
+          // Lấy instance của Modal để ẩn nó đi
+          const modalElement = document.getElementById("commissionModal");
+          if (!modalElement) {
+            console.error("Lỗi không tìm thấy Modal Element để ẩn.");
+            return;
+          }
+          const modalInstance = bootstrap.Modal.getInstance(modalElement);
+          if (modalInstance) {
+            modalInstance.hide();
+          } else {
+            console.warn("Không thể lấy Instance của Modal để ẩn.");
+            // Thử ẩn thủ công nếu instance không tồn tại
+            modalElement.classList.remove("show");
+            modalElement.style.display = "none";
+            const backdrop = document.querySelector(".modal-backdrop");
+            if (backdrop) backdrop.remove();
+            document.body.classList.remove("modal-open");
+            document.body.style.overflow = "";
+          }
+
+          try {
+            const response = await fetch(
+              `${API_URL}/${shopId}/commission?commissionRate=${rate}`,
+              {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+
+            if (!response.ok) throw new Error("Lỗi khi cập nhật chiết khấu.");
+
+            Swal.fire(
+              "Thành công!",
+              `Đã cập nhật chiết khấu thành ${rate}%.`,
+              "success"
+            );
+            fetchActiveShops(); // Tải lại danh sách để thấy chiết khấu mới
+          } catch (err) {
+            Swal.fire("Lỗi", "Không thể lưu. Vui lòng kiểm tra lại.", "error");
+          }
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

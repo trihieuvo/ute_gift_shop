@@ -1,0 +1,50 @@
+[33mca17250[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/admin[m[33m, [m[1;31morigin/feature/admin[m[33m)[m Feat: Admin - Complete Dashboard and Stats
+[33m2dbee37[m Feat: Admin - Complete Dashboard and Stats (Task 2)
+[33mb2121a0[m Feat: Admin - Complete Dashboard and Stats (Task 1)
+[33m1f20640[m Thêm chức năng Đơn hàng
+[33m78ce920[m Thêm chức năng Sản phẩm
+[33m4d96dba[m Thêm chức năng khuyến mãi
+[33me112b78[m Thêm chức năng Vận chuyển
+[33m0cc6fa8[m Thêm chức năng duyệt đăng kí Vendor
+[33mfe76666[m Merge branch 'main' into feature/admin
+[33mbfb51a8[m Feat: vendor_DM_TK
+[33mb79b7cb[m[33m ([m[1;32mmain[m[33m)[m minor fix to make /order-history work
+[33ma947b6c[m fix a small bug in /home
+[33m5d85de6[m - make /home better with Fisher-Yates shuffle. - fix image showing in /cart - optimize logic in /cart - Add product detail - Add some product images
+[33mb940a41[m add product view detail and add 2 cart feature
+[33m90aafde[m Merge branch 'main' of https://github.com/trihieuvo/ute_gift_shop
+[33m6165fcb[m  thêm delete sản phẩm, còn cấn lưu ảnh chưa hiện ngay được
+[33mbbb232c[m update upload directory path in application.properties
+[33m63a59b1[m new /home.html
+[33m3a5a7d3[m fix upload ảnh
+[33maad0c87[m Merge branch 'main' of https://github.com/trihieuvo/ute_gift_shop
+[33m88d1519[m  Quản lý cửa hàng
+[33m05b6d1e[m change from single-image product to multi-image product
+[33m5f3925c[m add chatbot feature
+[33m0dd5abe[m[33m ([m[1;32mfeature/admin-role[m[33m)[m Add AI chat bot Add role application Add showing single-image function
+[33m6489afd[m  Thêm quản lý đơn hàng
+[33md4b6ddc[m Merge branch 'main' of https://github.com/trihieuvo/ute_gift_shop
+[33m663117e[m  thêm quản lý sản phẩm
+[33m64041b2[m Completed Shipper-related function, waiting for other roles to finished to continue polishing
+[33mdd0763f[m feat: Enhance address management with default address logic, update and delete functionality
+[33m515d562[m refactor: Simplify home page structure and enhance product display logic
+[33m428eec5[m Refactor the ShipperApiController logic, add dto files and more htmls to process order details
+[33mca0eee8[m Implement more APIs and polish the shipper function
+[33m71da511[m Fix security issue that make the shipper functionality encounter errors
+[33ma1f99a3[m feat: Enhance user profile management with update and change password functionality
+[33mc2ac46b[m feat: Implement product retrieval API and update home page to display products (use for showing product in /home)
+[33m59c128c[m feat: Add comments to JavaScript sections in cart and profile templates for clarity
+[33m388416f[m feat: Add @JsonIgnore annotation to Address entity to prevent serialization of user field (use for /profile)
+[33m9621438[m feat: Add @JsonIgnore annotation to CartItem and Product entities to prevent unnecessary serialization (Use for cart)
+[33ma21a2cb[m feat: Implement address management and cart functionality
+[33mb9ac7a1[m Refactor home.html layout and styling for improved user experience and responsiveness
+[33m76cc3ab[m Implement Shipper logic, still need some fixing
+[33m46a92c8[m Implement shipper logic, still some bugs left
+[33m8fd2abf[m Implement Thymeleaf Dialect Layout integration into the code base, change the default security setting to make sure it is using spring securtiy
+[33mc284f83[m Revert "test"
+[33m14272a9[m test
+[33m45a1999[m Update register logic to required user to use OTP to create a new account
+[33mc5ef411[m Update SweetAlert2 for html files, change the signup html file to match the use case depiction
+[33m81d17e8[m Updated User entity, redesign the ui using bootstrap 5 for login/logout, added forget password function by adjusting the AuthController and add new email service, added necessary htmls
+[33mb5e1056[m Add entity classes for Address, CartItem, Category, Order, OrderDetail, Product, ProductImage, Promotion, Review, ShippingMethod, and Shop
+[33m2394c68[m first commit

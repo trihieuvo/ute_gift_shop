@@ -1,5 +1,6 @@
 package com.utegiftshop.entity;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 import jakarta.persistence.Column;
@@ -46,4 +47,7 @@ public class Shop {
 
     @Column(name = "updated_at")
     private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+
+    @Column(name = "commission_rate", precision = 5, scale = 2) // Ví dụ: 5.00%
+    private BigDecimal commissionRate = BigDecimal.ZERO; // Mặc định là 0
 }

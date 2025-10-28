@@ -1,11 +1,13 @@
 package com.utegiftshop.dto.response;
 
 import com.utegiftshop.entity.Shop;
-import com.utegiftshop.entity.User; // Cần import User
+import com.utegiftshop.entity.User;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.sql.Timestamp; // Thêm import này
+
+import java.sql.Timestamp;
+import java.math.BigDecimal; // Cần import cho Chiết khấu
 
 @Getter
 @Setter
@@ -14,31 +16,33 @@ public class ShopDto {
     private Long id;
     private String name;
     private String description;
-    private String logoUrl; // Entity của bạn CÓ trường này
+    private String logoUrl;
     private String status;
     
-    // THÊM: Trường này RẤT CẦN THIẾT cho file HTML/JS của bạn
+    // === BỔ SUNG: Trường Chiết khấu (Hoa hồng) ===
+    private BigDecimal commissionRate; 
+    
     private Timestamp createdAt; 
-
-    // Trường user quan trọng cho HTML/JS
     private UserInfoResponse user; 
 
-    // === HÀM KHỞI TẠO ĐÃ SỬA LỖI ===
+    // === HÀM KHỞI TẠO ĐÃ SỬA LỖI & THÊM CHIẾT KHẤU ===
     public ShopDto(Shop shop) {
         this.id = shop.getId();
         this.name = shop.getName();
         this.description = shop.getDescription();
-        this.logoUrl = shop.getLogoUrl(); // Lấy logoUrl từ entity
+        this.logoUrl = shop.getLogoUrl();
         this.status = shop.getStatus();
         
-        // THÊM: Lấy createdAt từ entity
+        // Lấy Chiết khấu từ Entity Shop (đã được thêm vào Entity ở bước trước)
+        this.commissionRate = shop.getCommissionRate(); 
+        
         this.createdAt = shop.getCreatedAt(); 
 
         // === Dùng đúng constructor 6 tham số của UserInfoResponse ===
         if (shop.getUser() != null) {
             User userEntity = shop.getUser();
             
-            // Gọi chính xác constructor 6 tham số bạn đã cung cấp
+            // Gọi chính xác constructor 6 tham số
             this.user = new UserInfoResponse(
                 true, // authenticated
                 userEntity.getId(), 

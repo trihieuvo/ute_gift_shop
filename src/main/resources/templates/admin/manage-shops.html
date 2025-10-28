@@ -6,11 +6,15 @@
   layout:decorate="~{layouts/_admin_layout}"
 >
   <head>
-    <title>Quản lý Cửa hàng</title>
+    <title>Yêu cầu Đăng ký Cửa hàng</title>
   </head>
   <body>
     <div layout:fragment="content">
       <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Yêu cầu Đăng ký Cửa hàng</h1>
+
+      <a th:href="@{/admin/manage-commissions}" class="btn btn-primary mb-3">
+        <i class="bi bi-tags-fill"></i> Quản lý Chiết khấu/Shop đang hoạt động
+      </a>
 
       <div class="table-responsive">
         <table class="table table-hover">
@@ -19,72 +23,80 @@
               <th>Tên Shop</th>
               <th>Chủ sở hữu (Email)</th>
               <th>Ngày đăng ký</th>
+              <th>Mô tả</th>
               <th>Hành động</th>
             </tr>
           </thead>
-          <tbody id="shop-table-body">
-            <tr>
-              <td colspan="4" class="text-center">Đang tải...</td>
-            </tr>
-          </tbody>
+          <tbody id="shop-table-body"></tbody>
         </table>
       </div>
     </div>
 
     <th:block layout:fragment="scripts_body">
       <script>
-        const token = localStorage.getItem("jwtToken"); // Lấy token
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/shops";
 
-        // 1. Tải danh sách khi trang được mở
         document.addEventListener("DOMContentLoaded", fetchPendingShops);
 
         async function fetchPendingShops() {
           const tbody = document.getElementById("shop-table-body");
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="text-center">Đang tải...</td></tr>';
 
           try {
-            const response = await fetch("/api/v1/admin/shops/pending", {
+            // SỬA LỖI: Gọi API /list với tham số status=PENDING
+            const response = await fetch(`${API_URL}/list?status=PENDING`, {
               headers: { Authorization: `Bearer ${token}` },
             });
+            if (!response.ok) throw new Error("Lỗi tải dữ liệu.");
 
             const shops = await response.json();
-            tbody.innerHTML = ""; // Xóa "Đang tải..."
+            tbody.innerHTML = "";
 
             if (shops.length === 0) {
               tbody.innerHTML =
-                '<tr><td colspan="4" class="text-center">Không có yêu cầu nào.</td></tr>';
+                '<tr><td colspan="5" class="text-center">Không có yêu cầu nào.</td></tr>';
             }
 
             shops.forEach((shop) => {
               const userEmail = shop.user ? shop.user.email : "N/A";
+              const registrationDate = new Date(
+                shop.createdAt
+              ).toLocaleDateString("vi-VN");
+
               tbody.innerHTML += `
-                            <tr>
-                                <td>${shop.name}</td>
-                                <td>${userEmail}</td>
-                                <td>${new Date(
-                                  shop.createdAt
-                                ).toLocaleDateString("vi-VN")}</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm" onclick="handleApprove(${
-                                      shop.id
-                                    })">
-                                        <i class="bi bi-check-lg"></i> Duyệt
-                                    </button>
-                                    <button class="btn btn-danger btn-sm" onclick="handleReject(${
-                                      shop.id
-                                    })">
-                                        <i class="bi bi-x-lg"></i> Từ chối
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
+                <tr>
+                    <td>${shop.name}</td>
+                    <td>${userEmail}</td>
+                    <td>${registrationDate}</td>
+                    <td>${
+                      shop.description
+                        ? shop.description.substring(0, 50) + "..."
+                        : "Không có"
+                    }</td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="handleApprove(${
+                          shop.id
+                        })">
+                            <i class="bi bi-check-lg"></i> Duyệt
+                        </button>
+                        <button class="btn btn-danger btn-sm ms-1" onclick="handleReject(${
+                          shop.id
+                        })">
+                            <i class="bi bi-x-lg"></i> Từ chối
+                        </button>
+                    </td>
+                </tr>
+              `;
             });
           } catch (err) {
             tbody.innerHTML =
-              '<tr><td colspan="4" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
+              '<tr><td colspan="5" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
           }
         }
 
-        // 2. Hàm xử lý nút "Duyệt"
+        // Hàm Phê duyệt/Từ chối (Đã bổ sung logic đầy đủ)
         async function handleApprove(shopId) {
           Swal.fire({
             title: "Bạn chắc chắn?",
@@ -96,18 +108,25 @@
             confirmButtonText: "Vâng, phê duyệt!",
           }).then(async (result) => {
             if (result.isConfirmed) {
-              await fetch(`/api/v1/admin/shops/${shopId}/approve`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-              });
-
-              Swal.fire("Thành công!", "Đã phê duyệt cửa hàng.", "success");
-              fetchPendingShops(); // Tải lại danh sách
+              try {
+                const response = await fetch(`${API_URL}/${shopId}/approve`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) throw new Error("Lỗi khi phê duyệt");
+                Swal.fire("Thành công!", "Đã phê duyệt cửa hàng.", "success");
+                fetchPendingShops(); // Tải lại danh sách
+              } catch (err) {
+                Swal.fire(
+                  "Lỗi!",
+                  "Không thể phê duyệt. Vui lòng thử lại.",
+                  "error"
+                );
+              }
             }
           });
         }
 
-        // 3. Hàm xử lý nút "Từ chối"
         async function handleReject(shopId) {
           Swal.fire({
             title: "Bạn chắc chắn?",
@@ -119,13 +138,21 @@
             confirmButtonText: "Vâng, từ chối!",
           }).then(async (result) => {
             if (result.isConfirmed) {
-              await fetch(`/api/v1/admin/shops/${shopId}/reject`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-              });
-
-              Swal.fire("Đã từ chối", "Đã từ chối yêu cầu.", "info");
-              fetchPendingShops(); // Tải lại danh sách
+              try {
+                const response = await fetch(`${API_URL}/${shopId}/reject`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) throw new Error("Lỗi khi từ chối");
+                Swal.fire("Đã từ chối", "Đã từ chối yêu cầu.", "info");
+                fetchPendingShops(); // Tải lại danh sách
+              } catch (err) {
+                Swal.fire(
+                  "Lỗi!",
+                  "Không thể từ chối. Vui lòng thử lại.",
+                  "error"
+                );
+              }
             }
           });
         }
