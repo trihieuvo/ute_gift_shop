@@ -129,6 +129,14 @@
         }
 
         /* === KẾT THÚC CSS MỚI === */
+
+        /* --> THÊM CSS CHO BADGE GIỎ HÀNG <-- */
+        #cart-item-count {
+            font-size: 0.75rem; /* Kích thước chữ nhỏ hơn */
+            padding: 0.2em 0.5em; /* Padding nhỏ hơn */
+            vertical-align: top; /* Căn chỉnh badge lên trên một chút */
+            /* Các class position-absolute... đã xử lý vị trí */
+        }
     </style>
     <th:block layout:fragment="styles"></th:block>
     <th:block layout:fragment="scripts_head"></th:block>
@@ -142,8 +150,9 @@
                 <i class="bi bi-shop"></i> UTE GiftShop
             </a>
             <div class="d-flex align-items-center">
-                <a class="nav-link me-3" th:href="@{/cart}">
+                <a class="nav-link me-3 position-relative" th:href="@{/cart}">
                     <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
+                    <span class="badge bg-danger ms-1 position-absolute top-0 start-100 translate-middle" id="cart-item-count" style="display: none;">0</span>
                 </a>
                 <div class="dropdown">
                     <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown"
@@ -244,16 +253,57 @@
                 });
         }
 
+        // --> THÊM HÀM CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG <--
+        async function updateCartCount() {
+            const token = localStorage.getItem('jwtToken');
+            const cartCountBadge = document.getElementById('cart-item-count');
+
+            if (!token || !cartCountBadge) {
+                if(cartCountBadge) cartCountBadge.style.display = 'none'; // Ẩn nếu không đăng nhập hoặc không tìm thấy badge
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/cart', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const items = await response.json();
+                    // Đếm số lượng item khác nhau, hoặc tổng số lượng sản phẩm tùy logic bạn muốn
+                    // Ở đây đếm số lượng item khác nhau (số dòng trong giỏ hàng)
+                    const count = items.length;
+                    cartCountBadge.textContent = count;
+                    if (count > 0) {
+                        cartCountBadge.style.display = 'inline-block'; // Hiện badge nếu có hàng
+                    } else {
+                        cartCountBadge.style.display = 'none'; // Ẩn nếu giỏ trống
+                    }
+                } else {
+                    // Xử lý lỗi (ví dụ: token hết hạn)
+                    console.error("Lỗi khi lấy giỏ hàng để cập nhật số lượng:", response.status);
+                    cartCountBadge.style.display = 'none'; // Ẩn nếu có lỗi
+                }
+            } catch (error) {
+                console.error("Lỗi mạng khi lấy số lượng giỏ hàng:", error);
+                cartCountBadge.style.display = 'none'; // Ẩn nếu có lỗi mạng
+            }
+        }
+        // --> KẾT THÚC HÀM MỚI <--
+
+
         function renderGuestMenu() {
             const userGreetingElem = document.getElementById('userGreeting');
             const userMenu = document.getElementById('user-menu');
             const navbarAvatar = document.getElementById('navbarUserAvatar');
+            const cartCountBadge = document.getElementById('cart-item-count'); // --> Lấy badge
+
             if (userGreetingElem && userMenu && navbarAvatar) {
                 userGreetingElem.textContent = 'Tài khoản';
                 navbarAvatar.src = '/images/placeholder-avatar-small.png'; // Cần tạo ảnh này
                 navbarAvatar.alt = 'Guest Avatar';
                 userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
                                       <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
+                if(cartCountBadge) cartCountBadge.style.display = 'none'; // --> Ẩn badge khi là khách
             } else {
                 console.error("renderGuestMenu: Navbar elements not found!");
             }
@@ -269,6 +319,7 @@
             const userMenu = document.getElementById('user-menu');
             if (!userGreetingElem || !userMenu || !navbarAvatar) {
                 console.error("checkLoginStatus: Navbar elements not found!");
+                renderGuestMenu(); // Hiển thị menu khách nếu lỗi DOM
                 return; // Dừng nếu không tìm thấy element
             }
             // --- Kết thúc kiểm tra ---
@@ -297,7 +348,7 @@
                     } else {
                         console.error(`Lỗi server (${response.status}) khi gọi API /me. Hiển thị menu khách.`);
                         globalUserInfo = null;
-                        renderGuestMenu();
+                        renderGuestMenu(); // Hiển thị menu khách nếu lỗi server khác
                     }
                     return;
                 }
@@ -334,6 +385,9 @@
                     userMenu.innerHTML = menuItems;
                     console.log("Giao diện đã được cập nhật.");
 
+                    // --> GỌI HÀM CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG KHI ĐĂNG NHẬP THÀNH CÔNG <--
+                    updateCartCount();
+
                 } else {
                     console.log("API trả về không xác thực. Đăng xuất...");
                     logout(); // Gọi logout nếu API nói không authenticated
@@ -342,7 +396,7 @@
                 console.error("Đã xảy ra lỗi mạng trong quá trình xác thực:", error);
                 Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
                 globalUserInfo = null;
-                renderGuestMenu();
+                renderGuestMenu(); // Hiển thị menu khách nếu lỗi mạng
             }
         }
 
@@ -354,6 +408,7 @@
     <th:block layout:fragment="scripts_body"></th:block>
 
     <script>
+        // === CHATBOT CODE ===
         const chatPopup = document.getElementById('chat-popup');
         const toggleChatBtn = document.getElementById('toggle-chat-btn');
         const chatInput = document.getElementById('chat-input');
@@ -432,8 +487,11 @@
 
         function formatBotMessage(text) {
             let escapedText = escapeHTML(text);
+            // Thay thế **bold** bằng <strong>bold</strong>
             let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Xử lý trường hợp có dấu \ trước **
             formattedText = formattedText.replace(/\\\*\\\*(.*?)\\\*\\\*/g, '<strong>$1</strong>');
+             // Thay thế \n bằng <br>
             formattedText = formattedText.replace(/\n/g, '<br>');
             return formattedText;
         }
@@ -445,14 +503,15 @@
                 messageDiv.textContent = text;
             } else if (type === 'bot') {
                 messageDiv.className = 'chat-message bot-message';
-                messageDiv.innerHTML = formatBotMessage(text);
+                messageDiv.innerHTML = formatBotMessage(text); // Sử dụng formatBotMessage
             } else if (type === 'bot-typing') {
                 messageDiv.className = 'chat-message bot-message';
                 messageDiv.id = 'bot-typing-indicator';
-                messageDiv.textContent = text;
+                messageDiv.textContent = text; // Typing indicator không cần format
             }
             if (chatBody) {
                 chatBody.appendChild(messageDiv);
+                // Cuộn xuống tin nhắn mới nhất
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
         }
@@ -460,7 +519,7 @@
         function removeTypingIndicator() {
             const typingIndicator = document.getElementById('bot-typing-indicator');
             if (typingIndicator && chatBody) {
-                try {
+                try { // Thêm try-catch để tránh lỗi nếu element đã bị xóa
                     chatBody.removeChild(typingIndicator);
                 } catch (e) {}
             }

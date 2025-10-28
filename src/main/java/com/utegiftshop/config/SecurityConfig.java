@@ -58,31 +58,30 @@ public class SecurityConfig {
 					"/forgot-password", "/reset-password",
 					"/cart", "/checkout", "/profile",
 					"/api/auth/**",
-					// Cho phép GET sản phẩm và danh mục công khai
 					 "/api/products/**", "/api/categories", "/products/**",
-					"/order-history", "/orders/**", // Cho phép xem chi tiết đơn hàng (JS sẽ gọi API kiểm tra quyền sau)
+					"/order-history", "/orders/**", 
 					"/css/**", "/js/**", "/images/**", "/*.ico",
 					"/error",
-					"/shipper/**", // Cho phép truy cập trang shipper (JS sẽ kiểm tra token và role sau)
-					"/vendor/**", // Cho phép truy cập trang vendor (JS sẽ kiểm tra token và role sau)
+					"/shipper/**", 
+					"/vendor/**", 
 					"/api/images/**",
 					"/ws/**",
 					"/v3/api-docs/**", "/swagger-ui/**",
-					// Cho phép GET đánh giá sản phẩm công khai
 					"/api/reviews/product/**",
-                    // Cho phép GET thông tin user để kiểm tra ID khi render review
                     "/api/reviews/me"
 				).permitAll()
 
 				// ===== 2. API YÊU CẦU ĐĂNG NHẬP (BẤT KỲ VAI TRÒ) =====
 				.requestMatchers(
-					"/api/users/me", // GET thông tin user
-                    "/api/users/me/avatar", // POST avatar
-                    "/api/users/me/change-password", // POST đổi mật khẩu
-                     "/api/users/me", // PUT cập nhật profile
-					"/api/chat/**", // Tất cả API chat
-					// GET kiểm tra điều kiện đánh giá
-					 "/api/reviews/eligibility/**"
+					"/api/users/me", 
+                    "/api/users/me/avatar", 
+                    "/api/users/me/change-password", 
+                    "/api/users/me", 
+					"/api/chat/**", 
+					"/api/addresses",
+					"/api/cart/**",
+					"/api/reviews/eligibility/**",
+					"api/orders/**"
 				).authenticated()
 
 				// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====

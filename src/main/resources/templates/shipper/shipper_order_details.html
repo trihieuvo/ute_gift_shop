@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ư<!DOCTYPE html>
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
@@ -6,32 +6,19 @@
 <head>
     <title>Shipper - Chi tiết Đơn hàng</title>
     <style>
-        .product-list-item {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #eee;
+        .product-list-item { display: flex; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+        .product-list-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 1rem; }
+        .product-info { flex-grow: 1; }
+        .product-info p { margin-bottom: 0; }
+        .product-price { text-align: right; min-width: 100px; }
+        #delivery-note-group, #pod-upload-group { display: none; }
+        /* ---> THÊM STYLE CHO LINK <--- */
+        .phone-link, .address-link {
+            text-decoration: none;
+            color: #0d6efd;
         }
-        .product-list-item img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 1rem;
-        }
-        .product-info {
-            flex-grow: 1;
-        }
-        .product-info p {
-            margin-bottom: 0;
-        }
-        .product-price {
-            text-align: right;
-            min-width: 100px;
-        }
-        /* Ẩn các trường không cần thiết ban đầu */
-        #delivery-note-group, #pod-upload-group {
-            display: none;
+        .phone-link:hover, .address-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -99,33 +86,26 @@
                                 <button type="button" id="btn-start-delivery" class="btn btn-primary btn-lg d-none" onclick="handleUpdateStatus('DELIVERING')">
                                     <i class="bi bi-truck"></i> Bắt đầu giao hàng
                                 </button>
-                                
                                 <button type="button" id="btn-delivered" class="btn btn-success btn-lg d-none" onclick="showUpdateOptions('DELIVERED')">
                                     <i class="bi bi-check-circle-fill"></i> Giao hàng thành công
                                 </button>
-                                
                                 <button type="button" id="btn-failed" class="btn btn-danger btn-lg d-none" onclick="showUpdateOptions('RETURN_PENDING')">
                                     <i class="bi bi-x-circle-fill"></i> Báo giao hàng thất bại
                                 </button>
-                                
                                 <p id="final-status-msg" class="text-muted text-center d-none">Đơn hàng này đã kết thúc.</p>
                             </div>
-                            
                             <div class="mb-3" id="delivery-note-group">
                                 <label for="delivery-note" class="form-label">Lý do thất bại / Ghi chú:</label>
                                 <textarea class="form-control" id="delivery-note" rows="3" placeholder="VD: Khách hẹn giao lại, Khách không nghe máy..."></textarea>
                             </div>
-                            
                             <div class="mb-3" id="pod-upload-group">
                                 <label for="pod-url" class="form-label">URL Ảnh bằng chứng giao hàng (POD):</label>
                                 <input type="text" class="form-control" id="pod-url" placeholder="Dán link ảnh đã upload (VD: imgur.com/...)">
                             </div>
-
                             <div id="confirm-action-group" class="d-none d-grid gap-2">
                                 <button type="button" id="btn-confirm-update" class="btn btn-success">Xác nhận</button>
                                 <button type="button" class="btn btn-secondary" onclick="cancelUpdateOptions()">Hủy bỏ</button>
                             </div>
-
                         </form>
                     </div>
                 </div>
@@ -137,7 +117,6 @@
 <th:block layout:fragment="scripts_body">
     <script th:inline="javascript">
         /*<![CDATA[*/
-        // Lấy orderId từ Model mà ShipperViewController đã truyền sang
         const orderId = /*[[${orderId}]]*/ '0';
         /*]]>*/
 
@@ -146,8 +125,7 @@
             style: 'currency',
             currency: 'VND'
         });
-        
-        // Các DOM element
+
         const loadingContainer = document.getElementById('loading-container');
         const detailsContainer = document.getElementById('details-container');
         const productListContainer = document.getElementById('product-list-container');
@@ -160,37 +138,48 @@
         const confirmGroup = document.getElementById('confirm-action-group');
         const btnConfirmUpdate = document.getElementById('btn-confirm-update');
         const actionButtons = document.getElementById('action-buttons');
-        
-        let currentStatus = ''; // Lưu trạng thái hiện tại
+
+        let currentStatus = '';
 
         async function fetchOrderDetail() {
             if (!token || !orderId) {
                 window.location.href = '/login';
                 return;
             }
-            
+
             loadingContainer.classList.remove('d-none');
             detailsContainer.classList.add('d-none');
-            
+
             try {
-                // Gọi API chi tiết đơn hàng
                 const response = await fetch(`/api/shipper/orders/${orderId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
                     const order = await response.json();
-                    
-                    // Đổ dữ liệu vào các thẻ span
+
                     document.getElementById('recipient-name').textContent = order.recipientName || 'N/A';
-                    document.getElementById('recipient-phone').innerHTML = order.recipientPhone 
-                        ? `<a href="tel:${order.recipientPhone}">${order.recipientPhone}</a>` : 'N/A';
-                    document.getElementById('recipient-address').textContent = order.shippingAddress || 'N/A';
-                    
+
+                    // ---> CHỈNH SỬA SĐT VÀ ĐỊA CHỈ <---
+                    const phoneElement = document.getElementById('recipient-phone');
+                    if (order.recipientPhone) {
+                        phoneElement.innerHTML = `<a href="tel:${order.recipientPhone}" class="phone-link"><i class="bi bi-telephone-fill"></i> ${order.recipientPhone}</a>`;
+                    } else {
+                        phoneElement.textContent = 'N/A';
+                    }
+
+                    const addressElement = document.getElementById('recipient-address');
+                    if (order.shippingAddress) {
+                         addressElement.innerHTML = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.shippingAddress)}" target="_blank" rel="noopener noreferrer" class="address-link"><i class="bi bi-geo-alt-fill"></i> ${order.shippingAddress}</a>`;
+                    } else {
+                        addressElement.textContent = 'N/A';
+                    }
+                     // ---> KẾT THÚC CHỈNH SỬA <---
+
                     const statusElem = document.getElementById('order-status');
                     statusElem.textContent = order.status;
                     statusElem.className = 'badge fs-6 ' + getStatusBadgeClass(order.status);
-                    
+
                     const paymentElem = document.getElementById('payment-method');
                     paymentElem.textContent = order.paymentMethod;
                     if(order.paymentMethod === 'COD') {
@@ -198,16 +187,21 @@
                     } else {
                          paymentElem.innerHTML += ' <span class="badge bg-success">Đã thanh toán</span>';
                     }
-                    
+
                     document.getElementById('total-amount').textContent = formatter.format(order.totalAmount || 0);
-                    
-                    // Hiển thị danh sách sản phẩm
+
+                    // Hiển thị danh sách sản phẩm (không thay đổi)
                     productListContainer.innerHTML = '';
                     if (order.products && order.products.length > 0) {
                         order.products.forEach(item => {
+                            const noImageUrl = 'https://via.placeholder.com/60?text=N/A';
+                            let imageUrl = noImageUrl; // Mặc định
+                            // Bạn cần đảm bảo API trả về URL ảnh sản phẩm
+                            // Ví dụ: if(item.productImageUrl) imageUrl = item.productImageUrl;
+
                             productListContainer.innerHTML += `
                                 <div class="product-list-item">
-                                    <img src="https://via.placeholder.com/100" alt="${item.productName}">
+                                    <img src="${imageUrl}" alt="${item.productName}" class="order-product-image" onerror="this.src='${noImageUrl}'">
                                     <div class="product-info">
                                         <p class="fw-bold">${item.productName}</p>
                                         <p class="text-muted small">SL: ${item.quantity}</p>
@@ -221,12 +215,10 @@
                     } else {
                         productListContainer.innerHTML = '<p class="text-muted">Không có chi tiết sản phẩm.</p>';
                     }
-                    
-                    // Cập nhật trạng thái và hiển thị nút hành động
+
                     currentStatus = order.status;
                     updateActionButtons(currentStatus);
-                    
-                    // Hiển thị nội dung
+
                     loadingContainer.classList.add('d-none');
                     detailsContainer.classList.remove('d-none');
 
@@ -240,7 +232,8 @@
                  loadingContainer.innerHTML = '<p class="text-danger p-5">Lỗi kết nối mạng.</p>';
             }
         }
-        
+
+        // --- Các hàm khác (getStatusBadgeClass, updateActionButtons, showUpdateOptions, cancelUpdateOptions, handleUpdateStatus) giữ nguyên như trước ---
         function getStatusBadgeClass(status) {
             switch(status) {
                 case 'NEW':
@@ -256,40 +249,30 @@
         }
 
         function updateActionButtons(status) {
-            // Ẩn tất cả các nút
             [btnStartDelivery, btnDelivered, btnFailed, finalStatusMsg].forEach(btn => btn.classList.add('d-none'));
-            
-            // Hiển thị nút dựa trên trạng thái
             if (['CONFIRMED', 'PREPARING'].includes(status)) {
                 btnStartDelivery.classList.remove('d-none');
             } else if (status === 'DELIVERING') {
                 btnDelivered.classList.remove('d-none');
                 btnFailed.classList.remove('d-none');
             } else {
-                // Các trạng thái cuối (DELIVERED, RETURNED, CANCELLED)
                 finalStatusMsg.classList.remove('d-none');
             }
         }
 
-        // Hiển thị các trường nhập liệu tương ứng
         function showUpdateOptions(newStatus) {
-            actionButtons.classList.add('d-none'); // Ẩn các nút hành động
-            
+            actionButtons.classList.add('d-none');
             if (newStatus === 'DELIVERED') {
-                podGroup.style.display = 'block'; // Hiện trường POD
-                noteGroup.style.display = 'none'; // Ẩn ghi chú
+                podGroup.style.display = 'block';
+                noteGroup.style.display = 'none';
             } else if (newStatus === 'RETURN_PENDING') {
-                podGroup.style.display = 'none'; // Ẩn POD
-                noteGroup.style.display = 'block'; // Hiện trường Ghi chú
+                podGroup.style.display = 'none';
+                noteGroup.style.display = 'block';
             }
-            
-            confirmGroup.classList.remove('d-none'); // Hiện nút "Xác nhận"
-            
-            // Gán hành động cho nút "Xác nhận"
-            btnConfirmUpdate.onclick = () => handleUpdateStatus(newStatus); 
+            confirmGroup.classList.remove('d-none');
+            btnConfirmUpdate.onclick = () => handleUpdateStatus(newStatus);
         }
 
-        // Hủy bỏ việc cập nhật, quay lại
         function cancelUpdateOptions() {
             actionButtons.classList.remove('d-none');
             confirmGroup.classList.add('d-none');
@@ -299,12 +282,10 @@
             document.getElementById('pod-url').value = '';
         }
 
-        // Hàm gọi API cập nhật trạng thái
         async function handleUpdateStatus(newStatus) {
             const note = document.getElementById('delivery-note').value;
             const podUrl = document.getElementById('pod-url').value;
-            
-            // Kiểm tra ràng buộc
+
             if (newStatus === 'RETURN_PENDING' && !note) {
                 Swal.fire('Thiếu thông tin', 'Vui lòng nhập lý do giao hàng thất bại.', 'warning');
                 return;
@@ -313,32 +294,23 @@
                 Swal.fire('Thiếu thông tin', 'Vui lòng cung cấp URL bằng chứng giao hàng (POD).', 'warning');
                 return;
             }
-            
-            const body = {
-                newStatus: newStatus,
-                note: note,
-                proofOfDeliveryImageUrl: podUrl
-            };
-            
+
+            const body = { newStatus, note, proofOfDeliveryImageUrl: podUrl };
+
             btnConfirmUpdate.disabled = true;
             btnConfirmUpdate.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
 
             try {
                 const response = await fetch(`/api/shipper/orders/${orderId}/status`, {
                     method: 'PUT',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-                
                 const responseText = await response.text();
-
                 if (response.ok) {
                     Swal.fire('Thành công!', responseText, 'success');
-                    cancelUpdateOptions(); // Ẩn form xác nhận
-                    fetchOrderDetail(); // Tải lại chi tiết đơn hàng
+                    cancelUpdateOptions();
+                    fetchOrderDetail(); // Reload details
                 } else {
                     Swal.fire('Lỗi!', responseText, 'error');
                 }

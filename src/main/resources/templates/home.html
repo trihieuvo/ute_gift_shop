@@ -9,17 +9,78 @@
         .product-card { border: 1px solid #eee; transition: all 0.3s; margin-bottom: 1.5rem; }
         .product-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,.1); transform: translateY(-5px); }
         .product-card .card-img-top { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
-        .category-sidebar { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1); position: sticky; top: 90px; }
+        .category-sidebar { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1); position: sticky; top: 90px; z-index: 100; }
         .category-sidebar .nav-link, .category-sidebar .dropdown-item { color: #333; cursor: pointer; font-weight: 500; }
-        .category-sidebar .nav-item .nav-link:hover, .category-sidebar .dropdown-item:hover { color: #0d6efd; }
+        .category-sidebar .nav-item .nav-link:hover, 
+        .category-sidebar .nav-item .nav-link.active:hover,
+        .category-sidebar .dropdown-item:hover { 
+            color: #0d6efd; 
+            background-color: #f8f9fa; 
+        }
         .category-sidebar .nav-link.active, .category-sidebar .dropdown-item.active { color: #fff; background-color: #0d6efd; border-radius: 0.25rem; }
-        .category-sidebar .dropdown-menu { border: none; box-shadow: 0 4px 6px rgba(0,0,0,.1); }
+        .category-sidebar .dropdown-menu { border: none; box-shadow: 0 4px 6px rgba(0,0,0,.1); padding: 0.5rem 0; }
+        .category-sidebar .dropdown-item { padding: 0.5rem 1rem; }
         .product-img-container { position: relative; overflow: hidden; }
         .img-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; cursor: pointer; z-index: 10; }
         .product-img-container:hover .img-nav-btn { opacity: 1; }
         .img-prev { left: 10px; }
         .img-next { right: 10px; }
         .price-filter .form-check { margin-bottom: 0.5rem; }
+
+        /* --- CSS CHO DROPDOWN KHI HOVER (Dropdown dọc - Fixed UX) --- */
+        .category-sidebar .nav-item.dropdown {
+             position: relative;
+             z-index: 1002; /* Cao hơn sidebar */
+        }
+        .category-sidebar .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 0; /* Căn sát với dòng cha */
+            left: 100%; /* Hiển thị bên phải */
+            min-width: 200px;
+            z-index: 1003; /* Cao nhất để đè lên mọi thứ */
+            margin-left: 0.5rem; /* Khoảng cách nhỏ để dễ di chuyển */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+            pointer-events: none;
+        }
+        
+        /* Tạo vùng cầu nối invisible để dễ di chuyển chuột */
+        .category-sidebar .nav-item.dropdown::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 100%;
+            width: 0.5rem; /* Vùng cầu nối */
+            height: 100%;
+            z-index: 1002; /* Ngang với dropdown item */
+        }
+        
+        /* Hiển thị menu con khi hover */
+        .category-sidebar .nav-item.dropdown:hover > .dropdown-menu,
+        .category-sidebar .dropdown-menu:hover {
+            display: block;
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 0s;
+            pointer-events: auto;
+        }
+
+        /* Đảm bảo dropdown-toggle có mũi tên */
+        .category-sidebar .nav-link.dropdown-toggle {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+        }
+        
+        .category-sidebar .nav-link.dropdown-toggle::after {
+            content: '›';
+            border: none;
+            margin-left: auto;
+            font-size: 1.2rem;
+        }
+        /* --- KẾT THÚC CSS HOVER --- */
     </style>
 </head>
 <body>
@@ -69,17 +130,17 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
-        // === DOM ELEMENTS ===
+        // DOM ELEMENTS
         const productListContainer = document.getElementById('product-list');
         const categoryMenu = document.getElementById('category-menu');
         const productsTitle = document.getElementById('products-title');
         const searchKeywordInput = document.getElementById('search-keyword');
-        
-        // === STATE MANAGEMENT ===
+
+        // STATE MANAGEMENT
         let currentFilters = { keyword: null, categoryId: null, minPrice: null, maxPrice: null };
         let debounceTimer;
 
-        // === INITIALIZATION ===
+        // INITIALIZATION
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             currentFilters = {
@@ -88,52 +149,49 @@
                 minPrice: urlParams.get('minPrice'),
                 maxPrice: urlParams.get('maxPrice')
             };
-            
+
             restoreUIFromState();
             fetchAndDisplayProducts();
             fetchAndDisplayCategories();
-            
+
             searchKeywordInput.addEventListener('input', handleLiveSearch);
         });
-        
-        // === CORE LOGIC ===
-        
+
+        // CORE LOGIC
+
         async function fetchAndDisplayProducts() {
             const url = new URL('/api/products', window.location.origin);
             const hasFilter = currentFilters.keyword || currentFilters.categoryId || currentFilters.minPrice != null;
-            
-            // Chỉ thêm param vào URL nếu có giá trị
+
             if (currentFilters.keyword) url.searchParams.append('keyword', currentFilters.keyword);
             if (currentFilters.categoryId) url.searchParams.append('categoryId', currentFilters.categoryId);
             if (currentFilters.minPrice != null) {
                 url.searchParams.append('minPrice', currentFilters.minPrice);
                 if (currentFilters.maxPrice != null) url.searchParams.append('maxPrice', currentFilters.maxPrice);
             }
-        
+
             productListContainer.innerHTML = `<div class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải sản phẩm...</p></div>`;
-        
+
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Lỗi mạng hoặc server!');
-                
+
                 let products = await response.json();
 
-                // === KHÔI PHỤC LOGIC NGẪU NHIÊN ===
-                // Chỉ xáo trộn nếu không có bất kỳ bộ lọc nào được áp dụng
+                // Randomize product order only if no filters are applied
                 if (!hasFilter) {
-                    // Thuật toán xáo trộn Fisher-Yates
                     for (let i = products.length - 1; i > 0; i--) {
                         const j = Math.floor(Math.random() * (i + 1));
                         [products[i], products[j]] = [products[j], products[i]];
                     }
                 }
-                
+
                 renderProductCards(products);
             } catch (error) {
                 productListContainer.innerHTML = '<p class="text-danger text-center col-12">Không thể tải danh sách sản phẩm.</p>';
             }
         }
-        
+
         function handleLiveSearch() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -156,6 +214,7 @@
             fetchAndDisplayProducts();
         }
 
+
         function handlePriceFilterChange() {
             currentFilters.keyword = null;
             const selectedPriceRange = document.querySelector('input[name="priceRange"]:checked').value;
@@ -173,16 +232,19 @@
             fetchAndDisplayProducts();
         }
 
-        // === UI HELPER FUNCTIONS ===
-        
+        // UI HELPER FUNCTIONS
+
         function updateURL() {
             const url = new URL(window.location);
             url.search = '';
             for (const key in currentFilters) {
-                if (currentFilters[key] != null) url.searchParams.set(key, currentFilters[key]);
+                if (currentFilters[key] != null && currentFilters[key] !== '') {
+                     url.searchParams.set(key, currentFilters[key]);
+                }
             }
             window.history.pushState({}, '', url);
         }
+
 
         function restoreUIFromState() {
             if (currentFilters.keyword) searchKeywordInput.value = currentFilters.keyword;
@@ -191,125 +253,221 @@
                 const priceValue = `${currentFilters.minPrice}-${max}`;
                 const priceRadio = document.querySelector(`input[name="priceRange"][value="${priceValue}"]`);
                 if (priceRadio) priceRadio.checked = true;
+            } else {
+                 document.getElementById('price-all').checked = true;
             }
         }
 
         function resetCategoryAndPriceUI() {
             document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => el.classList.remove('active'));
-            const allCategoriesLink = document.querySelector('#category-menu .nav-link');
+            const allCategoriesLink = document.querySelector('#category-menu li:first-child .nav-link');
             if (allCategoriesLink) allCategoriesLink.classList.add('active');
-            document.getElementById('price-all').checked = true;
+            resetPriceUI();
         }
+
+        function resetPriceUI() {
+             document.getElementById('price-all').checked = true;
+        }
+
 
         function setActiveCategory(element) {
             document.querySelectorAll('#category-menu .nav-link, #category-menu .dropdown-item').forEach(el => el.classList.remove('active'));
             if (element) {
                 element.classList.add('active');
-                if (element.classList.contains('dropdown-item')) {
-                    element.closest('.dropdown').querySelector('.dropdown-toggle').classList.add('active');
+                const dropdownItemParent = element.closest('.dropdown-menu');
+                if (dropdownItemParent) {
+                    const parentLi = dropdownItemParent.closest('.nav-item.dropdown');
+                    if (parentLi) {
+                        const parentToggle = parentLi.querySelector('.nav-link.dropdown-toggle');
+                        if (parentToggle) {
+                            parentToggle.classList.add('active');
+                        }
+                    }
                 }
+            } else {
+                 const allCategoriesLink = document.querySelector('#category-menu li:first-child .nav-link');
+                 if (allCategoriesLink) allCategoriesLink.classList.add('active');
             }
         }
 
-        function updateProductsTitle(newTitle) {
+
+        function updateProductsTitle(categoryName) {
             if (currentFilters.keyword) {
-                productsTitle.textContent = `Kết quả cho "${currentFilters.keyword}"`;
-            } else if (newTitle) {
-                productsTitle.textContent = newTitle;
+                productsTitle.textContent = `Kết quả cho "${escapeHtml(currentFilters.keyword)}"`;
+            } else if (categoryName) {
+                productsTitle.textContent = escapeHtml(categoryName);
             } else {
-                const activeCategory = document.querySelector('#category-menu .active');
-                productsTitle.textContent = activeCategory ? activeCategory.textContent.trim() : "Tất cả sản phẩm";
+                productsTitle.textContent = "Tất cả sản phẩm";
             }
         }
-        
-        // === RENDERING FUNCTIONS ===
-        
+
+
+        // RENDERING FUNCTIONS
+
         function renderProductCards(products) {
             productListContainer.innerHTML = '';
-            if (products.length === 0) {
+            if (!products || products.length === 0) {
                 productListContainer.innerHTML = '<p class="text-center text-muted col-12">Không tìm thấy sản phẩm nào phù hợp.</p>';
                 return;
             }
             products.forEach(product => {
-                const noImageUrl = 'https://via.placeholder.com/200?text=No+Image';
+                const noImageUrl = 'https://via.placeholder.com/300x300?text=No+Image';
                 let initialImageUrl = noImageUrl;
                 let allImageUrls = [];
                 let imageNavigationButtons = '';
                 let initialImageIndex = 0;
 
-                if (product.images && product.images.length > 0) {
-                    allImageUrls = product.images.map(img => img.imageUrl);
-                    
-                    // === KHÔI PHỤC LOGIC ẢNH NGẪU NHIÊN ===
-                    initialImageIndex = Math.floor(Math.random() * allImageUrls.length);
-                    initialImageUrl = allImageUrls[initialImageIndex] || noImageUrl;
+                if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+                    allImageUrls = product.images
+                        .map(img => img ? img.imageUrl : null)
+                        .filter(url => url);
 
-                    if (allImageUrls.length > 1) {
-                        imageNavigationButtons = `
-                            <button class="img-nav-btn img-prev" onclick="changeImage(event, ${product.id}, -1)">&#10094;</button>
-                            <button class="img-nav-btn img-next" onclick="changeImage(event, ${product.id}, 1)">&#10095;</button>`;
+                    if (allImageUrls.length > 0) {
+                        initialImageIndex = Math.floor(Math.random() * allImageUrls.length);
+                        initialImageUrl = allImageUrls[initialImageIndex];
+
+                        if (allImageUrls.length > 1) {
+                            imageNavigationButtons = `
+                                <button class="img-nav-btn img-prev" onclick="changeImage(event, ${product.id}, -1)">&#10094;</button>
+                                <button class="img-nav-btn img-next" onclick="changeImage(event, ${product.id}, 1)">&#10095;</button>`;
+                        }
                     }
                 }
+
                 const imagesData = JSON.stringify(allImageUrls);
+
                 productListContainer.innerHTML += `
-                    <div class="col-md-4">
-                        <div class="card product-card" id="product-card-${product.id}" data-images='${imagesData}' onclick="window.location.href='/products/${product.id}'" style="cursor: pointer;">
-                            <div class="product-img-container">
-                                <img src="${initialImageUrl}" class="card-img-top" alt="${product.name}" id="product-img-${product.id}" data-current-index="${initialImageIndex}" onerror="this.onerror=null;this.src='${noImageUrl}';">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card product-card h-100" id="product-card-${product.id}" data-images='${escapeHtml(imagesData)}'>
+                            <div class="product-img-container" onclick="window.location.href='/products/${product.id}'" style="cursor: pointer;">
+                                <img src="${escapeHtml(initialImageUrl)}" class="card-img-top" alt="${escapeHtml(product.name)}" id="product-img-${product.id}" data-current-index="${initialImageIndex}" onerror="this.onerror=null;this.src='${noImageUrl}';">
                                 ${imageNavigationButtons}
                             </div>
-                            <div class="card-body">
-                                <h5 class="card-title">${product.name}</h5>
-                                <p class="card-text fw-bold">${product.price.toLocaleString('vi-VN')} đ</p>
-                                <a href="/products/${product.id}" class="btn btn-primary">Xem chi tiết</a>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">${escapeHtml(product.name)}</h5>
+                                <p class="card-text fw-bold">${product.price != null ? product.price.toLocaleString('vi-VN') : 'N/A'} đ</p>
+                                <a href="/products/${product.id}" class="btn btn-primary mt-auto">Xem chi tiết</a>
                             </div>
                         </div>
                     </div>`;
             });
         }
-        
+
         async function fetchAndDisplayCategories() {
             try {
                 const response = await fetch('/api/categories');
                 if (!response.ok) throw new Error('Lỗi khi tải danh mục');
                 const categories = await response.json();
                 categoryMenu.innerHTML = '';
-                const allProductsActiveClass = !currentFilters.categoryId && !currentFilters.keyword ? 'active' : '';
-                categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link ${allProductsActiveClass}" onclick="handleCategoryClick(null, this, 'Tất cả sản phẩm')">Tất cả sản phẩm</a></li>`;
-                
+
+                const allProductsActiveClass = (currentFilters.categoryId == null && !currentFilters.keyword) ? 'active' : '';
+                // Render "Tất cả sản phẩm"
+                categoryMenu.innerHTML += `
+                    <li class="nav-item">
+                        <a class="nav-link ${allProductsActiveClass}" onclick="handleCategoryClick(null, this, 'Tất cả sản phẩm')">
+                            Tất cả sản phẩm
+                        </a>
+                    </li>`;
+
+                // Render categories and subcategories
                 categories.forEach(category => {
                     let isParentActive = false;
                     let childrenHtml = '';
+
                     if (category.children && category.children.length > 0) {
                         childrenHtml = category.children.map(child => {
-                            const childActiveClass = (currentFilters.categoryId && child.id == currentFilters.categoryId) ? 'active' : '';
+                            const childActiveClass = (currentFilters.categoryId != null && child.id == currentFilters.categoryId) ? 'active' : '';
                             if (childActiveClass) isParentActive = true;
-                            return `<li><a class="dropdown-item ${childActiveClass}" onclick="handleCategoryClick(${child.id}, this, '${child.name}')">${child.name}</a></li>`;
+                            return `
+                                <li>
+                                    <a class="dropdown-item ${childActiveClass}" onclick="handleCategoryClick(${child.id}, this, '${escapeHtml(child.name)}')">
+                                        ${escapeHtml(child.name)}
+                                    </a>
+                                </li>`;
                         }).join('');
                     }
-                    const parentActiveClass = isParentActive || (currentFilters.categoryId && category.id == currentFilters.categoryId) ? 'active' : '';
+
+                    const parentActiveClass = (isParentActive || (currentFilters.categoryId != null && category.id == currentFilters.categoryId)) ? 'active' : '';
+
                     if (childrenHtml) {
-                        categoryMenu.innerHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="handleCategoryClick(${category.id}, this, '${category.name}')">${category.name}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
+                        // Render as dropdown
+                        categoryMenu.innerHTML += `
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" aria-expanded="false">
+                                     ${escapeHtml(category.name)}
+                                </a>
+                                <ul class="dropdown-menu">
+                                    ${childrenHtml}
+                                </ul>
+                            </li>`;
                     } else {
-                        categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link ${parentActiveClass}" onclick="handleCategoryClick(${category.id}, this, '${category.name}')">${category.name}</a></li>`;
+                        // Render as simple link
+                        categoryMenu.innerHTML += `
+                            <li class="nav-item">
+                                <a class="nav-link ${parentActiveClass}" onclick="handleCategoryClick(${category.id}, this, '${escapeHtml(category.name)}')">
+                                    ${escapeHtml(category.name)}
+                                </a>
+                            </li>`;
                     }
                 });
+
+                updateProductsTitleBasedOnActiveCategory();
+
             } catch (error) {
+                console.error("Lỗi tải danh mục:", error);
                 categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
             }
         }
-        
+
+        function updateProductsTitleBasedOnActiveCategory() {
+             if (currentFilters.keyword) {
+                 updateProductsTitle();
+                 return;
+             }
+             const activeCategoryLink = document.querySelector('#category-menu .nav-link.active, #category-menu .dropdown-item.active');
+             const titleText = activeCategoryLink ? activeCategoryLink.textContent.trim() : "Tất cả sản phẩm";
+             updateProductsTitle(titleText);
+        }
+
+
         function changeImage(event, productId, direction) {
             event.stopPropagation();
             const card = document.getElementById(`product-card-${productId}`);
             const img = document.getElementById(`product-img-${productId}`);
             if (!card || !img) return;
-            const images = JSON.parse(card.dataset.images);
-            let currentIndex = parseInt(img.dataset.currentIndex, 10) + direction;
-            if (currentIndex >= images.length) currentIndex = 0;
-            else if (currentIndex < 0) currentIndex = images.length - 1;
-            img.src = images[currentIndex];
-            img.dataset.currentIndex = currentIndex;
+
+            try {
+                 const images = JSON.parse(card.dataset.images);
+                 if (!images || images.length <= 1) return;
+
+                 let currentIndex = parseInt(img.dataset.currentIndex, 10);
+                 if (isNaN(currentIndex)) currentIndex = 0;
+
+                 currentIndex += direction;
+
+                 if (currentIndex >= images.length) currentIndex = 0;
+                 else if (currentIndex < 0) currentIndex = images.length - 1;
+
+                 const nextImageUrl = images[currentIndex];
+                 if (nextImageUrl) {
+                    img.src = nextImageUrl;
+                    img.dataset.currentIndex = currentIndex;
+                 } else {
+                     console.warn(`Invalid image URL at index ${currentIndex} for product ${productId}`);
+                 }
+            } catch (e) {
+                 console.error(`Error parsing images for product ${productId}:`, e);
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
         }
     </script>
 </th:block>

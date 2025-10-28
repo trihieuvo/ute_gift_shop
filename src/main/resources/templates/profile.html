@@ -603,9 +603,8 @@
                 : `<button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${addr.id})"><i class="bi bi-trash"></i></button>`;
 
             const setDefaultButton = isDefault
-                ? `<span class="badge bg-primary">Mặc định</span>`
+                ? `<span class="badge bg-primary fw-bold">Mặc định</span>` 
                 : `<button class="btn btn-sm btn-outline-success" onclick="setDefaultAddress(${addr.id})">Đặt làm mặc định</button>`;
-
             const editButton = `<button class="btn btn-sm btn-outline-primary" onclick="openEditModal(${addr.id})"><i class="bi bi-pencil-square"></i></button>`;
 
             container.innerHTML += `
