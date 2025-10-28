@@ -7,6 +7,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean; // Thêm import      
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories; // Thêm import
 import org.springframework.web.client.RestTemplate; // Thêm import
+
 @SpringBootApplication(
     scanBasePackages = "com.utegiftshop"
 )
