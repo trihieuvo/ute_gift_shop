@@ -1,13 +1,14 @@
-xpackage com.utegiftshop.dto.response;
+package com.utegiftshop.dto.response;
+
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 
 import com.utegiftshop.entity.Shop;
 import com.utegiftshop.entity.User;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.sql.Timestamp;
-import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -58,7 +59,8 @@ public class ShopDto {
                 userEntity.getEmail(),
                 userEntity.getFullName(), 
                 userEntity.getPhoneNumber(),
-                userEntity.getRole().getName() 
+                userEntity.getRole().getName(), 
+                userEntity.getAvatarUrl() // Thêm avatarUrl
             );
         }
     }
