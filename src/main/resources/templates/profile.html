@@ -3,26 +3,33 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/_app_layout}">
+
 <head>
     <title>Thông tin cá nhân</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <style>
         .profile-nav .list-group-item {
             cursor: pointer;
             font-weight: 500;
         }
+
         .profile-nav .list-group-item.active {
             background-color: #0d6efd;
             border-color: #0d6efd;
             color: white;
             font-weight: bold;
         }
+
         .profile-nav .list-group-item i {
             margin-right: 10px;
-            width: 20px; /* Align icons */
+            width: 20px;
+            /* Align icons */
         }
+
         .card-header h5 {
             margin-bottom: 0;
         }
+
         .address-card {
             border: 1px solid #ddd;
             padding: 1rem;
@@ -30,325 +37,552 @@
             margin-bottom: 1rem;
             position: relative;
         }
+        .address-card .recipient-name-default {
+         font-weight: bold;
+         color: #0d6efd;
+        }
         .address-card.is-default {
             border-left: 4px solid #0d6efd;
         }
+
         .address-actions {
             position: absolute;
             top: 1rem;
             right: 1rem;
         }
+
         /* CSS cho tab đăng ký vai trò */
         #applyRoleForm[disabled] {
             opacity: 0.6;
             pointer-events: none;
         }
+
+        /* === STYLE MỚI CHO AVATAR === */
+        .avatar-section {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .avatar-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #eee;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            /* Cho phép click để đổi ảnh */
+            transition: opacity 0.3s;
+        }
+
+        .avatar-img:hover {
+            opacity: 0.8;
+        }
+
+        #avatarInput {
+            display: none;
+            /* Ẩn input file gốc */
+        }
+
+        .avatar-upload-label {
+            cursor: pointer;
+            color: #0d6efd;
+            text-decoration: underline;
+        }
+
+        /* === STYLE MỚI CHO CROPPER MODAL === */
+        #cropperModal .modal-body {
+            height: 400px;
+            /* Hoặc chiều cao phù hợp */
+            display: flex;
+            /* Căn giữa ảnh */
+            justify-content: center;
+            align-items: center;
+        }
+
+        #cropperImage {
+            display: block;
+            max-width: 100%;
+            /* Đảm bảo ảnh không vượt quá modal */
+            max-height: 350px;
+            /* Giới hạn chiều cao ảnh gốc */
+        }
+
     </style>
 </head>
+
 <body>
-<div layout:fragment="content">
-    <h1 class="mb-4">Tài khoản của tôi</h1>
-    <div class="row">
-        <div class="col-md-3">
-            <div class="list-group profile-nav shadow-sm">
-                <a class="list-group-item list-group-item-action active" data-target="profile-info">
-                    <i class="bi bi-person-fill"></i>Hồ sơ của tôi
-                </a>
-                <a class="list-group-item list-group-item-action" data-target="address-book">
-                    <i class="bi bi-geo-alt-fill"></i>Sổ địa chỉ
-                </a>
-                <a class="list-group-item list-group-item-action" data-target="change-password">
-                    <i class="bi bi-shield-lock-fill"></i>Đổi mật khẩu
-                </a>
-                <a class="list-group-item list-group-item-action" data-target="apply-role" id="apply-role-tab">
-                    <i class="bi bi-briefcase-fill"></i>Đăng ký vai trò
-                </a>
-                </div>
-        </div>
-
-        <div class="col-md-9">
-            <div id="profile-info" class="profile-section">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5><i class="bi bi-person-badge"></i> Hồ sơ của tôi</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="card-text text-muted">Quản lý thông tin hồ sơ để bảo mật tài khoản.</p>
-                        <hr>
-                        <form id="profileForm">
-                            <div class="mb-3 row">
-                                <label for="email" class="col-sm-3 col-form-label">Email</label>
-                                <div class="col-sm-9">
-                                    <input type="email" readonly class="form-control-plaintext" id="email">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="fullName" class="col-sm-3 col-form-label">Họ và Tên</label>
-                                <div class="col-sm-9">
-                                    <input type="text" class="form-control" id="fullName" required>
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="phoneNumberProfile" class="col-sm-3 col-form-label">Số điện thoại</label>
-                                <div class="col-sm-9">
-                                    <input type="text" class="form-control" id="phoneNumberProfile">
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-9 offset-sm-3">
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Lưu thay đổi</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+    <div layout:fragment="content">
+        <h1 class="mb-4">Tài khoản của tôi</h1>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="list-group profile-nav shadow-sm">
+                    <a class="list-group-item list-group-item-action active" data-target="profile-info">
+                        <i class="bi bi-person-fill"></i>Hồ sơ của tôi
+                    </a>
+                    <a class="list-group-item list-group-item-action" data-target="address-book">
+                        <i class="bi bi-geo-alt-fill"></i>Sổ địa chỉ
+                    </a>
+                    <a class="list-group-item list-group-item-action" data-target="change-password">
+                        <i class="bi bi-shield-lock-fill"></i>Đổi mật khẩu
+                    </a>
+                    <a class="list-group-item list-group-item-action" data-target="apply-role" id="apply-role-tab">
+                        <i class="bi bi-briefcase-fill"></i>Đăng ký vai trò
+                    </a>
                 </div>
             </div>
 
-            <div id="address-book" class="profile-section d-none">
-                 <div class="card shadow-sm">
-                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                         <h5><i class="bi bi-book-fill"></i> Sổ địa chỉ</h5>
-                         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                             <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
-                         </button>
-                     </div>
-                     <div class="card-body">
-                        <div id="address-list-profile">
-                            <p class="text-center p-3">Đang tải danh sách địa chỉ...</p>
+            <div class="col-md-9">
+                <div id="profile-info" class="profile-section">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5><i class="bi bi-person-badge"></i> Hồ sơ của tôi</h5>
                         </div>
-                     </div>
-                 </div>
-            </div>
+                        <div class="card-body">
 
-            <div id="change-password" class="profile-section d-none">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5><i class="bi bi-key-fill"></i> Đổi mật khẩu</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="card-text text-muted">Để bảo mật tài khoản, vui lòng không chia sẻ mật khẩu cho người khác.</p>
-                        <hr>
-                        <form id="changePasswordForm" class="mt-3">
-                            <div class="mb-3 row">
-                                <label for="currentPassword" class="col-sm-4 col-form-label">Mật khẩu hiện tại</label>
-                                <div class="col-sm-8">
-                                    <input type="password" class="form-control" id="currentPassword" required>
+                            <div class="avatar-section">
+                                <img src="/images/placeholder.png" alt="Avatar" class="avatar-img" id="avatarPreview"
+                                     onclick="document.getElementById('avatarInput').click();">
+                                <div>
+                                    <input type="file" id="avatarInput" accept="image/*"
+                                           onchange="handleFileSelect(event)">
+                                    <label for="avatarInput" class="avatar-upload-label">Nhấn vào ảnh hoặc đây để đổi
+                                        avatar</label>
                                 </div>
+                                <div id="avatarUploadStatus" class="mt-2 small"></div>
                             </div>
-                            <div class="mb-3 row">
-                                <label for="newPassword" class="col-sm-4 col-form-label">Mật khẩu mới</label>
-                                <div class="col-sm-8">
-                                    <input type="password" class="form-control" id="newPassword" required>
+                            <hr>
+                            <p class="card-text text-muted">Quản lý thông tin hồ sơ để bảo mật tài khoản.</p>
+                            <form id="profileForm">
+                                <div class="mb-3 row">
+                                    <label for="email" class="col-sm-3 col-form-label">Email</label>
+                                    <div class="col-sm-9">
+                                        <input type="email" readonly class="form-control-plaintext" id="email">
+                                    </div>
                                 </div>
-                            </div>
-                             <div class="mb-3 row">
-                                <label for="confirmNewPassword" class="col-sm-4 col-form-label">Xác nhận mật khẩu</label>
-                                <div class="col-sm-8">
-                                    <input type="password" class="form-control" id="confirmNewPassword" required>
+                                <div class="mb-3 row">
+                                    <label for="fullName" class="col-sm-3 col-form-label">Họ và Tên</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="fullName" required>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-8 offset-sm-4">
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Xác nhận</button>
+                                <div class="mb-3 row">
+                                    <label for="phoneNumberProfile" class="col-sm-3 col-form-label">Số điện
+                                        thoại</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="phoneNumberProfile">
+                                    </div>
                                 </div>
-                            </div>
-                        </form>
+                                <div class="row mt-4">
+                                    <div class="col-sm-9 offset-sm-3">
+                                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Lưu
+                                            thay đổi thông tin</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="apply-role" class="profile-section d-none">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5><i class="bi bi-briefcase-fill"></i> Đăng ký vai trò (Vendor/Shipper)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="application-status-message" class="alert alert-info d-none"></div>
-                        
-                        <form id="applyRoleForm">
-                            <p class="card-text text-muted">Chọn vai trò bạn muốn đăng ký và gửi yêu cầu để Admin xem xét.</p>
-                            <div class="mb-3">
-                                <label for="requestedRole" class="form-label">Vai trò mong muốn</label>
-                                <select class="form-select" id="requestedRole" required>
-                                    <option value="" selected disabled>-- Chọn một vai trò --</option>
-                                    <option value="Vendor">Người bán hàng (Vendor)</option>
-                                    <option value="Shipper">Người giao hàng (Shipper)</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="applicationMessage" class="form-label">Lời nhắn (Lý do đăng ký)</label>
-                                <textarea class="form-control" id="applicationMessage" rows="4" placeholder="Ví dụ: Tôi muốn mở cửa hàng bán đồ thủ công..."></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-send-check"></i> Gửi yêu cầu
+                <div id="address-book" class="profile-section d-none">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5><i class="bi bi-book-fill"></i> Sổ địa chỉ</h5>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#addAddressModal">
+                                <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
                             </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="address-list-profile">
+                                <p class="text-center p-3">Đang tải danh sách địa chỉ...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="change-password" class="profile-section d-none">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5><i class="bi bi-key-fill"></i> Đổi mật khẩu</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text text-muted">Để bảo mật tài khoản, vui lòng không chia sẻ mật khẩu cho
+                                người khác.</p>
+                            <hr>
+                            <form id="changePasswordForm" class="mt-3">
+                                <div class="mb-3 row">
+                                    <label for="currentPassword" class="col-sm-4 col-form-label">Mật khẩu hiện
+                                        tại</label>
+                                    <div class="col-sm-8">
+                                        <input type="password" class="form-control" id="currentPassword" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3 row">
+                                    <label for="newPassword" class="col-sm-4 col-form-label">Mật khẩu mới</label>
+                                    <div class="col-sm-8">
+                                        <input type="password" class="form-control" id="newPassword" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3 row">
+                                    <label for="confirmNewPassword" class="col-sm-4 col-form-label">Xác nhận mật
+                                        khẩu</label>
+                                    <div class="col-sm-8">
+                                        <input type="password" class="form-control" id="confirmNewPassword" required>
+                                    </div>
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-sm-8 offset-sm-4">
+                                        <button type="submit" class="btn btn-primary"><i
+                                                class="bi bi-check-circle"></i> Xác nhận</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="apply-role" class="profile-section d-none">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5><i class="bi bi-briefcase-fill"></i> Đăng ký vai trò (Vendor/Shipper)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="application-status-message" class="alert alert-info d-none"></div>
+                            <form id="applyRoleForm">
+                                <p class="card-text text-muted">Chọn vai trò bạn muốn đăng ký và gửi yêu cầu để Admin xem
+                                    xét.</p>
+                                <div class="mb-3">
+                                    <label for="requestedRole" class="form-label">Vai trò mong muốn</label>
+                                    <select class="form-select" id="requestedRole" required>
+                                        <option value="" selected disabled>-- Chọn một vai trò --</option>
+                                        <option value="Vendor">Người bán hàng (Vendor)</option>
+                                        <option value="Shipper">Người giao hàng (Shipper)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="applicationMessage" class="form-label">Lời nhắn (Lý do đăng ký)</label>
+                                    <textarea class="form-control" id="applicationMessage" rows="4"
+                                              placeholder="Ví dụ: Tôi muốn mở cửa hàng bán đồ thủ công..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-send-check"></i> Gửi yêu cầu
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="addAddressModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Thêm địa chỉ mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addAddressForm">
+                            <div class="mb-3">
+                                <label for="recipientName" class="form-label">Tên người nhận</label>
+                                <input type="text" class="form-control" id="recipientName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phoneNumberAddress" class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-control" id="phoneNumberAddress" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fullAddress" class="form-label">Địa chỉ chi tiết</label>
+                                <input type="text" class="form-control" id="fullAddress" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Lưu địa chỉ</button>
                         </form>
                     </div>
                 </div>
             </div>
-            </div>
-    </div>
+        </div>
 
-    <div class="modal fade" id="addAddressModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Thêm địa chỉ mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addAddressForm">
-                        <div class="mb-3">
-                            <label for="recipientName" class="form-label">Tên người nhận</label>
-                            <input type="text" class="form-control" id="recipientName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="phoneNumberAddress" class="form-label">Số điện thoại</label>
-                            <input type="text" class="form-control" id="phoneNumberAddress" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="fullAddress" class="form-label">Địa chỉ chi tiết</label>
-                            <input type="text" class="form-control" id="fullAddress" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Lưu địa chỉ</button>
-                    </form>
+        <div class="modal fade" id="editAddressModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Chỉnh sửa địa chỉ</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editAddressForm">
+                            <input type="hidden" id="editAddressId">
+                            <div class="mb-3">
+                                <label for="editRecipientName" class="form-label">Tên người nhận</label>
+                                <input type="text" class="form-control" id="editRecipientName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editPhoneNumberAddress" class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-control" id="editPhoneNumberAddress" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editFullAddress" class="form-label">Địa chỉ chi tiết</label>
+                                <input type="text" class="form-control" id="editFullAddress" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Lưu thay đổi</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="modal fade" id="editAddressModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Chỉnh sửa địa chỉ</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editAddressForm">
-                        <input type="hidden" id="editAddressId">
-                        <div class="mb-3">
-                            <label for="editRecipientName" class="form-label">Tên người nhận</label>
-                            <input type="text" class="form-control" id="editRecipientName" required>
+
+        <div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true"
+             data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="cropperModalLabel">Cắt ảnh đại diện</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div>
+                            <img id="cropperImage" src="#" alt="Crop Preview">
                         </div>
-                        <div class="mb-3">
-                            <label for="editPhoneNumberAddress" class="form-label">Số điện thoại</label>
-                            <input type="text" class="form-control" id="editPhoneNumberAddress" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editFullAddress" class="form-label">Địa chỉ chi tiết</label>
-                            <input type="text" class="form-control" id="editFullAddress" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Lưu thay đổi</button>
-                    </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <button type="button" class="btn btn-primary" id="cropAndUploadButton">Xác nhận và Tải lên</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-</div>
+    <th:block layout:fragment="scripts_body">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+        <script>
+            const token = localStorage.getItem('jwtToken');
+            let userAddresses = [];
+            let currentUserInfo = null; // Biến lưu thông tin user global cho trang này
+            const avatarPreview = document.getElementById('avatarPreview');
+            const avatarInput = document.getElementById('avatarInput');
+            const avatarUploadStatus = document.getElementById('avatarUploadStatus');
 
-<th:block layout:fragment="scripts_body">
-<script>
-    const token = localStorage.getItem('jwtToken');
-    let userAddresses = [];
-    let currentUserInfo = null; // Biến lưu thông tin user
 
-    // === QUẢN LÝ HIỂN THỊ CÁC TAB ===
-    document.querySelectorAll('.profile-nav .list-group-item').forEach(navLink => {
-        navLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.querySelectorAll('.profile-nav .list-group-item').forEach(link => link.classList.remove('active'));
-            this.classList.add('active');
-            
-            document.querySelectorAll('.profile-section').forEach(section => section.classList.add('d-none'));
-            const targetId = this.getAttribute('data-target');
-            document.getElementById(targetId).classList.remove('d-none');
+            const cropperModalElement = document.getElementById('cropperModal');
+            const cropperImageElement = document.getElementById('cropperImage');
+            const cropAndUploadButton = document.getElementById('cropAndUploadButton');
+            let cropperInstance = null;
+            let cropperModal = null;
+            let originalFile = null; // Lưu file gốc đã chọn
+
+
+            // === KHỞI TẠO MODAL CROPPER KHI DOM SẴN SÀNG ===
+            document.addEventListener('DOMContentLoaded', () => {
+                // Khởi tạo đối tượng Bootstrap Modal
+                if (cropperModalElement) {
+                    cropperModal = new bootstrap.Modal(cropperModalElement);
+
+                    // Lắng nghe sự kiện khi modal ẩn đi để hủy cropper
+                    cropperModalElement.addEventListener('hidden.bs.modal', () => {
+                        if (cropperInstance) {
+                            cropperInstance.destroy(); // Hủy instance cropper
+                            cropperInstance = null;
+                            console.log("Cropper destroyed.");
+                        }
+                        // Reset input file để có thể chọn lại file cũ nếu hủy
+                        if (avatarInput) avatarInput.value = null;
+                        originalFile = null; // Xóa tham chiếu đến file gốc
+                    });
+                } else {
+                    console.error("Cropper modal element not found!");
+                }
+                // Tải thông tin người dùng và địa chỉ khi trang load
+                fetchCurrentUser();
+                fetchAddressesForProfile();
+            });
+
+
+
+            // === QUẢN LÝ HIỂN THỊ CÁC TAB ===
+            document.querySelectorAll('.profile-nav .list-group-item').forEach(navLink => {
+                navLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Bỏ active tất cả link
+                    document.querySelectorAll('.profile-nav .list-group-item').forEach(link => link.classList.remove('active'));
+                    // Active link được click
+                    this.classList.add('active');
+                    // Ẩn tất cả section
+                    document.querySelectorAll('.profile-section').forEach(section => section.classList.add('d-none'));
+                    // Hiển thị section tương ứng
+                    const targetId = this.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) targetElement.classList.remove('d-none');
+                });
+            });
+
+            // === LOGIC LẤY THÔNG TIN CÁ NHÂN ===
+            async function fetchCurrentUser() {
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+                try {
+                    const response = await fetch('/api/users/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) {
+                        Swal.fire('Lỗi', 'Phiên đăng nhập hết hạn hoặc có lỗi xảy ra.', 'error').then(() => window.location.href = '/login');
+                        return;
+                    }
+                    const userInfo = await response.json();
+                    if (userInfo.authenticated) {
+                        currentUserInfo = userInfo; // Lưu thông tin
+                        // Điền thông tin vào form
+                        const emailInput = document.getElementById('email');
+                        const fullNameInput = document.getElementById('fullName');
+                        const phoneInput = document.getElementById('phoneNumberProfile');
+                        if (emailInput) emailInput.value = userInfo.email;
+                        if (fullNameInput) fullNameInput.value = userInfo.fullName || '';
+                        if (phoneInput) phoneInput.value = userInfo.phoneNumber || '';
+
+                        // Cập nhật ảnh đại diện preview
+                        if (avatarPreview) {
+                            if (userInfo.avatarUrl) {
+                                avatarPreview.src = userInfo.avatarUrl + '?t=' + new Date().getTime(); // Thêm timestamp
+                            } else {
+                                avatarPreview.src = '/images/placeholder.png'; // Ảnh mặc định
+                            }
+                        }
+                        // Kiểm tra vai trò để ẩn/hiện tab đăng ký
+                        checkUserRoleAndApplicationStatus();
+                    } else {
+                        Swal.fire('Lỗi', 'Không thể xác thực người dùng.', 'error').then(() => window.location.href = '/login');
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi fetchCurrentUser:", error);
+                    Swal.fire('Lỗi', 'Lỗi mạng khi tải thông tin người dùng.', 'error');
+                }
+            }
+
+            // === CẬP NHẬT HỒ SƠ (Tên, SĐT) ===
+            const profileForm = document.getElementById('profileForm');
+            if (profileForm) {
+                profileForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const fullNameInput = document.getElementById('fullName');
+                    const phoneInput = document.getElementById('phoneNumberProfile');
+                    if (!fullNameInput || !phoneInput) return;
+
+                    const fullNameVal = fullNameInput.value;
+                    const phoneVal = phoneInput.value;
+                    try {
+                        const response = await fetch('/api/users/me', {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                fullName: fullNameVal,
+                                phoneNumber: phoneVal
+                            })
+                        });
+                        const responseText = await response.text();
+                        if (response.ok) {
+                            Swal.fire('Thành công', responseText, 'success');
+                            // Cập nhật lại thông tin trong biến global và navbar nếu cần
+                            if (currentUserInfo) {
+                                currentUserInfo.fullName = fullNameVal;
+                                currentUserInfo.phoneNumber = phoneVal;
+                            }
+                            // Cập nhật lời chào ở layout (nếu hàm checkLoginStatus không được gọi)
+                            const userGreetingElem = document.getElementById('userGreeting');
+                            if (userGreetingElem) userGreetingElem.textContent = `Chào, ${fullNameVal || currentUserInfo?.email}`; // Cập nhật tên chào
+                        } else {
+                            Swal.fire('Lỗi', responseText, 'error');
+                        }
+                    } catch (error) {
+                        console.error("Lỗi khi cập nhật hồ sơ:", error);
+                        Swal.fire('Lỗi', 'Lỗi mạng khi cập nhật hồ sơ.', 'error');
+                    }
+                });
+            }
+
+            // === ĐỔI MẬT KHẨU ===
+            const changePasswordForm = document.getElementById('changePasswordForm');
+            if (changePasswordForm) {
+                changePasswordForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const currentPasswordInput = document.getElementById('currentPassword');
+                    const newPasswordInput = document.getElementById('newPassword');
+                    const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+                    if (!currentPasswordInput || !newPasswordInput || !confirmNewPasswordInput) return;
+
+                    const currentPassword = currentPasswordInput.value;
+                    const newPassword = newPasswordInput.value;
+                    const confirmNewPassword = confirmNewPasswordInput.value;
+
+                    if (newPassword !== confirmNewPassword) {
+                        Swal.fire('Lỗi', 'Mật khẩu mới và mật khẩu xác nhận không khớp.', 'warning');
+                        return;
+                    }
+                    if (!newPassword || newPassword.length < 6) { // Thêm kiểm tra độ dài cơ bản
+                        Swal.fire('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/users/me/change-password', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                currentPassword: currentPassword,
+                                newPassword: newPassword
+                            })
+                        });
+                        const responseText = await response.text();
+                        if (response.ok) {
+                            Swal.fire('Thành công', responseText, 'success');
+                            this.reset(); // Xóa các trường mật khẩu
+                        } else {
+                            Swal.fire('Lỗi', responseText, 'error');
+                        }
+                    } catch (error) {
+                        console.error("Lỗi khi đổi mật khẩu:", error);
+                        Swal.fire('Lỗi', 'Lỗi mạng khi đổi mật khẩu.', 'error');
+                    }
+                });
+            }
+
+            // === LOGIC SỔ ĐỊA CHỈ (Tải, Thêm, Xóa, Sửa, Đặt mặc định) ===
+
+            // Hàm tải danh sách địa chỉ (Phiên bản sửa lỗi hiển thị + Thêm log + Bold tên)
+            async function fetchAddressesForProfile() {
+    const container = document.getElementById('address-list-profile');
+    if (!container) return;
+    container.innerHTML = '<p class="text-center p-3">Đang tải danh sách địa chỉ...</p>';
+    try {
+        const response = await fetch('/api/addresses', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
-    });
-
-    // === LOGIC LẤY VÀ CẬP NHẬT THÔNG TIN CÁ NHÂN ===
-    async function fetchCurrentUser() {
-        if (!token) {
-            window.location.href = '/login';
-            return;
-        }
-        const response = await fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } });
-        
-        if (!response.ok) {
-             Swal.fire('Lỗi', 'Phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
-             return;
-        }
-
-        const userInfo = await response.json();
-        if (userInfo.authenticated) {
-            currentUserInfo = userInfo; // Lưu thông tin user
-            document.getElementById('email').value = userInfo.email;
-            document.getElementById('fullName').value = userInfo.fullName || '';
-            document.getElementById('phoneNumberProfile').value = userInfo.phoneNumber || '';
-
-            // === KIỂM TRA VAI TRÒ (ĐỂ ẨN/HIỆN TAB ĐĂNG KÝ) ===
-            checkUserRoleAndApplicationStatus();
-            // === KẾT THÚC ===
-        }
-    }
-
-    // === CẬP NHẬT HỒ SƠ ===
-    document.getElementById('profileForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const response = await fetch('/api/users/me', {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fullName: document.getElementById('fullName').value,
-                phoneNumber: document.getElementById('phoneNumberProfile').value
-            })
-        });
-        const responseText = await response.text();
-        if (response.ok) {
-            Swal.fire('Thành công', responseText, 'success');
-        } else {
-            Swal.fire('Lỗi', responseText, 'error');
-        }
-    });
-
-    // === ĐỔI MẬT KHẨU ===
-    document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-
-        if (newPassword !== confirmNewPassword) {
-            Swal.fire('Lỗi', 'Mật khẩu mới và mật khẩu xác nhận không khớp.', 'warning');
-            return;
-        }
-
-        const response = await fetch('/api/users/me/change-password', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                currentPassword: document.getElementById('currentPassword').value,
-                newPassword: newPassword
-            })
-        });
-        const responseText = await response.text();
-         if (response.ok) {
-            Swal.fire('Thành công', responseText, 'success');
-            this.reset();
-        } else {
-            Swal.fire('Lỗi', responseText, 'error');
-        }
-    });
-
-    // === LOGIC SỔ ĐỊA CHỈ (Tải và render) ===
-    async function fetchAddressesForProfile() {
-        const response = await fetch('/api/addresses', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!response.ok) throw new Error('Không thể tải địa chỉ');
         userAddresses = await response.json();
         
-        userAddresses.sort((a, b) => (b.default ? 1 : 0) - (a.default ? 1 : 0));
-
-        const container = document.getElementById('address-list-profile');
-        container.innerHTML = '';
+        // Debug: Xem dữ liệu thô từ API
+        console.log("Raw API Response:", JSON.stringify(userAddresses, null, 2));
+        
+        // Sắp xếp mặc định lên đầu
+        userAddresses.sort((a, b) => {
+            const aDefault = a.isDefault === true || a.isDefault === 'true' || a.isDefault === 1;
+            const bDefault = b.isDefault === true || b.isDefault === 'true' || b.isDefault === 1;
+            return (bDefault ? 1 : 0) - (aDefault ? 1 : 0);
+        });
+        
+        container.innerHTML = ''; // Xóa loading
         
         if (userAddresses.length === 0) {
             container.innerHTML = '<p class="text-center text-muted p-3">Bạn chưa có địa chỉ nào.</p>';
@@ -356,249 +590,394 @@
         }
 
         userAddresses.forEach(addr => {
-            const isDefault = addr.default;
-            const defaultClass = isDefault ? 'is-default' : '';
-            const defaultBadge = isDefault ? '<span class="badge bg-primary me-2">Mặc định</span>' : '';
+            // Chuyển đổi isDefault về boolean rõ ràng
+            const isDefault = addr.isDefault === true || addr.isDefault === 'true' || addr.isDefault === 1;
             
+            console.log(`Rendering Address ID: ${addr.id}, isDefault: ${isDefault}, Raw: ${addr.isDefault}`);
+
+            const defaultCardClass = isDefault ? 'is-default' : '';
+            const defaultNameClass = isDefault ? 'recipient-name-default' : '';
+
             const deleteButton = isDefault 
-                ? `<button class="btn btn-sm btn-outline-danger" disabled title="Không thể xóa địa chỉ mặc định"><i class="bi bi-trash"></i></button>`
+                ? `<button class="btn btn-sm btn-outline-danger" disabled title="Không thể xóa địa chỉ mặc định"><i class="bi bi-trash"></i></button>` 
                 : `<button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${addr.id})"><i class="bi bi-trash"></i></button>`;
 
-            const setDefaultButton = !isDefault
-                ? `<button class="btn btn-sm btn-outline-success" onclick="setDefaultAddress(${addr.id})">Đặt làm mặc định</button>`
-                : '';
-            
+            const setDefaultButton = isDefault
+                ? `<span class="badge bg-primary">Mặc định</span>`
+                : `<button class="btn btn-sm btn-outline-success" onclick="setDefaultAddress(${addr.id})">Đặt làm mặc định</button>`;
+
             const editButton = `<button class="btn btn-sm btn-outline-primary" onclick="openEditModal(${addr.id})"><i class="bi bi-pencil-square"></i></button>`;
 
             container.innerHTML += `
-                <div class="address-card ${defaultClass}">
+                <div class="address-card ${defaultCardClass}">
                     <div class="address-actions d-flex gap-2">
                         ${setDefaultButton}
                         ${editButton}
                         ${deleteButton}
                     </div>
-                    <div>
-                        <strong>${addr.recipientName}</strong>
-                        ${defaultBadge}
-                    </div>
+                    <div><strong class="${defaultNameClass}">${addr.recipientName}</strong></div>
                     <p class="text-muted mb-1">${addr.phoneNumber}</p>
                     <p class="mb-0">${addr.fullAddress}</p>
                 </div>`;
         });
+    } catch (error) {
+        console.error("Lỗi khi tải địa chỉ:", error);
+        if (container) container.innerHTML = '<p class="text-danger text-center p-3">Lỗi tải danh sách địa chỉ.</p>';
     }
-    
-    // === SỔ ĐỊA CHỈ (Thêm) ===
-    document.getElementById('addAddressForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const response = await fetch('/api/addresses', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                recipientName: document.getElementById('recipientName').value,
-                phoneNumber: document.getElementById('phoneNumberAddress').value,
-                fullAddress: document.getElementById('fullAddress').value
-            })
-        });
+}
 
-        if (response.ok) {
-            var myModalEl = document.getElementById('addAddressModal');
-            var modal = bootstrap.Modal.getInstance(myModalEl);
-            modal.hide();
-            this.reset();
-            fetchAddressesForProfile(); 
-        } else {
-            Swal.fire('Lỗi', 'Không thể thêm địa chỉ', 'error');
-        }
-    });
+            // Form thêm địa chỉ
+            const addAddressForm = document.getElementById('addAddressForm');
+            if (addAddressForm) addAddressForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const recipientName = document.getElementById('recipientName').value;
+                const phoneNumber = document.getElementById('phoneNumberAddress').value;
+                const fullAddress = document.getElementById('fullAddress').value;
 
-    // === SỔ ĐỊA CHỈ (Xóa) ===
-    async function deleteAddress(addressId) {
-        Swal.fire({
-            title: 'Bạn chắc chắn muốn xóa?',
-            text: "Bạn không thể hoàn tác hành động này!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonText: 'Không',
-            confirmButtonText: 'Vâng, xóa nó!'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                const response = await fetch(`/api/addresses/${addressId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                try {
+                    const response = await fetch('/api/addresses', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ recipientName, phoneNumber, fullAddress })
+                    });
+                    const responseText = await response.text();
+                    if (response.ok) {
+                        Swal.fire('Thành công', 'Thêm địa chỉ mới thành công!', 'success');
+                        fetchAddressesForProfile(); // Tải lại danh sách
+                        const addModalElem = document.getElementById('addAddressModal');
+                        if (addModalElem) bootstrap.Modal.getInstance(addModalElem).hide(); // Đóng modal
+                        this.reset(); // Xóa form
+                    } else {
+                        Swal.fire('Lỗi', responseText, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Lỗi', 'Lỗi mạng khi thêm địa chỉ.', 'error');
+                }
+            });
+
+            // Hàm xóa địa chỉ
+            async function deleteAddress(addressId) {
+                Swal.fire({
+                    title: 'Bạn chắc chắn muốn xóa?',
+                    text: "Địa chỉ này sẽ bị xóa vĩnh viễn!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Đồng ý xóa',
+                    cancelButtonText: 'Hủy bỏ'
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        try {
+                            const response = await fetch(`/api/addresses/${addressId}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            const responseText = await response.text();
+                            if (response.ok) {
+                                Swal.fire('Đã xóa!', responseText, 'success');
+                                fetchAddressesForProfile(); // Tải lại danh sách
+                            } else {
+                                Swal.fire('Lỗi!', responseText, 'error');
+                            }
+                        } catch (error) {
+                            Swal.fire('Lỗi!', 'Lỗi mạng khi xóa địa chỉ.', 'error');
+                        }
+                    }
                 });
-                const responseText = await response.text();
-                if (response.ok) {
-                    Swal.fire('Đã xóa!', responseText, 'success');
-                    fetchAddressesForProfile();
-                } else {
-                    Swal.fire('Lỗi!', responseText, 'error');
+            }
+
+            // Hàm đặt làm mặc định
+            async function setDefaultAddress(addressId) {
+                try {
+                    const response = await fetch(`/api/addresses/${addressId}/set-default`, {
+                        method: 'PUT', // Dùng PUT thay PATCH để nhất quán với controller
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const responseText = await response.text();
+                    if (response.ok) {
+                        Swal.fire('Thành công', responseText, 'success');
+                        fetchAddressesForProfile(); // Tải lại danh sách
+                    } else {
+                        Swal.fire('Lỗi!', responseText, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Lỗi!', 'Lỗi mạng khi đặt mặc định.', 'error');
                 }
             }
-        });
-    }
 
-    // === SỔ ĐỊA CHỈ (Đặt làm mặc định) ===
-    async function setDefaultAddress(addressId) {
-        const response = await fetch(`/api/addresses/${addressId}/set-default`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const responseText = await response.text();
-        if (response.ok) {
-            Swal.fire({
-                title: 'Thành công!',
-                text: responseText,
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            fetchAddressesForProfile();
-        } else {
-            Swal.fire('Lỗi!', responseText, 'error');
-        }
-    }
+            // Hàm mở modal sửa
+            function openEditModal(addressId) {
+                const address = userAddresses.find(a => a.id === addressId);
+                if (address) {
+                    document.getElementById('editAddressId').value = address.id;
+                    document.getElementById('editRecipientName').value = address.recipientName;
+                    document.getElementById('editPhoneNumberAddress').value = address.phoneNumber;
+                    document.getElementById('editFullAddress').value = address.fullAddress;
 
-    // === SỔ ĐỊA CHỈ (Mở Modal Sửa) ===
-    function openEditModal(addressId) {
-        const addressToEdit = userAddresses.find(addr => addr.id === addressId);
-        if (!addressToEdit) return;
-
-        document.getElementById('editAddressId').value = addressToEdit.id;
-        document.getElementById('editRecipientName').value = addressToEdit.recipientName;
-        document.getElementById('editPhoneNumberAddress').value = addressToEdit.phoneNumber;
-        document.getElementById('editFullAddress').value = addressToEdit.fullAddress;
-
-        var myModal = new bootstrap.Modal(document.getElementById('editAddressModal'));
-        myModal.show();
-    }
-
-    // === SỔ ĐỊA CHỈ (Submit Sửa) ===
-    document.getElementById('editAddressForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const addressId = document.getElementById('editAddressId').value;
-        
-        const response = await fetch(`/api/addresses/${addressId}`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                recipientName: document.getElementById('editRecipientName').value,
-                phoneNumber: document.getElementById('editPhoneNumberAddress').value,
-                fullAddress: document.getElementById('editFullAddress').value
-            })
-        });
-
-        const responseText = await response.text();
-        if (response.ok) {
-            var myModalEl = document.getElementById('editAddressModal');
-            var modal = bootstrap.Modal.getInstance(myModalEl);
-            modal.hide();
-            Swal.fire('Thành công', responseText, 'success');
-            fetchAddressesForProfile();
-        } else {
-            Swal.fire('Lỗi', responseText, 'error');
-        }
-    });
-
-    // === LOGIC ĐĂNG KÝ VAI TRÒ (MỚI) ===
-    
-    const applyRoleTab = document.getElementById('apply-role-tab');
-    const applyRoleForm = document.getElementById('applyRoleForm');
-    const applicationStatusMessage = document.getElementById('application-status-message');
-
-    /**
-     * Kiểm tra vai trò của user và trạng thái đơn đăng ký (nếu có)
-     */
-    async function checkUserRoleAndApplicationStatus() {
-        if (!currentUserInfo) return;
-
-        // 1. Nếu user không còn là "Customer" (đã là Vendor/Shipper/Admin)
-        if (currentUserInfo.role !== 'Customer') {
-            applyRoleTab.classList.add('d-none'); // Ẩn luôn tab đăng ký
-            document.getElementById('apply-role').classList.add('d-none'); // Ẩn nội dung
-            return;
-        }
-        
-        // 2. Nếu là Customer, kiểm tra xem có đơn đang chờ không
-        try {
-            const response = await fetch('/api/apply/my-status', { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            });
-            const statusData = await response.json();
-
-            if (statusData.hasPendingApplication) {
-                // Vô hiệu hóa form
-                applyRoleForm.setAttribute('disabled', 'true');
-                // Hiển thị thông báo
-                applicationStatusMessage.textContent = `Bạn đã có một đơn đăng ký vai trò "${statusData.requestedRole}" đang ở trạng thái "PENDING". Vui lòng chờ Admin duyệt.`;
-                applicationStatusMessage.classList.remove('d-none', 'alert-success');
-                applicationStatusMessage.classList.add('alert-info');
-            } else {
-                // Cho phép nộp đơn
-                applyRoleForm.removeAttribute('disabled');
-                applicationStatusMessage.classList.add('d-none');
-            }
-        } catch (error) {
-            console.error("Lỗi kiểm tra trạng thái đơn:", error);
-            applicationStatusMessage.textContent = "Lỗi khi kiểm tra trạng thái đăng ký.";
-            applicationStatusMessage.classList.add('alert-danger');
-            applicationStatusMessage.classList.remove('d-none');
-        }
-    }
-
-    /**
-     * Xử lý nộp đơn đăng ký vai trò
-     */
-    applyRoleForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const requestedRole = document.getElementById('requestedRole').value;
-        const message = document.getElementById('applicationMessage').value;
-
-        if (!requestedRole) {
-            Swal.fire('Lỗi', 'Vui lòng chọn vai trò bạn muốn đăng ký.', 'warning');
-            return;
-        }
-        
-        const submitButton = this.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
-        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang gửi...';
-
-        try {
-            const response = await fetch('/api/apply/role', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    requestedRole: requestedRole,
-                    message: message
-                })
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                Swal.fire('Thành công!', result.message, 'success');
-                checkUserRoleAndApplicationStatus(); // Cập nhật lại trạng thái (vô hiệu hóa form)
-            } else {
-                Swal.fire('Lỗi!', result.message || 'Không thể gửi đơn.', 'error');
+                    const editModalElem = document.getElementById('editAddressModal');
+                    if (editModalElem) bootstrap.Modal.getOrCreateInstance(editModalElem).show();
+                } else {
+                    Swal.fire('Lỗi', 'Không tìm thấy địa chỉ để sửa.', 'error');
+                }
             }
 
-        } catch (error) {
-            Swal.fire('Lỗi!', 'Lỗi mạng, không thể gửi đơn đăng ký.', 'error');
-        } finally {
-            submitButton.disabled = false;
-            submitButton.innerHTML = '<i class="bi bi-send-check"></i> Gửi yêu cầu';
-        }
-    });
-    // === KẾT THÚC LOGIC MỚI ===
+            // Form sửa địa chỉ
+            const editAddressForm = document.getElementById('editAddressForm');
+            if (editAddressForm) editAddressForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const addressId = document.getElementById('editAddressId').value;
+                const recipientName = document.getElementById('editRecipientName').value;
+                const phoneNumber = document.getElementById('editPhoneNumberAddress').value;
+                const fullAddress = document.getElementById('editFullAddress').value;
+
+                try {
+                    const response = await fetch(`/api/addresses/${addressId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ recipientName, phoneNumber, fullAddress })
+                    });
+                    const responseText = await response.text();
+                    if (response.ok) {
+                        Swal.fire('Thành công', responseText, 'success');
+                        fetchAddressesForProfile(); // Tải lại danh sách
+                        const editModalElem = document.getElementById('editAddressModal');
+                        if (editModalElem) bootstrap.Modal.getInstance(editModalElem).hide(); // Đóng modal
+                    } else {
+                        Swal.fire('Lỗi', responseText, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Lỗi', 'Lỗi mạng khi cập nhật địa chỉ.', 'error');
+                }
+            });
 
 
-    // === GỌI CÁC HÀM KHỞI TẠO KHI TRANG TẢI XONG ===
-    document.addEventListener('DOMContentLoaded', () => {
-        fetchCurrentUser();
-        fetchAddressesForProfile();
-        // (checkUserRoleAndApplicationStatus() sẽ được gọi bên trong fetchCurrentUser())
-    });
-</script>
-</th:block>
+            // === LOGIC ĐĂNG KÝ VAI TRÒ ===
+            const applyRoleTab = document.getElementById('apply-role-tab');
+            const applyRoleForm = document.getElementById('applyRoleForm');
+            const applicationStatusMessage = document.getElementById('application-status-message');
+
+            // Hàm kiểm tra vai trò và trạng thái đơn
+            async function checkUserRoleAndApplicationStatus() {
+                if (!currentUserInfo || !applyRoleTab || !applyRoleForm || !applicationStatusMessage) return;
+                if (currentUserInfo.role !== 'Customer') {
+                    applyRoleTab.classList.add('d-none');
+                    const applyRoleSection = document.getElementById('apply-role');
+                    if (applyRoleSection) applyRoleSection.classList.add('d-none');
+                    return;
+                } else {
+                    applyRoleTab.classList.remove('d-none');
+                }
+                try {
+                    const response = await fetch('/api/apply/my-status', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) throw new Error('Lỗi kiểm tra trạng thái đơn');
+                    const statusData = await response.json();
+                    if (statusData.hasPendingApplication) {
+                        applyRoleForm.setAttribute('disabled', 'true');
+                        applicationStatusMessage.textContent = `Bạn đã có một đơn đăng ký vai trò "${statusData.requestedRole}" đang ở trạng thái "PENDING". Vui lòng chờ Admin duyệt.`;
+                        applicationStatusMessage.className = 'alert alert-info';
+                    } else {
+                        applyRoleForm.removeAttribute('disabled');
+                        applicationStatusMessage.className = 'alert alert-info d-none';
+                    }
+                } catch (error) {
+                    console.error("Lỗi kiểm tra trạng thái đơn:", error);
+                    applicationStatusMessage.textContent = "Lỗi khi kiểm tra trạng thái đăng ký.";
+                    applicationStatusMessage.className = 'alert alert-danger';
+                }
+            }
+
+            // Form nộp đơn đăng ký
+            if (applyRoleForm) {
+                applyRoleForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const requestedRoleSelect = document.getElementById('requestedRole');
+                    const applicationMessageInput = document.getElementById('applicationMessage');
+                    if (!requestedRoleSelect || !applicationMessageInput) return;
+
+                    const requestedRole = requestedRoleSelect.value;
+                    const message = applicationMessageInput.value;
+
+                    if (!requestedRole) {
+                        Swal.fire('Thiếu thông tin', 'Vui lòng chọn vai trò bạn muốn đăng ký.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/apply/role', { // Đảm bảo đúng endpoint
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ requestedRole, message })
+                        });
+                        const result = await response.json();
+                        if (response.ok || response.status === 201) { // 201 Created
+                            Swal.fire('Thành công', result.message || 'Gửi yêu cầu thành công!', 'success');
+                            checkUserRoleAndApplicationStatus(); // Cập nhật lại trạng thái (vô hiệu hóa form)
+                        } else {
+                            Swal.fire('Lỗi', result.message || 'Gửi yêu cầu thất bại.', 'error');
+                        }
+                    } catch (error) {
+                        Swal.fire('Lỗi', 'Lỗi mạng khi gửi yêu cầu.', 'error');
+                    }
+                });
+            }
+
+
+            // === HÀM XỬ LÝ CHỌN FILE AVATAR (Mở Cropper) ===
+            function handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (!file || !cropperModal || !cropperImageElement) return;
+                if (!file.type.startsWith('image/')) {
+                    Swal.fire('Lỗi', 'Vui lòng chọn file hình ảnh.', 'warning');
+                    if (avatarInput) avatarInput.value = null;
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    Swal.fire('Lỗi', 'Kích thước ảnh gốc không được vượt quá 5MB.', 'warning');
+                    if (avatarInput) avatarInput.value = null;
+                    return;
+                }
+                originalFile = file; // Lưu file gốc
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    cropperImageElement.src = e.target.result;
+                    cropperModal.show(); // Hiển thị modal crop
+                    // Khởi tạo Cropper sau khi modal hiển thị
+                    // Dùng setTimeout để đảm bảo modal đã render
+                    setTimeout(() => {
+                        if (cropperInstance) cropperInstance.destroy(); // Hủy instance cũ nếu còn
+                        cropperInstance = new Cropper(cropperImageElement, {
+                            aspectRatio: 1 / 1, // Tỉ lệ 1:1
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.8,
+                            responsive: true,
+                            background: false,
+                            modal: false
+                        });
+                        console.log("Cropper initialized.");
+                    }, 150); // Delay nhỏ để modal kịp hiển thị hoàn toàn
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // === HÀM XỬ LÝ KHI NHẤN NÚT XÁC NHẬN CROP ===
+            if (cropAndUploadButton) {
+                cropAndUploadButton.addEventListener('click', () => {
+                    if (!cropperInstance || !originalFile) {
+                        console.error("Cropper not ready or no original file.");
+                        return;
+                    }
+                    // Lấy ảnh đã cắt dưới dạng Canvas
+                    const canvas = cropperInstance.getCroppedCanvas({
+                        width: 300, // Kích thước mong muốn
+                        height: 300,
+                        imageSmoothingEnabled: true,
+                        imageSmoothingQuality: 'high'
+                    });
+                    if (!canvas) {
+                        Swal.fire('Lỗi', 'Không thể lấy ảnh đã cắt.', 'error');
+                        return;
+                    }
+                    // Chuyển Canvas thành Blob
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            Swal.fire('Lỗi', 'Không thể chuyển đổi ảnh đã cắt.', 'error');
+                            return;
+                        }
+                        // Tạo tên file mới
+                        let fileName = 'avatar_' + Date.now();
+                        const fileExtension = originalFile.name.split('.').pop();
+                        if (fileExtension && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension.toLowerCase())) {
+                            fileName += '.' + fileExtension;
+                        } else {
+                            fileName += '.png';
+                            if (!blob.type.startsWith('image/')) blob = new Blob([blob], {
+                                type: 'image/png'
+                            }); // Mặc định png
+                        }
+                        // Tạo File object từ Blob
+                        const croppedFile = new File([blob], fileName, {
+                            type: blob.type
+                        });
+                        // Kiểm tra kích thước file đã crop
+                        if (croppedFile.size > 2 * 1024 * 1024) { // 2MB
+                            Swal.fire('Lỗi', 'Kích thước ảnh sau khi cắt vượt quá 2MB.', 'warning');
+                            return;
+                        }
+                        // Đóng modal và upload
+                        cropperModal.hide();
+                        uploadCroppedAvatar(croppedFile);
+                    }, originalFile.type || 'image/png'); // Sử dụng mime type gốc hoặc fallback
+                });
+            }
+
+            // === HÀM UPLOAD FILE ĐÃ CROP LÊN SERVER ===
+            async function uploadCroppedAvatar(croppedFile) {
+                if (!croppedFile || !avatarUploadStatus || !avatarPreview) return;
+                avatarUploadStatus.textContent = 'Đang tải lên ảnh đã cắt...';
+                avatarUploadStatus.className = 'mt-2 small text-info';
+                const formData = new FormData();
+                formData.append('file', croppedFile); // Gửi file đã crop
+                try {
+                    const response = await fetch('/api/users/me/avatar', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        avatarUploadStatus.textContent = result.message || 'Cập nhật thành công!';
+                        avatarUploadStatus.className = 'mt-2 small text-success';
+                        const newAvatarUrl = result.avatarUrl + '?t=' + new Date().getTime(); // Thêm timestamp
+                        avatarPreview.src = newAvatarUrl; // Cập nhật preview trên trang profile
+                        if (currentUserInfo) currentUserInfo.avatarUrl = result.avatarUrl; // Cập nhật cache local
+
+                        // Gọi lại hàm checkLoginStatus (từ _app_layout.html) để cập nhật toàn bộ navbar (bao gồm avatar)
+                        if (typeof checkLoginStatus === 'function') {
+                            console.log("Calling checkLoginStatus from profile to update navbar.");
+                            checkLoginStatus(); // Gọi hàm từ layout
+                        } else {
+                            console.warn("checkLoginStatus function not found globally.");
+                            // Fallback (ít khả năng): cập nhật trực tiếp ảnh navbar nếu hàm global không tồn tại
+                            const navbarAvatar = document.getElementById('navbarUserAvatar');
+                            if (navbarAvatar) navbarAvatar.src = newAvatarUrl;
+                        }
+                    } else {
+                        avatarUploadStatus.textContent = `Lỗi: ${result.message || 'Không thể tải lên.'}`;
+                        avatarUploadStatus.className = 'mt-2 small text-danger';
+                        // Hoàn tác preview về ảnh cũ
+                        if (currentUserInfo && currentUserInfo.avatarUrl) avatarPreview.src = currentUserInfo.avatarUrl + '?t=' + new Date().getTime();
+                        else avatarPreview.src = '/images/placeholder.png';
+                    }
+                } catch (error) {
+                    console.error("Lỗi upload avatar đã crop:", error);
+                    avatarUploadStatus.textContent = 'Lỗi mạng khi tải lên.';
+                    avatarUploadStatus.className = 'mt-2 small text-danger';
+                    // Hoàn tác preview về ảnh cũ
+                    if (currentUserInfo && currentUserInfo.avatarUrl) avatarPreview.src = currentUserInfo.avatarUrl + '?t=' + new Date().getTime();
+                    else avatarPreview.src = '/images/placeholder.png';
+                } finally {
+                    // Input file được reset khi modal (cropperModal) ẩn đi (trong sự kiện 'hidden.bs.modal')
+                }
+            }
+        </script>
+    </th:block>
 </body>
+
 </html>

@@ -76,7 +76,8 @@
 					.requestMatchers(
 						"/api/users/me",
 						"/api/chat/**",
-						"/api/reviews/eligibility/**"
+						"/api/reviews/eligibility/**",
+						"api/users/me/avatar"
 					).authenticated()
 
 					// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
