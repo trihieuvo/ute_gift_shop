@@ -34,7 +34,8 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
         Pageable pageable
     );
     // === KẾT THÚC BỔ SUNG PHÂN TRANG ===
-
+    // TÌM ĐƠN HÀNG THEO MÃ THANH TOÁN
+    Optional<Order> findByPaymentCode(String paymentCode);
 
     // === BỔ SUNG: TÍNH TỔNG TIỀN COD ĐANG GIỮ ===
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.shipper.id = :shipperId AND o.status = 'DELIVERED' AND o.paymentMethod = 'COD' AND o.isCodReconciled = false")

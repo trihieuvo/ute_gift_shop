@@ -1,20 +1,39 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.dto.request.CheckoutRequest;
-import com.utegiftshop.entity.*;
-import com.utegiftshop.repository.*;
-import com.utegiftshop.security.service.UserDetailsImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus; 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional; 
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController; 
+
+import com.utegiftshop.dto.request.CheckoutRequest;
+import com.utegiftshop.entity.Address;
+import com.utegiftshop.entity.CartItem;
+import com.utegiftshop.entity.Order;
+import com.utegiftshop.entity.OrderDetail;
+import com.utegiftshop.entity.Product;
+import com.utegiftshop.entity.User;
+import com.utegiftshop.repository.AddressRepository;
+import com.utegiftshop.repository.CartItemRepository;
+import com.utegiftshop.repository.OrderDetailRepository;
+import com.utegiftshop.repository.OrderRepository;
+import com.utegiftshop.repository.ProductRepository;
+import com.utegiftshop.security.service.UserDetailsImpl;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -47,14 +66,8 @@ public class OrderController {
         Order order = new Order();
         User user = new User();
         user.setId(userId);
-        order.setUser(user); // Gán người dùng đặt hàng
-
-        // === HOÀN TÁC: Chỉ lưu địa chỉ, không lưu SĐT/Tên (vì CSDL gốc không có) ===
+        order.setUser(user);
         order.setShippingAddress(address.getFullAddress());
-        // order.setRecipientName(address.getRecipientName()); // <-- XÓA DÒNG NÀY
-        // order.setRecipientPhone(address.getPhoneNumber()); // <-- XÓA DÒNG NÀY
-        // === KẾT THÚC HOÀN TÁC ===
-
         order.setPaymentMethod(request.getPaymentMethod());
         order.setStatus("NEW"); // Trạng thái ban đầu
 
@@ -66,24 +79,29 @@ public class OrderController {
             if (product.getStockQuantity() < item.getQuantity()) {
                 throw new RuntimeException("Sản phẩm " + product.getName() + " không đủ số lượng.");
             }
-            // Create OrderDetail
             OrderDetail detail = new OrderDetail();
             detail.setOrder(order);
             detail.setProduct(product);
             detail.setQuantity(item.getQuantity());
-            detail.setPrice(product.getPrice()); // Lưu giá tại thời điểm mua
+            detail.setPrice(product.getPrice());
             orderDetails.add(detail);
-
             totalAmount = totalAmount.add(product.getPrice().multiply(new BigDecimal(item.getQuantity())));
-
-            // Update product stock
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
             productRepository.save(product);
         }
 
         order.setTotalAmount(totalAmount);
 
-        // Save Order and OrderDetails
+        // === LOGIC MỚI: XỬ LÝ PHƯƠNG THỨC THANH TOÁN ===
+        String paymentCode = null;
+        if ("SEPAY_QR".equalsIgnoreCase(request.getPaymentMethod())) {
+            // Tạo mã thanh toán ngẫu nhiên và duy nhất
+            paymentCode = "UTE" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+            order.setPaymentCode(paymentCode);
+            order.setStatus("PENDING_PAYMENT"); // Trạng thái mới: Chờ thanh toán
+        }
+        // ===============================================
+
         Order savedOrder = orderRepository.save(order);
         
         List<OrderDetail> savedDetails = new ArrayList<>();
@@ -91,12 +109,17 @@ public class OrderController {
             detail.setOrder(savedOrder);
             savedDetails.add(orderDetailRepository.save(detail));
         }
-        savedOrder.setOrderDetails(savedDetails); 
+        savedOrder.setOrderDetails(savedDetails);
 
-        // Clear cart
         cartItemRepository.deleteByUserId(userId);
 
-        return ResponseEntity.ok(savedOrder);
+        // Trả về thông tin cần thiết cho frontend
+        return ResponseEntity.ok(Map.of(
+            "orderId", savedOrder.getId(),
+            "paymentMethod", savedOrder.getPaymentMethod(),
+            "paymentCode", paymentCode, // Sẽ là null nếu là COD
+            "totalAmount", totalAmount
+        ));
     }
 
     // === CÁC API CỦA CUSTOMER (GIỮ NGUYÊN) ===

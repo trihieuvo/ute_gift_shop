@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_app_layout}">
+<head>
+    <title>Thanh toán QR</title>
+    <style>
+        .payment-container {
+            max-width: 500px;
+            margin: auto;
+            text-align: center;
+        }
+        #qr-code {
+            max-width: 300px;
+            height: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        #countdown {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #d9534f;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="payment-container">
+        <h2 class="mb-3">Quét mã QR để thanh toán</h2>
+        <p>Vui lòng mở ứng dụng ngân hàng và quét mã QR bên dưới để hoàn tất thanh toán.</p>
+        
+        <div id="qr-container" class="my-4">
+            <img id="qr-code" src="" alt="Đang tạo mã QR...">
+        </div>
+        
+        <div id="payment-info">
+            <p>Số tiền: <strong id="amount" class="text-primary"></strong></p>
+            <p>Nội dung: <strong id="content" class="text-primary"></strong></p>
+        </div>
+
+        <div class="alert alert-warning">
+            Mã QR sẽ hết hạn sau: <span id="countdown">03:00</span>
+        </div>
+        
+        <div id="status-message"></div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts_body">
+    <script>
+        const paymentInfo = JSON.parse(sessionStorage.getItem('paymentInfo'));
+        
+        if (!paymentInfo) {
+            document.querySelector('.payment-container').innerHTML = '<h2>Lỗi: Không tìm thấy thông tin thanh toán.</h2>';
+        } else {
+            // THAY THÔNG TIN CỦA BẠN VÀO ĐÂY
+            const YOUR_ACCOUNT_NUMBER = "0372008321";
+            const YOUR_BANK_CODE = "MBBank"; // Ví dụ: Vietcombank, Techcombank, ...
+            
+            const amount = paymentInfo.totalAmount;
+            const content = paymentInfo.paymentCode;
+
+            // Hiển thị thông tin
+            document.getElementById('amount').textContent = amount.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('content').textContent = content;
+
+            // Tạo URL cho QR Code
+            const qrUrl = `https://qr.sepay.vn/img?acc=${YOUR_ACCOUNT_NUMBER}&bank=${YOUR_BANK_CODE}&amount=${amount}&des=${content}`;
+            document.getElementById('qr-code').src = qrUrl;
+
+            // Logic đếm ngược và polling
+            let timeLeft = 180; // 3 phút
+            const countdownEl = document.getElementById('countdown');
+            const statusMessageEl = document.getElementById('status-message');
+            
+            const countdownInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const seconds = (timeLeft % 60).toString().padStart(2, '0');
+                countdownEl.textContent = `${minutes}:${seconds}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    clearInterval(paymentInterval);
+                    statusMessageEl.innerHTML = '<div class="alert alert-danger">Mã thanh toán đã hết hạn. Vui lòng đặt lại đơn hàng.</div>';
+                }
+            }, 1000);
+
+            const paymentInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/payment/check-status?code=${content}`);
+                    const result = await response.json();
+
+                    if (result.paid === true) {
+                        clearInterval(countdownInterval);
+                        clearInterval(paymentInterval);
+                        statusMessageEl.innerHTML = '';
+                        Swal.fire('Thành công!', 'Thanh toán đã được xác nhận!', 'success')
+                            .then(() => {
+                                sessionStorage.removeItem('paymentInfo'); // Xóa thông tin sau khi xong
+                                window.location.href = '/order-history';
+                            });
+                    }
+                } catch (error) {
+                    console.error("Polling error:", error);
+                }
+            }, 3000); // 3 giây/lần
+        }
+    </script>
+</th:block>
+</body>
+</html>

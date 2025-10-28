@@ -68,7 +68,10 @@ public class SecurityConfig {
 					"/ws/**",
 					"/v3/api-docs/**", "/swagger-ui/**",
 					"/api/reviews/product/**",
-                    "/api/reviews/me"
+                    "/api/reviews/me",
+					"/payment/**",
+					"/api/payment/**"
+					
 				).permitAll()
 
 				// ===== 2. API YÊU CẦU ĐĂNG NHẬP (BẤT KỲ VAI TRÒ) =====
@@ -81,7 +84,9 @@ public class SecurityConfig {
 					"/api/addresses",
 					"/api/cart/**",
 					"/api/reviews/eligibility/**",
-					"api/orders/**"
+					"/api/orders/**"
+					
+					
 				).authenticated()
 
 				// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====

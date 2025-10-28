@@ -33,12 +33,12 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addViewController("/cart").setViewName("cart"); // Trang giỏ hàng
         registry.addViewController("/checkout").setViewName("checkout"); // Trang thanh toán
         registry.addViewController("/profile").setViewName("profile"); // Trang thông tin cá nhân
-
-        // === BỔ SUNG: ÁNH XẠ CHO LỊCH SỬ ĐƠN HÀNG ===
+        registry.addViewController("/payment/{orderId}").setViewName("payment"); // Trang thanh toán cho đơn hàng cụ thể
+        // ÁNH XẠ CHO LỊCH SỬ ĐƠN HÀNG ===
         registry.addViewController("/order-history").setViewName("order-history");
         // Ánh xạ cho trang chi tiết, {id} sẽ được xử lý bởi JS ở frontend
         registry.addViewController("/orders/{id}").setViewName("order-details"); 
-        // === KẾT THÚC BỔ SUNG ===
+       
         registry.addViewController("/products/{id}").setViewName("product-detail");
         // BỎ CÁC VIEW CONTROLLER CHO /shipper/... ở đây nếu có
 

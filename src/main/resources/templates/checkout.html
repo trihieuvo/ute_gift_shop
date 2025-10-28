@@ -5,107 +5,313 @@
       layout:decorate="~{layouts/_app_layout}">
 <head>
     <title>Thanh toán</title>
+    <!-- Các style cũ có thể giữ nguyên nếu cần -->
 </head>
 <body>
 <div layout:fragment="content">
     <h1 class="mb-4">Thanh toán đơn hàng</h1>
-    <div class="row">
-        <div class="col-md-7">
-            <h4>Chọn địa chỉ giao hàng</h4>
-            <div id="address-list" class="mb-3">
+    <div class="row g-4"> {/* Thêm g-4 để có khoảng cách giữa các cột */}
+        <div class="col-lg-7"> {/* Sử dụng col-lg-7 cho màn hình lớn */}
+            <div class="card shadow-sm mb-4"> {/* Bọc địa chỉ trong card */}
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Chọn địa chỉ giao hàng</h5>
                 </div>
-            <h4 class="mt-4">Chọn phương thức thanh toán</h4>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
-                <label class="form-check-label" for="cod">
-                    Thanh toán khi nhận hàng (COD)
-                </label>
+                <div class="card-body">
+                    <div id="address-list" class="mb-3">
+                        <p class="text-center p-3 text-muted">Đang tải địa chỉ...</p>
+                    </div>
+                     {/* Nút thêm địa chỉ có thể đặt ở đây nếu muốn */}
+                     <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModalCheckout">
+                        <i class="bi bi-plus-circle"></i> Thêm địa chỉ mới
+                    </button>
+                </div>
             </div>
+
+             <div class="card shadow-sm"> {/* Bọc phương thức TT trong card */}
+                 <div class="card-header bg-light">
+                     <h5 class="mb-0"><i class="bi bi-credit-card-fill me-2"></i>Chọn phương thức thanh toán</h5>
+                 </div>
+                 <div class="card-body">
+                    <div class="form-check mb-2"> {/* Thêm mb-2 */}
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
+                        <label class="form-check-label" for="cod">
+                            <i class="bi bi-cash-coin me-1"></i> Thanh toán khi nhận hàng (COD)
+                        </label>
+                    </div>
+                    {/* THÊM LỰA CHỌN THANH TOÁN QR */}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="sepay_qr" value="SEPAY_QR">
+                        <label class="form-check-label" for="sepay_qr">
+                           <i class="bi bi-qr-code me-1"></i> Thanh toán qua mã QR (Chuyển khoản - SePay)
+                        </label>
+                    </div>
+                 </div>
+             </div>
         </div>
 
-        <div class="col-md-5">
-            <div class="card">
+        <div class="col-lg-5"> {/* Sử dụng col-lg-5 */}
+            <div class="card shadow-sm sticky-top" style="top: 80px;"> {/* Thêm sticky-top */}
+                <div class="card-header bg-light">
+                     <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Tóm tắt đơn hàng</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Tóm tắt đơn hàng</h5>
-                    <div id="order-summary">Đang tải...</div>
-                    <button class="btn btn-success w-100 mt-3" onclick="placeOrder()">Đặt hàng</button>
+                    <div id="order-summary" class="mb-3">
+                         <p class="text-center text-muted">Đang tải tóm tắt...</p>
+                    </div>
+                    {/* Thêm tổng tiền và phí vận chuyển rõ ràng hơn */}
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Tạm tính:</span>
+                            <strong id="summary-subtotal">0 đ</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Phí vận chuyển:</span>
+                            <strong>Miễn phí</strong> {/* Hoặc tính toán nếu có */}
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between bg-light">
+                            <strong class="text-danger">Tổng cộng:</strong>
+                            <strong id="summary-total" class="text-danger fs-5">0 đ</strong>
+                        </li>
+                    </ul>
+                    <button class="btn btn-success w-100 btn-lg" onclick="placeOrder()"> {/* Thêm btn-lg */}
+                        <i class="bi bi-bag-check-fill me-2"></i> Đặt hàng
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
+
+    {/* Modal Thêm địa chỉ - Copy từ profile.html nếu cần */}
+    <div class="modal fade" id="addAddressModalCheckout" tabindex="-1">
+         <div class="modal-dialog modal-dialog-centered">
+             <div class="modal-content">
+                 <div class="modal-header">
+                     <h5 class="modal-title">Thêm địa chỉ mới</h5>
+                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                 </div>
+                 <div class="modal-body">
+                     <form id="addAddressFormCheckout">
+                         <div class="mb-3">
+                             <label for="recipientNameCheckout" class="form-label">Tên người nhận</label>
+                             <input type="text" class="form-control" id="recipientNameCheckout" required>
+                         </div>
+                         <div class="mb-3">
+                             <label for="phoneNumberAddressCheckout" class="form-label">Số điện thoại</label>
+                             <input type="text" class="form-control" id="phoneNumberAddressCheckout" required>
+                         </div>
+                         <div class="mb-3">
+                             <label for="fullAddressCheckout" class="form-label">Địa chỉ chi tiết</label>
+                             <input type="text" class="form-control" id="fullAddressCheckout" required placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố">
+                         </div>
+                         <button type="submit" class="btn btn-primary w-100">Lưu địa chỉ</button>
+                     </form>
+                 </div>
+             </div>
+         </div>
     </div>
 </div>
 
 <th:block layout:fragment="scripts_body">
     <script>
+        const token = localStorage.getItem('jwtToken');
+        const orderSummaryContainer = document.getElementById('order-summary');
+        const addressListContainer = document.getElementById('address-list');
+        const summarySubtotalEl = document.getElementById('summary-subtotal');
+        const summaryTotalEl = document.getElementById('summary-total');
+        let currentTotalAmount = 0; // Biến lưu tổng tiền
+
         document.addEventListener('DOMContentLoaded', () => {
+             if (!token) {
+                window.location.href = '/login'; // Chuyển hướng nếu chưa đăng nhập
+                return;
+            }
             fetchAddresses();
             fetchOrderSummary();
         });
 
+        // Hàm fetchAddresses giữ nguyên logic nhưng có cải tiến nhỏ
         async function fetchAddresses() {
-            const token = localStorage.getItem('jwtToken');
-            const response = await fetch('/api/addresses', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const addresses = await response.json();
-            const container = document.getElementById('address-list');
-            container.innerHTML = '';
-            addresses.forEach((addr, index) => {
-                container.innerHTML += `
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="address" id="addr-${addr.id}" value="${addr.id}" ${index === 0 ? 'checked' : ''}>
-                        <label class="form-check-label" for="addr-${addr.id}">
-                            <strong>${addr.recipientName}</strong> - ${addr.phoneNumber}<br>
-                            ${addr.fullAddress}
-                        </label>
-                    </div>
-                `;
-            });
-        }
-        
-        async function fetchOrderSummary() {
-            const token = localStorage.getItem('jwtToken');
-            const response = await fetch('/api/cart', { headers: { 'Authorization': `Bearer ${token}` } });
-            const items = await response.json();
-            const container = document.getElementById('order-summary');
-            
-            let total = 0;
-            container.innerHTML = '';
-            items.forEach(item => {
-                total += item.product.price * item.quantity;
-                container.innerHTML += `<p>${item.product.name} (x${item.quantity})</p>`;
-            });
-            container.innerHTML += `<hr><h5>Tổng cộng: ${total.toLocaleString('vi-VN')} đ</h5>`;
+            if (!addressListContainer) return;
+            addressListContainer.innerHTML = '<p class="text-center p-3 text-muted">Đang tải địa chỉ...</p>';
+            try {
+                const response = await fetch('/api/addresses', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!response.ok) throw new Error('Không thể tải địa chỉ');
+                const addresses = await response.json();
+
+                addressListContainer.innerHTML = ''; // Xóa loading
+                if (addresses.length === 0) {
+                     addressListContainer.innerHTML = '<p class="text-warning">Bạn chưa có địa chỉ nào. Vui lòng thêm địa chỉ mới.</p>';
+                }
+
+                addresses.forEach((addr, index) => {
+                    const isChecked = addr.isDefault || (!addresses.some(a => a.isDefault) && index === 0); // Ưu tiên default, nếu không có thì check cái đầu tiên
+                    addressListContainer.innerHTML += `
+                        <div class="form-check border p-3 rounded mb-2"> {/* Thêm style cho dễ nhìn */}
+                            <input class="form-check-input" type="radio" name="address" id="addr-${addr.id}" value="${addr.id}" ${isChecked ? 'checked' : ''}>
+                            <label class="form-check-label w-100" for="addr-${addr.id}"> {/* Thêm w-100 */}
+                                <div class="d-flex justify-content-between">
+                                    <span><strong>${addr.recipientName}</strong> - ${addr.phoneNumber}</span>
+                                     ${addr.isDefault ? '<span class="badge bg-primary">Mặc định</span>' : ''}
+                                </div>
+                                <div class="text-muted small">${addr.fullAddress}</div>
+                            </label>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Lỗi khi tải địa chỉ:", error);
+                addressListContainer.innerHTML = '<p class="text-danger">Lỗi tải danh sách địa chỉ.</p>';
+            }
         }
 
+        // Hàm fetchOrderSummary giữ nguyên logic nhưng cập nhật cả tổng tiền
+        async function fetchOrderSummary() {
+            if (!orderSummaryContainer) return;
+            orderSummaryContainer.innerHTML = '<p class="text-center text-muted">Đang tải tóm tắt...</p>';
+            try {
+                const response = await fetch('/api/cart', { headers: { 'Authorization': `Bearer ${token}` } });
+                 if (!response.ok) throw new Error('Không thể tải giỏ hàng');
+                const items = await response.json();
+
+                let total = 0;
+                orderSummaryContainer.innerHTML = ''; // Xóa loading
+                 if (items.length === 0) {
+                     orderSummaryContainer.innerHTML = '<p class="text-center text-muted">Giỏ hàng trống.</p>';
+                     document.querySelector('button[onclick="placeOrder()"]').disabled = true; // Vô hiệu hóa nút Đặt hàng
+                     return;
+                 }
+
+                items.forEach(item => {
+                    const itemTotal = item.product.price * item.quantity;
+                    total += itemTotal;
+                    orderSummaryContainer.innerHTML += `
+                     <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>${item.product.name} (x${item.quantity})</span>
+                        <span class="text-muted">${itemTotal.toLocaleString('vi-VN')} đ</span>
+                    </div>`;
+                });
+                currentTotalAmount = total; // Lưu tổng tiền vào biến global
+                // Cập nhật tổng tiền ở phần tóm tắt riêng
+                if(summarySubtotalEl) summarySubtotalEl.textContent = total.toLocaleString('vi-VN') + ' đ';
+                if(summaryTotalEl) summaryTotalEl.textContent = total.toLocaleString('vi-VN') + ' đ'; // Giả sử phí VC = 0
+                document.querySelector('button[onclick="placeOrder()"]').disabled = false; // Bật nút Đặt hàng
+            } catch(error){
+                 console.error("Lỗi khi tải tóm tắt đơn hàng:", error);
+                 orderSummaryContainer.innerHTML = '<p class="text-danger">Lỗi tải tóm tắt đơn hàng.</p>';
+                 document.querySelector('button[onclick="placeOrder()"]').disabled = true;
+            }
+        }
+
+        // Hàm placeOrder đã được cập nhật logic
         async function placeOrder() {
-            const token = localStorage.getItem('jwtToken');
             const selectedAddress = document.querySelector('input[name="address"]:checked');
             const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+            const placeOrderButton = document.querySelector('button[onclick="placeOrder()"]');
 
             if (!selectedAddress) {
                 Swal.fire('Lỗi', 'Vui lòng chọn địa chỉ giao hàng.', 'warning');
                 return;
             }
+            if (!selectedPayment){
+                 Swal.fire('Lỗi', 'Vui lòng chọn phương thức thanh toán.', 'warning');
+                 return;
+            }
 
-            const response = await fetch('/api/orders/checkout', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    addressId: selectedAddress.value,
-                    paymentMethod: selectedPayment.value
-                })
-            });
+            placeOrderButton.disabled = true; // Vô hiệu hóa nút khi đang xử lý
+            placeOrderButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
 
-            if (response.ok) {
-                Swal.fire('Thành công!', 'Đặt hàng thành công!', 'success').then(() => {
-                    window.location.href = '/home'; // Hoặc trang lịch sử đơn hàng
+            try {
+                const response = await fetch('/api/orders/checkout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        addressId: selectedAddress.value,
+                        paymentMethod: selectedPayment.value
+                    })
                 });
-            } else {
-                const error = await response.text();
-                Swal.fire('Lỗi!', `Không thể đặt hàng: ${error}`, 'error');
+
+                // Xử lý lỗi từ server (ví dụ: hết hàng,...)
+                if (!response.ok) {
+                    let errorMsg = "Đặt hàng thất bại.";
+                    try {
+                         const errorData = await response.json(); // Thử đọc JSON lỗi
+                         errorMsg = errorData.message || errorData || errorMsg; // Lấy message nếu có
+                    } catch (e) {
+                         errorMsg = await response.text() || errorMsg; // Đọc text nếu không phải JSON
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const result = await response.json();
+
+                if (result.paymentMethod === 'COD') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đặt hàng thành công!',
+                        text: 'Đơn hàng của bạn đã được ghi nhận. Cảm ơn bạn đã mua hàng!',
+                        confirmButtonText: 'Xem lịch sử đơn hàng'
+                    }).then(() => {
+                        window.location.href = '/order-history';
+                    });
+                } else if (result.paymentMethod === 'SEPAY_QR') {
+                    // Lưu thông tin vào sessionStorage để trang thanh toán có thể lấy
+                    sessionStorage.setItem('paymentInfo', JSON.stringify({
+                        orderId: result.orderId,
+                        paymentCode: result.paymentCode,
+                        totalAmount: result.totalAmount // Đảm bảo backend trả về totalAmount
+                    }));
+                    // Chuyển hướng đến trang thanh toán QR
+                     window.location.href = `/payment/${result.orderId}`;
+                     // Không cần Swal ở đây vì trang payment sẽ xử lý tiếp
+                }
+
+            } catch (error) {
+                console.error("Lỗi khi đặt hàng:", error);
+                Swal.fire('Lỗi!', `Không thể đặt hàng: ${error.message}`, 'error');
+                // Bật lại nút nếu có lỗi
+                 placeOrderButton.disabled = false;
+                 placeOrderButton.innerHTML = '<i class="bi bi-bag-check-fill me-2"></i> Đặt hàng';
             }
         }
+
+        // --- Logic cho Modal Thêm địa chỉ ---
+         const addAddressFormCheckout = document.getElementById('addAddressFormCheckout');
+         if(addAddressFormCheckout){
+            addAddressFormCheckout.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const recipientName = document.getElementById('recipientNameCheckout').value;
+                const phoneNumber = document.getElementById('phoneNumberAddressCheckout').value;
+                const fullAddress = document.getElementById('fullAddressCheckout').value;
+                const modalElement = document.getElementById('addAddressModalCheckout');
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                const submitButton = this.querySelector('button[type="submit"]');
+
+                 submitButton.disabled = true;
+                 submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+                try {
+                    const response = await fetch('/api/addresses', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ recipientName, phoneNumber, fullAddress })
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText || 'Không thể thêm địa chỉ');
+                    }
+                    Swal.fire('Thành công', 'Thêm địa chỉ mới thành công!', 'success');
+                    await fetchAddresses(); // Tải lại danh sách để hiển thị địa chỉ mới
+                    if(modalInstance) modalInstance.hide(); // Đóng modal
+                    this.reset(); // Xóa form
+                } catch (error) {
+                    Swal.fire('Lỗi', `Lỗi khi thêm địa chỉ: ${error.message}`, 'error');
+                } finally {
+                     submitButton.disabled = false;
+                     submitButton.innerHTML = 'Lưu địa chỉ';
+                }
+            });
+         }
+
     </script>
 </th:block>
 </body>

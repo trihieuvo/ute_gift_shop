@@ -46,6 +46,9 @@ public class Order {
 
     @Column(name = "payment_method", length = 50, nullable = false)
     private String paymentMethod;
+    
+    @Column(name = "payment_code", length = 50, unique = true)
+    private String paymentCode; // Dùng để dò giao dịch trên SePay
 
     // === BỔ SUNG CÁC TRƯỜNG CHO CỔNG THANH TOÁN ===
     @Column(name = "payment_status", length = 20)
