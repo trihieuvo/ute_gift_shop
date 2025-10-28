@@ -10,7 +10,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReviewEligibilityDto {
-    private boolean eligible;
-    private Long orderDetailId; // ID của mục hàng trong đơn hàng để đánh giá
+    private boolean eligible; // Đủ điều kiện viết MỚI hay không
+    private Long orderDetailId; // ID của mục hàng trong đơn hàng để đánh giá (nếu eligible=true)
     private String message;
+    private Long reviewId; // Thêm ID của đánh giá đã tồn tại (nếu eligible=false và đã đánh giá)
 }
