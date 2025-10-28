@@ -270,7 +270,7 @@ public class VendorOrderController {
                     isValid = "PREPARING".equals(currentStatus);
                     break;
                 case "RETURNED":
-                    isValid = "DELIVERED".equals(currentStatus);
+                	isValid = "RETURN_PENDING".equals(currentStatus) || "DELIVERED".equals(currentStatus);
                     break;
             }
 

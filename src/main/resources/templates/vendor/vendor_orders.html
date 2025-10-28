@@ -547,7 +547,7 @@
         }
 
         // ==================== RENDER STATUS ACTION BUTTONS ====================
-        function renderStatusActionButtons(currentStatus, orderId) {
+       function renderStatusActionButtons(currentStatus, orderId) {
             const statusActionButtons = document.getElementById('status-action-buttons');
             let buttons = '';
 
@@ -555,8 +555,10 @@
                 'NEW': { next: 'CONFIRMED', label: 'Xác nhận đơn', icon: 'check2-square', color: 'info' },
                 'CONFIRMED': { next: 'PREPARING', label: 'Bắt đầu chuẩn bị', icon: 'box-seam', color: 'warning' },
                 'PREPARING': { next: 'READY_FOR_SHIPMENT', label: 'Sẵn sàng giao hàng', icon: 'box-arrow-right', color: 'primary' }
+                // Xóa RETURNED ra khỏi statusFlow vì nó xử lý riêng
             };
 
+            // Hiển thị các nút chuyển tiếp trạng thái thông thường
             if (statusFlow[currentStatus]) {
                 const action = statusFlow[currentStatus];
                 buttons = `
@@ -566,13 +568,17 @@
             `;
             }
 
-            if (currentStatus === 'DELIVERED') {
-                buttons += `
+            // *** THAY ĐỔI Ở ĐÂY ***
+            // Hiển thị nút "Đánh dấu đã trả hàng" khi trạng thái là RETURN_PENDING hoặc DELIVERED
+            if (currentStatus === 'RETURN_PENDING' || currentStatus === 'DELIVERED') {
+                 buttons += `
                 <button class="btn btn-danger ms-2" onclick="updateOrderStatus(${orderId}, 'RETURNED')">
                     <i class="bi bi-arrow-return-left"></i> Đánh dấu đã trả hàng
                 </button>
             `;
             }
+            // *** KẾT THÚC THAY ĐỔI ***
+
 
             statusActionButtons.innerHTML = buttons;
         }
