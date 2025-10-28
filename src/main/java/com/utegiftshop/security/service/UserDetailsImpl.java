@@ -30,6 +30,10 @@ public class UserDetailsImpl implements UserDetails {
     }
 
     public static UserDetailsImpl build(User user) {
+        String roleName = user.getRole().getName(); // Lấy tên role
+    // === THÊM DÒNG NÀY ===
+    System.out.println(">>> UserDetailsImpl: Building user with role: '" + roleName + "'"); 
+    // ======================
         GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().getName());
         return new UserDetailsImpl(
                 user.getId(),

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Sản phẩm</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Kiểm duyệt & Quản lý Sản phẩm</h1>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên Sản phẩm</th>
+              <th>Giá</th>
+              <th>Tồn kho</th>
+              <th>Cửa hàng</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="product-table-body">
+            <tr>
+              <td colspan="7" class="text-center">Đang tải...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const API_URL = "/api/v1/admin/products";
+        const tbody = document.getElementById("product-table-body");
+
+        document.addEventListener("DOMContentLoaded", fetchAllProducts);
+
+        async function fetchAllProducts() {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center">Đang tải...</td></tr>';
+
+          try {
+            const response = await fetch(API_URL, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!response.ok) throw new Error("Lỗi tải dữ liệu sản phẩm.");
+
+            const products = await response.json();
+            tbody.innerHTML = "";
+
+            if (products.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="7" class="text-center">Không có sản phẩm nào.</td></tr>';
+            }
+
+            products.forEach((product) => {
+              // Giả định Entity Product có các trường này (name, price, stockQuantity, isActive, shop.name)
+              const isActive = product.active || product.isActive; // Kiểm tra cả 2 trường hợp tên getter
+              
+              let statusBadge, actionButton;
+              if (isActive) {
+                statusBadge = `<span class="badge bg-success">Hiển thị</span>`;
+                actionButton = `<button class="btn btn-danger btn-sm" onclick="handleToggleStatus(${product.id})">
+                                  <i class="bi bi-eye-slash-fill"></i> Ẩn
+                                </button>`;
+              } else {
+                statusBadge = `<span class="badge bg-secondary">Đã ẩn</span>`;
+                actionButton = `<button class="btn btn-success btn-sm" onclick="handleToggleStatus(${product.id})">
+                                  <i class="bi bi-eye-fill"></i> Hiện
+                                </button>`;
+              }
+              
+              // Chức năng Xóa vĩnh viễn
+              const deleteButton = `<button class="btn btn-dark btn-sm ms-2" onclick="handleDelete(${product.id})">
+                                      <i class="bi bi-x-circle-fill"></i> Xóa
+                                    </button>`;
+
+              tbody.innerHTML += `
+                <tr id="product-row-${product.id}">
+                  <td>${product.id}</td>
+                  <td>${product.name}</td>
+                  <td>${new Intl.NumberFormat('vi-VN').format(product.price)} đ</td>
+                  <td>${product.stockQuantity}</td>
+                  <td>${product.shop ? product.shop.name : 'N/A'}</td> 
+                  <td>${statusBadge}</td>
+                  <td>${actionButton} ${deleteButton}</td>
+                </tr>
+              `;
+            });
+          } catch (err) {
+            tbody.innerHTML =
+              '<tr><td colspan="7" class="text-center text-danger">Lỗi tải dữ liệu sản phẩm. Vui lòng kiểm tra console.</td></tr>';
+          }
+        }
+
+        // Hàm xử lý nút Ẩn/Hiện
+        async function handleToggleStatus(productId) {
+          try {
+            const response = await fetch(`${API_URL}/${productId}/toggle-active`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+              Swal.fire("Thành công!", "Đã cập nhật trạng thái sản phẩm.", "success");
+              fetchAllProducts(); // Tải lại bảng để cập nhật
+            }
+          } catch (err) {
+             Swal.fire("Lỗi!", "Không thể cập nhật trạng thái.", "error");
+          }
+        }
+
+        // Hàm xử lý nút Xóa
+        async function handleDelete(productId) {
+            Swal.fire({
+                title: "Xóa vĩnh viễn?",
+                text: "Bạn muốn XÓA VĨNH VIỄN sản phẩm này khỏi hệ thống?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#dc3545",
+                cancelButtonText: "Hủy",
+                confirmButtonText: "Vâng, xóa!",
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(`${API_URL}/${productId}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+
+                        if (!response.ok) throw new Error("Lỗi khi xóa");
+
+                        Swal.fire("Đã xóa!", "Sản phẩm đã bị xóa.", "success");
+                        fetchAllProducts(); // Tải lại bảng
+                    } catch (err) {
+                        Swal.fire("Lỗi", "Không thể xóa. Sản phẩm có thể đã có trong đơn hàng.", "error");
+                    }
+                }
+            });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

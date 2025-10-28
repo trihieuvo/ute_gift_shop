@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Quản lý Danh mục</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Danh mục</h1>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card shadow-sm">
+            <div class="card-header">
+              <h5 id="form-title">Thêm Danh mục mới</h5>
+            </div>
+            <div class="card-body">
+              <form id="category-form">
+                <input type="hidden" id="categoryId" />
+                <div class="mb-3">
+                  <label for="categoryName" class="form-label"
+                    >Tên Danh mục</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="categoryName"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary" id="save-btn">
+                  Lưu
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  id="cancel-btn"
+                  style="display: none"
+                  onclick="resetForm()"
+                >
+                  Hủy
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-8">
+          <div class="card shadow-sm">
+            <div class="card-header">
+              <h5>Danh sách Danh mục</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tên Danh mục</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody id="category-table-body">
+                    <tr>
+                      <td colspan="3" class="text-center">Đang tải...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        const form = document.getElementById("category-form");
+        const categoryIdInput = document.getElementById("categoryId");
+        const categoryNameInput = document.getElementById("categoryName");
+        const formTitle = document.getElementById("form-title");
+        const saveBtn = document.getElementById("save-btn");
+        const cancelBtn = document.getElementById("cancel-btn");
+        const tableBody = document.getElementById("category-table-body");
+
+        // --- Tải danh sách khi trang được mở ---
+        document.addEventListener("DOMContentLoaded", fetchCategories);
+
+        async function fetchCategories() {
+          tableBody.innerHTML =
+            '<tr><td colspan="3" class="text-center">Đang tải...</td></tr>';
+          try {
+            // Gọi API public để lấy danh sách
+            const response = await fetch("/api/categories");
+            const categories = await response.json();
+            tableBody.innerHTML = ""; // Xóa loading
+
+            if (categories.length === 0) {
+              tableBody.innerHTML =
+                '<tr><td colspan="3" class="text-center">Chưa có danh mục nào.</td></tr>';
+              return;
+            }
+
+            categories.forEach((cat) => {
+              tableBody.innerHTML += `
+                            <tr>
+                                <td>${cat.id}</td>
+                                <td>${cat.name}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editCategory(${cat.id}, '${cat.name}')">
+                                      <i class="bi bi-pencil-square"></i> Sửa
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteCategory(${cat.id})">
+                                      <i class="bi bi-trash"></i> Xóa
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+            });
+          } catch (err) {
+            tableBody.innerHTML =
+              '<tr><td colspan="3" class="text-center text-danger">Lỗi tải danh mục.</td></tr>';
+          }
+        }
+
+        // --- Xử lý Submit Form (Thêm hoặc Sửa) ---
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const categoryId = categoryIdInput.value;
+          const categoryName = categoryNameInput.value.trim();
+          if (!categoryName) return;
+
+          const isEditMode = categoryId !== "";
+          const url = isEditMode
+            ? `/api/v1/admin/categories/${categoryId}`
+            : "/api/v1/admin/categories";
+          const method = isEditMode ? "PUT" : "POST";
+
+          saveBtn.disabled = true;
+          saveBtn.innerHTML =
+            '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+          try {
+            const response = await fetch(url, {
+              method: method,
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ name: categoryName /*, parentId: ... */ }),
+            });
+
+            if (response.ok) {
+              Swal.fire(
+                "Thành công!",
+                `Đã ${isEditMode ? "cập nhật" : "thêm"} danh mục.`,
+                "success"
+              );
+              resetForm();
+              fetchCategories(); // Tải lại danh sách
+            } else {
+              const error = await response.json();
+              Swal.fire(
+                "Lỗi!",
+                error.message || "Không thể lưu danh mục.",
+                "error"
+              );
+            }
+          } catch (err) {
+            Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Lưu";
+          }
+        });
+
+        // --- Chức năng Sửa ---
+        function editCategory(id, name) {
+          categoryIdInput.value = id;
+          categoryNameInput.value = name;
+          formTitle.textContent = "Sửa Danh mục";
+          saveBtn.textContent = "Cập nhật";
+          cancelBtn.style.display = "inline-block"; // Hiện nút Hủy
+          window.scrollTo(0, 0); // Cuộn lên đầu trang để thấy form
+        }
+
+        // --- Chức năng Hủy (Reset Form) ---
+        function resetForm() {
+          categoryIdInput.value = "";
+          categoryNameInput.value = "";
+          formTitle.textContent = "Thêm Danh mục mới";
+          saveBtn.textContent = "Lưu";
+          cancelBtn.style.display = "none"; // Ẩn nút Hủy
+        }
+
+        // --- Chức năng Xóa ---
+        async function deleteCategory(id) {
+          Swal.fire({
+            title: "Bạn chắc chắn?",
+            text: "Bạn sẽ không thể hoàn tác!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonText: "Hủy",
+            confirmButtonText: "Vâng, xóa nó!",
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              try {
+                const response = await fetch(`/api/v1/admin/categories/${id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (response.ok) {
+                  Swal.fire("Đã xóa!", "Danh mục đã được xóa.", "success");
+                  fetchCategories(); // Tải lại danh sách
+                } else {
+                  const error = await response.json();
+                  Swal.fire(
+                    "Lỗi!",
+                    error.message || "Không thể xóa danh mục.",
+                    "error"
+                  );
+                }
+              } catch (err) {
+                Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
+              }
+            }
+          });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>
