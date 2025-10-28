@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/_vendor_layout}">
+<head>
+    <title>Đăng ký Cửa hàng</title>
+    <style>
+        .register-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            padding: 2rem 3rem;
+            border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .form-label {
+            font-weight: 600;
+        }
+        .btn-register {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+        }
+         .btn-loading { /* Style copy từ vendor_shop.html */
+            position: relative;
+            pointer-events: none;
+            color: transparent !important;
+        }
+        .btn-loading::after {
+            content: ''; position: absolute; left: 50%; top: 50%; height: 1.2rem;
+            width: 1.2rem; margin-left: -0.6rem; margin-top: -0.6rem;
+            border: 0.25em solid currentColor; border-right-color: transparent;
+            border-radius: 50%; display: inline-block;
+            animation: spinner-border .75s linear infinite; color: white !important;
+        }
+        @keyframes spinner-border { to { transform: rotate(360deg); } }
+        .pending-message, .rejected-message {
+            text-align: center;
+            padding: 3rem;
+            border-radius: 1rem;
+            margin: 2rem auto;
+            max-width: 600px;
+        }
+        .pending-message { background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+        .rejected-message { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .pending-message i, .rejected-message i { font-size: 3rem; display: block; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content">
+
+    <div id="shopStatusInfo" class="d-none">
+        </div>
+
+    <div class="register-container d-none" id="registerFormContainer">
+        <div class="text-center mb-4">
+            <i class="bi bi-shop-window" style="font-size: 3rem; color: #667eea;"></i>
+            <h1 class="h3 mb-3 fw-normal">Đăng ký Cửa hàng của bạn</h1>
+            <p class="text-muted">Điền thông tin chi tiết về cửa hàng để bắt đầu bán hàng trên UTE GiftShop.</p>
+        </div>
+
+        <form id="registerShopForm">
+            <div class="mb-3">
+                <label for="regShopName" class="form-label">Tên cửa hàng <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="regShopName" required maxlength="255" placeholder="VD: Quà tặng Sinh viên">
+            </div>
+            <div class="mb-3">
+                <label for="regShopDescription" class="form-label">Mô tả cửa hàng</label>
+                <textarea class="form-control" id="regShopDescription" rows="4" maxlength="1000" placeholder="Giới thiệu về cửa hàng..."></textarea>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">Thông tin liên hệ</h5>
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                    <label for="regContactPhone" class="form-label">Số điện thoại</label>
+                    <input type="tel" class="form-control" id="regContactPhone" placeholder="Số điện thoại liên hệ">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="regContactEmail" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="regContactEmail" placeholder="Email cửa hàng">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="regAddressDetail" class="form-label">Địa chỉ</label>
+                <textarea class="form-control" id="regAddressDetail" rows="2" placeholder="Địa chỉ chi tiết cửa hàng"></textarea>
+            </div>
+
+            <hr class="my-4">
+
+             <h5 class="mb-3">Mạng xã hội (Tùy chọn)</h5>
+             <div class="input-group mb-3">
+                 <span class="input-group-text"><i class="bi bi-facebook"></i></span>
+                 <input type="url" class="form-control" id="regFacebookUrl" placeholder="https://facebook.com/yourshop">
+             </div>
+             <div class="input-group mb-4">
+                 <span class="input-group-text"><i class="bi bi-instagram"></i></span>
+                 <input type="url" class="form-control" id="regInstagramUrl" placeholder="https://instagram.com/yourshop">
+             </div>
+
+            <button class="w-100 btn btn-lg btn-primary btn-register" type="submit" id="registerShopButton">
+                <i class="bi bi-send-check-fill me-2"></i>Gửi Đăng ký
+            </button>
+            <p class="mt-3 text-muted text-center small">Yêu cầu của bạn sẽ được gửi đến Admin để xét duyệt.</p>
+        </form>
+    </div>
+
+</div>
+
+<th:block layout:fragment="scripts_body">
+<script>
+    const token = localStorage.getItem('jwtToken');
+    const registerFormContainer = document.getElementById('registerFormContainer');
+    const registerShopForm = document.getElementById('registerShopForm');
+    const registerShopButton = document.getElementById('registerShopButton');
+    const shopStatusInfo = document.getElementById('shopStatusInfo');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!token) { window.location.href = '/login'; return; }
+        // Hàm checkShopStatusAndControlUI() sẽ được gọi từ _vendor_layout.html
+        // Chúng ta không cần gọi lại ở đây nữa. Layout sẽ xử lý việc hiển thị form hay thông báo.
+
+        if(registerShopForm) {
+            registerShopForm.addEventListener('submit', handleRegisterSubmit);
+        }
+    });
+
+    async function handleRegisterSubmit(event) {
+        event.preventDefault();
+        if (!registerShopButton) return;
+
+        const requestBody = {
+            name: document.getElementById('regShopName').value.trim(),
+            description: document.getElementById('regShopDescription').value.trim() || null,
+            contactPhone: document.getElementById('regContactPhone').value.trim() || null,
+            contactEmail: document.getElementById('regContactEmail').value.trim() || null,
+            addressDetail: document.getElementById('regAddressDetail').value.trim() || null,
+            facebookUrl: document.getElementById('regFacebookUrl').value.trim() || null,
+            instagramUrl: document.getElementById('regInstagramUrl').value.trim() || null
+        };
+
+        if (!requestBody.name) {
+            Swal.fire('Thiếu thông tin', 'Tên cửa hàng là bắt buộc.', 'warning');
+            return;
+        }
+        // Thêm các validation khác nếu cần (email, url format...)
+
+        registerShopButton.disabled = true;
+        registerShopButton.classList.add('btn-loading');
+
+        try {
+            const response = await fetch('/api/vendor/shop/register', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) { // Check for non-2xx status codes
+                 throw new Error(`(${response.status}) ${result.message || 'Đăng ký thất bại'}`);
+            }
+
+            // Đăng ký thành công (status 201 Created)
+            Swal.fire({
+                icon: 'success',
+                title: 'Gửi thành công!',
+                text: 'Yêu cầu đăng ký cửa hàng của bạn đã được gửi. Vui lòng chờ Admin duyệt.',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Sau khi đăng ký thành công, cập nhật lại UI để hiển thị trạng thái PENDING
+                checkShopStatusAndControlUI(); // Gọi lại hàm kiểm tra từ layout
+            });
+
+        } catch (error) {
+            console.error("Registration error:", error);
+            Swal.fire('Lỗi', `Đăng ký thất bại: ${error.message}`, 'error');
+        } finally {
+            registerShopButton.disabled = false;
+            registerShopButton.classList.remove('btn-loading');
+        }
+    }
+
+    // Hàm này sẽ được gọi TỪ _vendor_layout.html để hiển thị thông báo PENDING/REJECTED
+    function displayShopStatus(status) {
+        if (!shopStatusInfo || !registerFormContainer) return;
+
+        if (status === 'PENDING') {
+            shopStatusInfo.innerHTML = `
+                <div class="pending-message">
+                    <i class="bi bi-hourglass-split"></i>
+                    <h4 class="mb-3">Yêu cầu đang chờ duyệt</h4>
+                    <p>Cửa hàng của bạn đang chờ quản trị viên xem xét. Chúng tôi sẽ thông báo cho bạn khi có kết quả.</p>
+                </div>`;
+            shopStatusInfo.classList.remove('d-none');
+            registerFormContainer.classList.add('d-none');
+        } else if (status === 'REJECTED') {
+            shopStatusInfo.innerHTML = `
+                <div class="rejected-message">
+                    <i class="bi bi-x-octagon-fill"></i>
+                    <h4 class="mb-3">Yêu cầu bị từ chối</h4>
+                    <p>Rất tiếc, yêu cầu đăng ký cửa hàng của bạn chưa được duyệt. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.</p>
+                    <button class="btn btn-warning mt-3" onclick="showRegistrationFormAgain()">Thử lại với thông tin khác</button>
+                </div>`;
+            shopStatusInfo.classList.remove('d-none');
+            registerFormContainer.classList.add('d-none');
+        } else if (status === 'NOT_FOUND') {
+             // Trường hợp này sẽ hiển thị form đăng ký
+             shopStatusInfo.classList.add('d-none');
+             registerFormContainer.classList.remove('d-none');
+        } else {
+            // Trường hợp ACTIVE hoặc lỗi không xác định, ẩn cả 2
+             shopStatusInfo.classList.add('d-none');
+             registerFormContainer.classList.add('d-none');
+        }
+    }
+
+    // Hàm dùng khi user muốn đăng ký lại sau khi bị từ chối
+    function showRegistrationFormAgain() {
+         if (shopStatusInfo) shopStatusInfo.classList.add('d-none');
+         if (registerFormContainer) registerFormContainer.classList.remove('d-none');
+         if (registerShopForm) registerShopForm.reset(); // Reset form
+    }
+
+</script>
+</th:block>
+
+</body>
+</html>

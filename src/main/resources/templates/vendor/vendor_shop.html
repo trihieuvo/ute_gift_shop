@@ -152,7 +152,6 @@
 <body>
 
 <div layout:fragment="content">
-    <!-- Header -->
     <div class="mb-4">
         <h1 class="h2 mb-2" style="color: #2d3748; font-weight: 700;">
             <i class="bi bi-shop-window me-2"></i>Quản lý Cửa hàng
@@ -160,15 +159,13 @@
         <p class="text-muted mb-0">Cập nhật thông tin và mô tả cửa hàng của bạn</p>
     </div>
 
-    <!-- Loading Indicator -->
     <div id="loadingIndicator" class="text-center py-5">
         <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
         <p class="text-muted fs-5">Đang tải thông tin cửa hàng...</p>
     </div>
-    
-    <!-- Error Message -->
+
     <div id="errorMessage" class="alert alert-danger d-none" role="alert">
         <div class="d-flex align-items-center">
             <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
@@ -179,15 +176,13 @@
         </div>
     </div>
 
-    <!-- Shop Form -->
     <div id="shopForm" class="d-none">
-        
-        <!-- Shop Info Header Card -->
+
         <div class="shop-info-card">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="flex-grow-1">
                     <h2 id="shopNameDisplay">Tên cửa hàng</h2>
-                    <p class="mb-0"><i class="bi bi-calendar-check me-2"></i>Thành viên từ <span id="shopCreatedDate">2025</span></p>
+                    <p class="mb-0"><i class="bi bi-calendar-check me-2"></i>Thành viên từ <span id="shopCreatedDate">...</span></p>
                 </div>
                 <div id="shopStatusContainer" class="status-indicator bg-white bg-opacity-25" style="border: 2px solid rgba(255,255,255,0.3);">
                     <i class="bi bi-circle-fill" id="shopStatusIcon"></i>
@@ -198,31 +193,29 @@
 
         <form id="updateShopForm">
             <div class="row">
-                <!-- Left Column -->
                 <div class="col-lg-6">
-                    <!-- Basic Info Section -->
                     <div class="info-section">
                         <div class="info-section-title">
                             <i class="bi bi-info-circle-fill"></i>
                             <span>Thông tin cơ bản</span>
                         </div>
-                        
+
                         <div class="mb-4">
                             <label for="shopName" class="form-label">
                                 Tên cửa hàng <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="shopName" required 
+                            <input type="text" class="form-control" id="shopName" required
                                    maxlength="255" placeholder="VD: Shop Thời Trang Trẻ">
                             <div class="char-counter">
                                 <span id="nameCounter">0</span>/255 ký tự
                             </div>
                         </div>
-                        
+
                         <div class="mb-0">
                             <label for="shopDescription" class="form-label">
                                 Mô tả cửa hàng
                             </label>
-                            <textarea class="form-control" id="shopDescription" rows="6" 
+                            <textarea class="form-control" id="shopDescription" rows="6"
                                       maxlength="1000"
                                       placeholder="Giới thiệu về cửa hàng của bạn: sản phẩm, dịch vụ, điểm mạnh..."></textarea>
                             <div class="char-counter">
@@ -230,17 +223,48 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="info-section">
+                        <div class="info-section-title">
+                            <i class="bi bi-telephone-fill"></i>
+                            <span>Thông tin liên hệ</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="contactPhone" class="form-label">Số điện thoại liên hệ</label>
+                            <input type="tel" class="form-control" id="contactPhone" placeholder="VD: 09xxxxxxxx">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="contactEmail" class="form-label">Email liên hệ</label>
+                            <input type="email" class="form-control" id="contactEmail" placeholder="VD: shop@email.com">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="addressDetail" class="form-label">Địa chỉ chi tiết</label>
+                            <textarea class="form-control" id="addressDetail" rows="3" placeholder="VD: Số 1, Võ Văn Ngân, Linh Chiểu, Thủ Đức, TP.HCM"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="facebookUrl" class="form-label">Link Facebook</label>
+                            <input type="url" class="form-control" id="facebookUrl" placeholder="VD: https://facebook.com/yourshop">
+                        </div>
+
+                        <div class="mb-0">
+                            <label for="instagramUrl" class="form-label">Link Instagram</label>
+                            <input type="url" class="form-control" id="instagramUrl" placeholder="VD: https://instagram.com/yourshop">
+                        </div>
+                    </div>
+
                 </div>
 
-                <!-- Right Column -->
                 <div class="col-lg-6">
-                    <!-- Status Section -->
                     <div class="info-section">
                         <div class="info-section-title">
                             <i class="bi bi-shield-check"></i>
                             <span>Trạng thái duyệt</span>
                         </div>
-                        
+
                         <div class="status-badge-container">
                             <div class="mb-3">
                                 <i class="bi bi-shield-fill-check" style="font-size: 3rem; color: #667eea;"></i>
@@ -256,38 +280,9 @@
                         </div>
                     </div>
 
-                    <!-- Quick Stats (optional decoration) -->
-                    <div class="info-section">
-                        <div class="info-section-title">
-                            <i class="bi bi-graph-up-arrow"></i>
-                            <span>Thống kê nhanh</span>
-                        </div>
-                        
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="p-3 bg-light rounded">
-                                    <div class="fs-4 fw-bold text-primary" id="productCount">0</div>
-                                    <small class="text-muted">Sản phẩm</small>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="p-3 bg-light rounded">
-                                    <div class="fs-4 fw-bold text-success" id="orderCount">0</div>
-                                    <small class="text-muted">Đơn hàng</small>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="p-3 bg-light rounded">
-                                    <div class="fs-4 fw-bold text-warning" id="reviewCount">0</div>
-                                    <small class="text-muted">Đánh giá</small>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="d-flex gap-3 mt-4 justify-content-center">
                 <button type="submit" class="btn btn-save-custom" id="saveShopButton">
                     <i class="bi bi-check-circle me-2"></i>Lưu thay đổi
@@ -311,28 +306,38 @@
     const shopForm = document.getElementById('shopForm');
     const updateShopForm = document.getElementById('updateShopForm');
     const saveShopButton = document.getElementById('saveShopButton');
-    
+
+    // Basic Info
     const shopNameInput = document.getElementById('shopName');
     const shopDescriptionInput = document.getElementById('shopDescription');
     const shopNameDisplay = document.getElementById('shopNameDisplay');
     const shopCreatedDate = document.getElementById('shopCreatedDate');
-    
+
+    // Contact Info
+    const contactPhoneInput = document.getElementById('contactPhone');
+    const contactEmailInput = document.getElementById('contactEmail');
+    const addressDetailInput = document.getElementById('addressDetail');
+    const facebookUrlInput = document.getElementById('facebookUrl');
+    const instagramUrlInput = document.getElementById('instagramUrl');
+
+    // Status Info
     const shopStatusBadge = document.getElementById('shopStatus');
     const shopStatusIcon = document.getElementById('shopStatusIcon');
     const shopStatusContainer = document.getElementById('shopStatusContainer');
     const statusAlert = document.getElementById('statusAlert');
     const statusAlertText = document.getElementById('statusAlertText');
-    
+
+    // Counters
     const nameCounter = document.getElementById('nameCounter');
     const descCounter = document.getElementById('descCounter');
 
     // Character counters
     shopNameInput?.addEventListener('input', () => {
-        nameCounter.textContent = shopNameInput.value.length;
+        if(nameCounter) nameCounter.textContent = shopNameInput.value.length;
     });
-    
+
     shopDescriptionInput?.addEventListener('input', () => {
-        descCounter.textContent = shopDescriptionInput.value.length;
+        if(descCounter) descCounter.textContent = shopDescriptionInput.value.length;
     });
 
     // Run when DOM loads
@@ -352,29 +357,26 @@
     async function fetchShopDetails() {
         console.log("Fetching shop details...");
         showLoading();
-        
+
         try {
             const response = await fetch('/api/vendor/shop', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             console.log("Fetch status:", response.status);
-            const responseText = await response.text();
-            
+
             if (!response.ok) {
-                let errorMsg = responseText;
+                let errorMsg = 'Lỗi không xác định';
                 try {
-                    errorMsg = JSON.parse(responseText).message || responseText;
-                } catch (e) {}
-                throw new Error(`(${response.status}) ${errorMsg}`);
+                    const errorJson = await response.json();
+                    errorMsg = `(${response.status}) ${errorJson.message || 'Lỗi tải dữ liệu'}`;
+                } catch (e) {
+                    errorMsg = `(${response.status}) Lỗi máy chủ hoặc phản hồi không hợp lệ`;
+                }
+                throw new Error(errorMsg);
             }
-            
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                throw new Error("Response is not JSON");
-            }
-            
-            const data = JSON.parse(responseText);
+
+            const data = await response.json(); // Phải là JSON nếu OK
             console.log("Shop data received:", data);
             populateForm(data);
             showForm();
@@ -384,37 +386,57 @@
         }
     }
 
+
     // Populate form with shop data
     function populateForm(shop) {
         if (!shop || !shopForm) return;
-        
+
         console.log("Populating form with data:", shop);
-        
+
         // Basic info
         shopNameInput.value = shop.name || '';
         shopDescriptionInput.value = shop.description || '';
         shopNameDisplay.textContent = shop.name || 'Tên cửa hàng';
-        
+
+        // Contact info
+        contactPhoneInput.value = shop.contactPhone || '';
+        contactEmailInput.value = shop.contactEmail || '';
+        addressDetailInput.value = shop.addressDetail || '';
+        facebookUrlInput.value = shop.facebookUrl || '';
+        instagramUrlInput.value = shop.instagramUrl || '';
+
         // Update counters
-        nameCounter.textContent = (shop.name || '').length;
-        descCounter.textContent = (shop.description || '').length;
-        
+        if(nameCounter) nameCounter.textContent = (shop.name || '').length;
+        if(descCounter) descCounter.textContent = (shop.description || '').length;
+
         // Created date
-        if (shop.created_at || shop.createdAt) {
-            const date = new Date(shop.created_at || shop.createdAt);
-            shopCreatedDate.textContent = date.toLocaleDateString('vi-VN', { 
-                year: 'numeric', 
-                month: 'long' 
-            });
+        if (shop.createdAt) { // Dùng createdAt từ DTO mới
+            try {
+                const date = new Date(shop.createdAt);
+                if (!isNaN(date)) { // Check if date is valid
+                    shopCreatedDate.textContent = date.toLocaleDateString('vi-VN', {
+                        year: 'numeric',
+                        month: 'long'
+                    });
+                } else {
+                     shopCreatedDate.textContent = 'N/A';
+                }
+            } catch (e) {
+                console.error("Error parsing createdAt date:", e);
+                shopCreatedDate.textContent = 'Lỗi ngày';
+            }
+        } else {
+             shopCreatedDate.textContent = 'Không có';
         }
-        
+
         updateStatusBadge(shop.status);
     }
+
 
     // Update status badge
     function updateStatusBadge(status) {
         if (!shopStatusBadge || !shopStatusIcon) return;
-        
+
         const statusConfigs = {
             'ACTIVE': {
                 text: 'Đang hoạt động',
@@ -435,37 +457,48 @@
                 alertClass: 'alert-danger'
             }
         };
-        
+
         const config = statusConfigs[status?.toUpperCase()] || {
             text: 'Không xác định',
             icon: 'text-secondary',
             alert: '',
             alertClass: 'alert-secondary'
         };
-        
+
         shopStatusBadge.textContent = config.text;
         shopStatusIcon.className = `bi bi-circle-fill ${config.icon}`;
-        
+
         // Update alert
         if (config.alert && statusAlert && statusAlertText) {
             statusAlertText.textContent = config.alert;
             statusAlert.className = `alert border-0 mt-3 ${config.alertClass}`;
             statusAlert.classList.remove('d-none');
+        } else if (statusAlert) {
+            statusAlert.classList.add('d-none'); // Ẩn nếu không có alert
         }
     }
+
 
     // Handle form submission
     async function handleShopUpdate(event) {
         event.preventDefault();
         console.log("Submitting shop update...");
-        
+
         if (!saveShopButton) return;
 
+        // Trim và gán null nếu rỗng cho các trường không bắt buộc
+        const getVal = (el) => el.value.trim() || null;
+
         const requestBody = {
-            name: shopNameInput.value.trim(),
-            description: shopDescriptionInput.value.trim() || null
+            name: shopNameInput.value.trim(), // Name is required
+            description: getVal(shopDescriptionInput),
+            contactPhone: getVal(contactPhoneInput),
+            contactEmail: getVal(contactEmailInput),
+            addressDetail: getVal(addressDetailInput),
+            facebookUrl: getVal(facebookUrlInput),
+            instagramUrl: getVal(instagramUrlInput)
         };
-        
+
         if (!requestBody.name) {
             Swal.fire({
                 icon: 'warning',
@@ -475,6 +508,29 @@
             });
             return;
         }
+
+        // Validate email format if provided
+        if (requestBody.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestBody.contactEmail)) {
+             Swal.fire({
+                icon: 'warning',
+                title: 'Định dạng không hợp lệ',
+                text: 'Vui lòng nhập đúng định dạng email liên hệ.',
+                confirmButtonColor: '#667eea'
+            });
+            return;
+        }
+        // Basic URL validation (simple check)
+        if ((requestBody.facebookUrl && !requestBody.facebookUrl.startsWith('http')) ||
+            (requestBody.instagramUrl && !requestBody.instagramUrl.startsWith('http'))) {
+             Swal.fire({
+                icon: 'warning',
+                title: 'Định dạng không hợp lệ',
+                text: 'Link Facebook/Instagram phải bắt đầu bằng http:// hoặc https://',
+                confirmButtonColor: '#667eea'
+            });
+            return;
+        }
+
 
         saveShopButton.disabled = true;
         saveShopButton.classList.add('btn-loading');
@@ -488,17 +544,18 @@
                 },
                 body: JSON.stringify(requestBody)
             });
-            
-            const responseText = await response.text();
-            
+
             if (!response.ok) {
-                let errorMsg = responseText;
-                try {
-                    errorMsg = JSON.parse(responseText).message || responseText;
-                } catch (e) {}
-                throw new Error(`(${response.status}) ${errorMsg}`);
+                let errorMsg = 'Lỗi không xác định';
+                 try {
+                     const errorJson = await response.json();
+                     errorMsg = `(${response.status}) ${errorJson.message || 'Lỗi cập nhật'}`;
+                 } catch (e) {
+                     errorMsg = `(${response.status}) Lỗi máy chủ hoặc phản hồi không hợp lệ`;
+                 }
+                throw new Error(errorMsg);
             }
-            
+
             await Swal.fire({
                 icon: 'success',
                 title: 'Thành công!',
@@ -506,9 +563,11 @@
                 timer: 2000,
                 showConfirmButton: false
             });
-            
-            await fetchShopDetails();
-            
+
+            // Fetch lại để hiển thị dữ liệu mới nhất (bao gồm cả tên shop ở header card)
+            const updatedData = await response.json();
+            populateForm(updatedData); // Cập nhật form ngay lập tức
+
         } catch (error) {
             console.error("Update error:", error);
             Swal.fire({
@@ -522,6 +581,7 @@
             saveShopButton.classList.remove('btn-loading');
         }
     }
+
 
     // UI Management Functions
     function showLoading() {
