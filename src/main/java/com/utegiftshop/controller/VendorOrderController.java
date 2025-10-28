@@ -56,7 +56,6 @@ public class VendorOrderController {
             Long shopId = shop.getId();
             logger.info("📦 Fetching orders for Shop ID: {}", shopId);
 
-            // Lấy tất cả sản phẩm của shop này
             List<Product> shopProducts = productRepository.findByShopId(shopId);
             if (shopProducts.isEmpty()) {
                 logger.info("Shop {} has no products", shopId);
@@ -68,17 +67,15 @@ public class VendorOrderController {
                 shopProductIds.add(p.getId());
             }
 
-            // Lấy tất cả đơn hàng
             List<Order> allOrders = orderRepository.findAll();
             List<Map<String, Object>> vendorOrders = new ArrayList<>();
 
             for (Order order : allOrders) {
-                // Lọc OrderDetail của shop
                 List<OrderDetail> vendorDetails = new ArrayList<>();
                 BigDecimal vendorTotal = BigDecimal.ZERO;
 
                 for (OrderDetail detail : order.getOrderDetails()) {
-                    if (detail.getProduct() != null 
+                    if (detail.getProduct() != null
                             && shopProductIds.contains(detail.getProduct().getId())) {
                         vendorDetails.add(detail);
                         BigDecimal itemTotal = detail.getPrice()
@@ -88,17 +85,15 @@ public class VendorOrderController {
                 }
 
                 if (vendorDetails.isEmpty()) {
-                    continue; // Đơn hàng này không có sản phẩm của shop
+                    continue;
                 }
 
-                // Lọc theo status nếu có
                 if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("ALL")) {
                     if (!order.getStatus().equalsIgnoreCase(status)) {
                         continue;
                     }
                 }
 
-                // Tạo DTO
                 Map<String, Object> orderDto = new HashMap<>();
                 orderDto.put("orderId", order.getId());
                 orderDto.put("orderDate", order.getOrderDate());
@@ -106,21 +101,19 @@ public class VendorOrderController {
                 orderDto.put("paymentMethod", order.getPaymentMethod());
                 orderDto.put("shippingAddress", order.getShippingAddress());
                 orderDto.put("deliveryNote", order.getDeliveryNote());
-                
-                // Customer info
+
                 if (order.getUser() != null) {
                     orderDto.put("customerName", order.getUser().getFullName());
                     orderDto.put("customerEmail", order.getUser().getEmail());
                     orderDto.put("customerPhone", order.getUser().getPhoneNumber());
                 }
-                
+
                 orderDto.put("vendorTotalAmount", vendorTotal);
                 orderDto.put("vendorItemCount", vendorDetails.size());
 
                 vendorOrders.add(orderDto);
             }
 
-            // Sắp xếp theo ID giảm dần
             vendorOrders.sort((a, b) -> {
                 Long idA = (Long) a.get("orderId");
                 Long idB = (Long) b.get("orderId");
@@ -158,12 +151,11 @@ public class VendorOrderController {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
 
-            // Lọc sản phẩm của shop
             List<VendorOrderDetailDto> vendorItems = new ArrayList<>();
             BigDecimal vendorTotal = BigDecimal.ZERO;
 
             for (OrderDetail detail : order.getOrderDetails()) {
-                if (detail.getProduct() != null 
+                if (detail.getProduct() != null
                         && detail.getProduct().getShop() != null
                         && detail.getProduct().getShop().getId().equals(shopId)) {
                     VendorOrderDetailDto itemDto = new VendorOrderDetailDto(detail);
@@ -178,7 +170,6 @@ public class VendorOrderController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
             }
 
-            // Build response
             Map<String, Object> response = new HashMap<>();
             response.put("orderId", order.getId());
             response.put("orderDate", order.getOrderDate());
@@ -186,7 +177,7 @@ public class VendorOrderController {
             response.put("paymentMethod", order.getPaymentMethod());
             response.put("shippingAddress", order.getShippingAddress());
             response.put("deliveryNote", order.getDeliveryNote());
-            
+
             if (order.getUser() != null) {
                 Map<String, String> customer = new HashMap<>();
                 customer.put("name", order.getUser().getFullName());
@@ -194,7 +185,7 @@ public class VendorOrderController {
                 customer.put("phone", order.getUser().getPhoneNumber());
                 response.put("customer", customer);
             }
-            
+
             response.put("vendorTotalAmount", vendorTotal);
             response.put("vendorItems", vendorItems);
 
@@ -204,8 +195,8 @@ public class VendorOrderController {
             logger.error("❌ Error in getVendorOrderDetail: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
-            HttpStatus status = e.getMessage().contains("không tồn tại") 
-                    ? HttpStatus.NOT_FOUND 
+            HttpStatus status = e.getMessage().contains("không tồn tại")
+                    ? HttpStatus.NOT_FOUND
                     : HttpStatus.FORBIDDEN;
             return ResponseEntity.status(status).body(error);
         } catch (Exception e) {
@@ -227,7 +218,7 @@ public class VendorOrderController {
         try {
             Shop shop = getAuthenticatedShop(userDetails);
             Long shopId = shop.getId();
-            
+
             String newStatus = payload.get("newStatus");
             if (newStatus == null || newStatus.isBlank()) {
                 Map<String, String> error = new HashMap<>();
@@ -241,10 +232,9 @@ public class VendorOrderController {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
 
-            // Kiểm tra quyền
             boolean hasProduct = false;
             for (OrderDetail detail : order.getOrderDetails()) {
-                if (detail.getProduct() != null 
+                if (detail.getProduct() != null
                         && detail.getProduct().getShop() != null
                         && detail.getProduct().getShop().getId().equals(shopId)) {
                     hasProduct = true;
@@ -260,15 +250,15 @@ public class VendorOrderController {
 
             // Validate status transition
             Set<String> allowedStatuses = new HashSet<>(Arrays.asList(
-                    "CONFIRMED", "PREPARING", "READY_FOR_SHIPMENT"));
-            
+                    "CONFIRMED", "PREPARING", "READY_FOR_SHIPMENT", "RETURNED"));
+
             if (!allowedStatuses.contains(newStatus)) {
                 throw new RuntimeException("Trạng thái '" + newStatus + "' không hợp lệ");
             }
 
             String currentStatus = order.getStatus();
             boolean isValid = false;
-            
+
             switch (newStatus) {
                 case "CONFIRMED":
                     isValid = "NEW".equals(currentStatus);
@@ -278,6 +268,9 @@ public class VendorOrderController {
                     break;
                 case "READY_FOR_SHIPMENT":
                     isValid = "PREPARING".equals(currentStatus);
+                    break;
+                case "RETURNED":
+                    isValid = "DELIVERED".equals(currentStatus);
                     break;
             }
 
@@ -289,7 +282,7 @@ public class VendorOrderController {
             orderRepository.save(order);
 
             logger.info("✅ Order {} status updated to {}", orderId, newStatus);
-            
+
             Map<String, String> response = new HashMap<>();
             response.put("message", "Cập nhật trạng thái thành công");
             return ResponseEntity.ok(response);
@@ -327,7 +320,7 @@ public class VendorOrderController {
             }
 
             List<Order> allOrders = orderRepository.findAll();
-            
+
             long totalOrders = 0;
             long newOrders = 0;
             long confirmedOrders = 0;
@@ -337,6 +330,7 @@ public class VendorOrderController {
             long deliveredOrders = 0;
             long failedOrders = 0;
             long cancelledOrders = 0;
+            long returnedOrders = 0; // Thêm biến đếm
             BigDecimal totalRevenue = BigDecimal.ZERO;
 
             for (Order order : allOrders) {
@@ -344,7 +338,7 @@ public class VendorOrderController {
                 BigDecimal orderVendorTotal = BigDecimal.ZERO;
 
                 for (OrderDetail detail : order.getOrderDetails()) {
-                    if (detail.getProduct() != null 
+                    if (detail.getProduct() != null
                             && shopProductIds.contains(detail.getProduct().getId())) {
                         hasShopProduct = true;
                         BigDecimal itemTotal = detail.getPrice()
@@ -357,19 +351,20 @@ public class VendorOrderController {
 
                 totalOrders++;
                 String status = order.getStatus();
-                
+
                 switch (status) {
                     case "NEW": newOrders++; break;
                     case "CONFIRMED": confirmedOrders++; break;
                     case "PREPARING": preparingOrders++; break;
                     case "READY_FOR_SHIPMENT": readyOrders++; break;
                     case "DELIVERING": deliveringOrders++; break;
-                    case "DELIVERED": 
-                        deliveredOrders++; 
+                    case "DELIVERED":
+                        deliveredOrders++;
                         totalRevenue = totalRevenue.add(orderVendorTotal);
                         break;
                     case "FAILED_DELIVERY": failedOrders++; break;
                     case "CANCELLED": cancelledOrders++; break;
+                    case "RETURNED": returnedOrders++; break; // Thêm case đếm
                 }
             }
 
@@ -383,6 +378,7 @@ public class VendorOrderController {
             stats.put("deliveredOrders", deliveredOrders);
             stats.put("failedDeliveryOrders", failedOrders);
             stats.put("cancelledOrders", cancelledOrders);
+            stats.put("returnedOrders", returnedOrders); // Thêm vào response
             stats.put("totalRevenue", totalRevenue);
 
             logger.info("✅ Statistics calculated for Shop {}", shopId);
