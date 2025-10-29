@@ -26,7 +26,7 @@ public class Category {
     @Column(length = 100, nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "parent_id")
     private Category parent; // Để tạo danh mục đa cấp
 }

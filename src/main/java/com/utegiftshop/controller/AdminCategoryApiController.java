@@ -1,15 +1,23 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.dto.request.CategoryRequest;
-import com.utegiftshop.entity.Category;
-import com.utegiftshop.security.service.CategoryService; // Đảm bảo import đúng
-import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException; // Import thêm
+import org.springframework.transaction.annotation.Transactional; // Đảm bảo import đúng
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody; // Import thêm
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import com.utegiftshop.dto.request.CategoryRequest;
+import com.utegiftshop.entity.Category;
+import com.utegiftshop.security.service.CategoryService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/admin/categories") // API được bảo vệ bởi SecurityConfig
@@ -26,6 +34,7 @@ public class AdminCategoryApiController {
 
     // API lấy chi tiết 1 category (để sửa)
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Category> getCategoryById(@PathVariable Integer id) {
         return categoryService.findCategoryById(id)
                 .map(ResponseEntity::ok)

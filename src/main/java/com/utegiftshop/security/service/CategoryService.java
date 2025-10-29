@@ -1,13 +1,14 @@
 package com.utegiftshop.security.service;
 
-import com.utegiftshop.dto.request.CategoryRequest; // Đảm bảo DTO tên là CategoryRequest
-import com.utegiftshop.entity.Category;
-import com.utegiftshop.repository.CategoryRepository;
+import java.util.List; // Đảm bảo DTO tên là CategoryRequest
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import com.utegiftshop.dto.request.CategoryRequest;
+import com.utegiftshop.entity.Category;
+import com.utegiftshop.repository.CategoryRepository;
 
 @Service
 public class CategoryService {
@@ -38,10 +39,17 @@ public class CategoryService {
     public Category createCategory(CategoryRequest dto) {
         Category category = new Category();
         category.setName(dto.getName());
-        // (Xử lý parentId nếu entity Category của bạn có trường parentId)
-        // if (dto.getParentId() != null) {
-        //     category.setParentId(dto.getParentId()); 
-        // }
+
+       
+        if (dto.getParentId() != null) {
+            Category parent = categoryRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục cha với ID: " + dto.getParentId()));
+            category.setParent(parent);
+        } else {
+            category.setParent(null); // Đây là danh mục gốc
+        }
+    
+
         return categoryRepository.save(category);
     }
 
@@ -52,12 +60,21 @@ public class CategoryService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục với ID: " + id));
         
         existing.setName(dto.getName());
-        // (Xử lý parentId nếu entity Category của bạn có trường parentId)
-        // existing.setParentId(dto.getParentId()); 
+        if (dto.getParentId() != null) {
+            // Ngăn việc tự đặt mình làm cha
+            if (dto.getParentId().equals(id)) {
+                throw new IllegalArgumentException("Không thể đặt một danh mục làm cha của chính nó.");
+            }
+            Category parent = categoryRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục cha với ID: " + dto.getParentId()));
+            existing.setParent(parent);
+        } else {
+            existing.setParent(null);
+        }
+     
 
         return categoryRepository.save(existing);
     }
-
     // (Admin) Xóa category
     @Transactional
     public void deleteCategory(Integer id) {
