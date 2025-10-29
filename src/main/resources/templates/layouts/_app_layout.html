@@ -357,7 +357,7 @@
         async function sendMessage() {
             const messageText = chatWidget.input.value.trim();
             if (!messageText) return;
-            addMessage('sent', messageText);
+            //addMessage('sent', messageText);
             chatWidget.input.value = '';
 
             if (activeChat.type === 'AI') {
@@ -404,17 +404,31 @@
                 clearTimeout(reconnectTimeout);
             };
             socket.onmessage = (e) => {
-                const msg = JSON.parse(e.data);
-                if(msg.type !== 'MESSAGE') return;
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg.type !== 'MESSAGE' || !msg.conversationId) return;
+                    // KIỂM TRA NGƯỜI GỬI (SỬA LỖI TẠI ĐÂY)
+                    const isSentByMe = String(msg.senderId) === String(globalUserInfo?.id);
+                    const messageStyle = isSentByMe ? 'sent' : 'received';
+                    
+                    const isForActiveChat = (msg.conversationId === activeChat.conversationId);
 
-                const isForActiveChat = (msg.conversationId === activeChat.conversationId);
-                
-                if (isForActiveChat && chatWidget.popup.style.display === 'flex') {
-                    addMessage('received', msg.content);
-                    markConversationAsRead(msg.conversationId);
-                } else {
-                    showNewMessageNotification();
-                    updateConversationList(msg);
+                    if (isForActiveChat && chatWidget.popup.style.display === 'flex') {
+                        // Chỉ hiển thị tin nhắn nếu nó thuộc về cuộc trò chuyện đang mở
+                        addMessage(messageStyle, msg.content); 
+                        
+                        // Nếu là tin nhắn nhận được, đánh dấu đã đọc
+                        if (!isSentByMe) {
+                            markConversationAsRead(msg.conversationId);
+                        }
+                    } else if (!isSentByMe) {
+                        // Nếu là tin nhắn mới từ cuộc trò chuyện khác, hiển thị thông báo
+                        showNewMessageNotification();
+                        updateConversationList(msg);
+                    }
+                } catch(err) {
+                    console.error("Layout: Lỗi xử lý tin nhắn WebSocket:", err);
+                    addMessage('system', 'Lỗi dữ liệu nhận được từ server.');
                 }
             };
             socket.onerror = (err) => console.error('WebSocket Error:', err);
