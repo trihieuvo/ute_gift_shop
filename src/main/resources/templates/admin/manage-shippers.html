@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html
+  lang="vi"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}"
+>
+  <head>
+    <title>Duyệt Đơn Đăng Ký Shipper</title>
+  </head>
+  <body>
+    <div layout:fragment="content">
+      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Duyệt Đơn Đăng Ký Shipper</h1>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Tên Người Yêu Cầu</th>
+              <th>Email</th>
+              <th>Ngày Đăng Ký</th>
+              <th>Lời Nhắn</th>
+              <th>Hành Động</th>
+            </tr>
+          </thead>
+          <tbody id="application-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <th:block layout:fragment="scripts_body">
+      <script>
+        const token = localStorage.getItem("jwtToken");
+        // API vẫn là /api/admin/applications
+        const API_URL = "/api/admin/applications"; 
+
+        document.addEventListener("DOMContentLoaded", fetchPendingApplications);
+
+        async function fetchPendingApplications() {
+          const tbody = document.getElementById("application-table-body");
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="text-center">Đang tải yêu cầu...</td></tr>';
+
+          try {
+            // Gọi API để lấy đơn đăng ký có status=PENDING và requestedRole=Shipper
+            const response = await fetch(`${API_URL}?status=PENDING&requestedRole=Shipper`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error("Lỗi tải dữ liệu.");
+
+            const applications = await response.json();
+            tbody.innerHTML = "";
+
+            if (applications.length === 0) {
+              tbody.innerHTML =
+                '<tr><td colspan="5" class="text-center">Không có yêu cầu đăng ký Shipper nào.</td></tr>';
+            }
+
+            applications.forEach((app) => {
+              const registrationDate = new Date(app.createdAt).toLocaleDateString("vi-VN");
+
+              tbody.innerHTML += `
+                <tr>
+                    <td>${app.userFullName}</td>
+                    <td>${app.userEmail}</td>
+                    <td>${registrationDate}</td>
+                    <td>${app.message || "Không có lời nhắn"}</td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="handleApprove(${app.id})">
+                            <i class="bi bi-check-lg"></i> Duyệt
+                        </button>
+                        <button class="btn btn-danger btn-sm ms-1" onclick="handleReject(${app.id})">
+                            <i class="bi bi-x-lg"></i> Từ chối
+                        </button>
+                    </td>
+                </tr>
+              `;
+            });
+          } catch (err) {
+            tbody.innerHTML =
+              '<tr><td colspan="5" class="text-center text-danger">Lỗi tải dữ liệu.</td></tr>';
+          }
+        }
+
+        // Logic duyệt và từ chối không thay đổi, vì backend đã xử lý việc này
+        async function handleApprove(applicationId) {
+          Swal.fire({
+            title: "Bạn chắc chắn?",
+            text: "Bạn muốn PHÊ DUYỆT yêu cầu làm Shipper này?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#28a745",
+            cancelButtonText: "Hủy",
+            confirmButtonText: "Vâng, phê duyệt!",
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              try {
+                const response = await fetch(`${API_URL}/${applicationId}/approve`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) throw new Error("Lỗi khi phê duyệt");
+                Swal.fire("Thành công!", "Đã phê duyệt yêu cầu.", "success");
+                fetchPendingApplications(); // Tải lại danh sách
+              } catch (err) {
+                Swal.fire("Lỗi!", "Không thể phê duyệt. Vui lòng thử lại.", "error");
+              }
+            }
+          });
+        }
+
+        async function handleReject(applicationId) {
+          Swal.fire({
+            title: "Bạn chắc chắn?",
+            text: "Bạn muốn TỪ CHỐI yêu cầu này?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc3545",
+            cancelButtonText: "Hủy",
+            confirmButtonText: "Vâng, từ chối!",
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              try {
+                const response = await fetch(`${API_URL}/${applicationId}/reject`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) throw new Error("Lỗi khi từ chối");
+                Swal.fire("Đã từ chối", "Đã từ chối yêu cầu.", "info");
+                fetchPendingApplications(); // Tải lại danh sách
+              } catch (err) {
+                Swal.fire("Lỗi!", "Không thể từ chối. Vui lòng thử lại.", "error");
+              }
+            }
+          });
+        }
+      </script>
+    </th:block>
+  </body>
+</html>

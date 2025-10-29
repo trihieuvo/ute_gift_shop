@@ -86,4 +86,9 @@ public class AdminPageController {
     public String orderDetail(Model model, @PathVariable Long orderId) { 
         return "admin/order-detail"; // templates/admin/order-detail.html
     }
+    // Trang Quản lý Đơn đăng ký Shipper
+    @GetMapping("/manage-shippers")
+    public String manageShippers() {
+        return "admin/manage-shippers"; // trỏ tới templates/admin/manage-shippers.html
+    }
 }
