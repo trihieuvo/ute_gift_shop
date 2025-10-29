@@ -35,55 +35,46 @@
     <th:block layout:fragment="scripts_body">
       <script>
         const token = localStorage.getItem("jwtToken");
-        const API_URL = "/api/v1/admin/shops";
+        // Sửa API URL ở đây
+        const API_URL = "/api/admin/applications"; 
 
-        document.addEventListener("DOMContentLoaded", fetchPendingShops);
+        document.addEventListener("DOMContentLoaded", fetchPendingApplications);
 
-        async function fetchPendingShops() {
+        async function fetchPendingApplications() { // Đổi tên hàm cho rõ nghĩa
           const tbody = document.getElementById("shop-table-body");
           tbody.innerHTML =
-            '<tr><td colspan="5" class="text-center">Đang tải...</td></tr>';
+            '<tr><td colspan="5" class="text-center">Đang tải yêu cầu...</td></tr>';
 
           try {
-            // SỬA LỖI: Gọi API /list với tham số status=PENDING
-            const response = await fetch(`${API_URL}/list?status=PENDING`, {
+            // Gọi API mới: lấy các đơn có status=PENDING và requestedRole=Vendor
+            const response = await fetch(`${API_URL}?status=PENDING&requestedRole=Vendor`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!response.ok) throw new Error("Lỗi tải dữ liệu.");
 
-            const shops = await response.json();
+            const applications = await response.json();
             tbody.innerHTML = "";
 
-            if (shops.length === 0) {
+            if (applications.length === 0) {
               tbody.innerHTML =
-                '<tr><td colspan="5" class="text-center">Không có yêu cầu nào.</td></tr>';
+                '<tr><td colspan="5" class="text-center">Không có yêu cầu đăng ký Vendor nào.</td></tr>';
             }
 
-            shops.forEach((shop) => {
-              const userEmail = shop.user ? shop.user.email : "N/A";
-              const registrationDate = new Date(
-                shop.createdAt
-              ).toLocaleDateString("vi-VN");
+            applications.forEach((app) => {
+              // Sử dụng các trường từ RoleApplicationDto
+              const registrationDate = new Date(app.createdAt).toLocaleDateString("vi-VN");
 
               tbody.innerHTML += `
                 <tr>
-                    <td>${shop.name}</td>
-                    <td>${userEmail}</td>
+                    <td>${app.userFullName}'s Shop (Yêu cầu)</td>
+                    <td>${app.userEmail}</td>
                     <td>${registrationDate}</td>
-                    <td>${
-                      shop.description
-                        ? shop.description.substring(0, 50) + "..."
-                        : "Không có"
-                    }</td>
+                    <td>${app.message || "Không có lời nhắn"}</td>
                     <td>
-                        <button class="btn btn-success btn-sm" onclick="handleApprove(${
-                          shop.id
-                        })">
+                        <button class="btn btn-success btn-sm" onclick="handleApprove(${app.id})">
                             <i class="bi bi-check-lg"></i> Duyệt
                         </button>
-                        <button class="btn btn-danger btn-sm ms-1" onclick="handleReject(${
-                          shop.id
-                        })">
+                        <button class="btn btn-danger btn-sm ms-1" onclick="handleReject(${app.id})">
                             <i class="bi bi-x-lg"></i> Từ chối
                         </button>
                     </td>
@@ -96,11 +87,11 @@
           }
         }
 
-        // Hàm Phê duyệt/Từ chối (Đã bổ sung logic đầy đủ)
-        async function handleApprove(shopId) {
+        // Sửa lại hàm Duyệt và Từ chối để gọi đúng API
+        async function handleApprove(applicationId) { // Đổi tên tham số
           Swal.fire({
             title: "Bạn chắc chắn?",
-            text: "Bạn muốn PHÊ DUYỆT cửa hàng này?",
+            text: "Bạn muốn PHÊ DUYỆT yêu cầu này?",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#28a745",
@@ -109,28 +100,25 @@
           }).then(async (result) => {
             if (result.isConfirmed) {
               try {
-                const response = await fetch(`${API_URL}/${shopId}/approve`, {
+                // Gọi API phê duyệt của AdminApplicationController
+                const response = await fetch(`${API_URL}/${applicationId}/approve`, {
                   method: "POST",
                   headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!response.ok) throw new Error("Lỗi khi phê duyệt");
-                Swal.fire("Thành công!", "Đã phê duyệt cửa hàng.", "success");
-                fetchPendingShops(); // Tải lại danh sách
+                Swal.fire("Thành công!", "Đã phê duyệt yêu cầu và tạo cửa hàng.", "success");
+                fetchPendingApplications(); // Tải lại danh sách
               } catch (err) {
-                Swal.fire(
-                  "Lỗi!",
-                  "Không thể phê duyệt. Vui lòng thử lại.",
-                  "error"
-                );
+                Swal.fire("Lỗi!", "Không thể phê duyệt. Vui lòng thử lại.", "error");
               }
             }
           });
         }
 
-        async function handleReject(shopId) {
+        async function handleReject(applicationId) { // Đổi tên tham số
           Swal.fire({
             title: "Bạn chắc chắn?",
-            text: "Bạn muốn TỪ CHỐI cửa hàng này?",
+            text: "Bạn muốn TỪ CHỐI yêu cầu này?",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#dc3545",
@@ -139,19 +127,16 @@
           }).then(async (result) => {
             if (result.isConfirmed) {
               try {
-                const response = await fetch(`${API_URL}/${shopId}/reject`, {
+                // Gọi API từ chối của AdminApplicationController
+                const response = await fetch(`${API_URL}/${applicationId}/reject`, {
                   method: "POST",
                   headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!response.ok) throw new Error("Lỗi khi từ chối");
                 Swal.fire("Đã từ chối", "Đã từ chối yêu cầu.", "info");
-                fetchPendingShops(); // Tải lại danh sách
+                fetchPendingApplications(); // Tải lại danh sách
               } catch (err) {
-                Swal.fire(
-                  "Lỗi!",
-                  "Không thể từ chối. Vui lòng thử lại.",
-                  "error"
-                );
+                Swal.fire("Lỗi!", "Không thể từ chối. Vui lòng thử lại.", "error");
               }
             }
           });

@@ -1,5 +1,20 @@
 package com.utegiftshop.controller;
 
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.utegiftshop.dto.response.RoleApplicationDto;
 import com.utegiftshop.entity.Role;
 import com.utegiftshop.entity.RoleApplication;
@@ -9,17 +24,6 @@ import com.utegiftshop.repository.RoleApplicationRepository;
 import com.utegiftshop.repository.RoleRepository;
 import com.utegiftshop.repository.ShopRepository;
 import com.utegiftshop.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/applications")
@@ -32,9 +36,21 @@ public class AdminApplicationController {
 
     @GetMapping
     public ResponseEntity<List<RoleApplicationDto>> getPendingApplications(
-            @RequestParam(defaultValue = "PENDING") String status) {
-        
+            @RequestParam(defaultValue = "PENDING") String status,
+            @RequestParam(required = false) String requestedRole) { // Thêm tham số này
+
         List<RoleApplication> applications = applicationRepository.findByStatus(status.toUpperCase());
+
+        // Nếu có yêu cầu lọc theo vai trò, lọc kết quả
+        if (requestedRole != null && !requestedRole.isEmpty()) {
+            List<RoleApplicationDto> dtos = applications.stream()
+                    .filter(app -> requestedRole.equalsIgnoreCase(app.getRequestedRole())) // Lọc ở đây
+                    .map(RoleApplicationDto::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
+        }
+
+        // Giữ nguyên logic cũ nếu không lọc theo vai trò
         List<RoleApplicationDto> dtos = applications.stream()
                 .map(RoleApplicationDto::new)
                 .collect(Collectors.toList());
