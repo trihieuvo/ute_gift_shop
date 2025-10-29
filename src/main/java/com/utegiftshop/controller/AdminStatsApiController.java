@@ -1,22 +1,25 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.dto.response.AdminDashboardStats;
-import com.utegiftshop.repository.OrderRepository;
-import com.utegiftshop.repository.ShopRepository;
-import com.utegiftshop.repository.UserRepository;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.HashMap;
+import com.utegiftshop.dto.response.AdminDashboardStats;
+import com.utegiftshop.entity.Order;
+import com.utegiftshop.entity.OrderDetail;
+import com.utegiftshop.repository.OrderRepository;
+import com.utegiftshop.repository.ShopRepository;
+import com.utegiftshop.repository.UserRepository;
 
 @RestController
 @RequestMapping("/api/v1/admin/stats")
@@ -32,7 +35,6 @@ public class AdminStatsApiController {
         this.shopRepository = shopRepository;
     }
 
-    // API 1: Lấy các số liệu thống kê tổng quan (ĐÃ THÊM BỘ LỌC)
     @GetMapping("/dashboard")
     public ResponseEntity<AdminDashboardStats> getDashboardStats(
         @RequestParam(required = false) String startDate,
@@ -42,63 +44,98 @@ public class AdminStatsApiController {
         Timestamp end = null;
         
         try {
-            if (startDate != null && !startDate.isEmpty()) {
-                start = Timestamp.valueOf(startDate + " 00:00:00");
-            }
-            if (endDate != null && !endDate.isEmpty()) {
-                end = Timestamp.valueOf(endDate + " 23:59:59");
-            }
-        } catch (IllegalArgumentException e) {
-            // Xử lý lỗi ngày tháng (tạm thời bỏ qua và dùng null)
-        }
+            if (startDate != null && !startDate.isEmpty()) start = Timestamp.valueOf(startDate + " 00:00:00");
+            if (endDate != null && !endDate.isEmpty()) end = Timestamp.valueOf(endDate + " 23:59:59");
+        } catch (IllegalArgumentException ignored) {}
 
-        // 1. Tổng số User (Chỉ tính user mới trong khoảng thời gian)
+        // Logic đếm người dùng mới và shop hoạt động
         long totalNewUsers = userRepository.countByCreatedAtBetween(start, end);
-
-        // 2. Tổng số Đơn hàng đã giao (Chỉ tính đơn hàng đã giao trong khoảng thời gian)
-        long totalDeliveredOrders = orderRepository.countByStatusAndOrderDateBetween("DELIVERED", start, end);
-
-        // 3. Tổng số Shop đang hoạt động (Không nên lọc theo ngày, lấy tổng số shop Active)
         long totalActiveShops = shopRepository.countByStatus("ACTIVE"); 
         
-        // 4. Tổng doanh thu (Chỉ tính doanh thu đã giao trong khoảng thời gian)
-        BigDecimal totalRevenue = orderRepository.sumTotalAmountIfStatusDeliveredAndOrderDateBetween(start, end);
+        // Lấy danh sách đơn hàng đã giao để tính toán doanh thu và hoa hồng
+        List<Order> deliveredOrders;
+        if (start != null && end != null) {
+            deliveredOrders = orderRepository.findDeliveredOrdersBetween(start, end);
+        } else if (start != null) {
+            deliveredOrders = orderRepository.findDeliveredOrdersAfter(start);
+        } else if (end != null) {
+            deliveredOrders = orderRepository.findDeliveredOrdersBefore(end);
+        } else {
+            deliveredOrders = orderRepository.findAllDelivered();
+        }
         
-        // Trả về DTO phản hồi
+        long totalDeliveredOrders = deliveredOrders.size();
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalCommission = BigDecimal.ZERO;
+
+        for (Order order : deliveredOrders) {
+            if (order.getTotalAmount() != null) {
+                totalRevenue = totalRevenue.add(order.getTotalAmount());
+            }
+            if (order.getOrderDetails() != null) {
+                for (OrderDetail detail : order.getOrderDetails()) {
+                    if (detail.getPrice() != null && detail.getQuantity() != null && detail.getCommissionRate() != null) {
+                        BigDecimal itemTotal = detail.getPrice().multiply(new BigDecimal(detail.getQuantity()));
+                        BigDecimal commissionRate = detail.getCommissionRate();
+                        BigDecimal commissionForItem = itemTotal.multiply(commissionRate.divide(new BigDecimal("100")));
+                        totalCommission = totalCommission.add(commissionForItem);
+                    }
+                }
+            }
+        }
+        
         AdminDashboardStats stats = new AdminDashboardStats(
             totalNewUsers, 
             totalDeliveredOrders, 
             totalActiveShops, 
-            totalRevenue
+            totalRevenue,
+            totalCommission
         );
 
         return ResponseEntity.ok(stats);
     }
     
-    // API 2: Lấy dữ liệu doanh thu theo tháng (Chart) - (ĐÃ THÊM BỘ LỌC)
     @GetMapping("/revenue-chart")
     public ResponseEntity<Map<String, BigDecimal>> getMonthlyRevenue(
         @RequestParam(required = false) String startDate,
         @RequestParam(required = false) String endDate
     ) {
-        // Tùy chọn 1: Nếu bạn đã có hàm trong OrderRepository để tính doanh thu theo tháng/khoảng ngày, hãy dùng nó.
-        // Tùy chọn 2: Nếu không, bạn cần viết logic để lấy dữ liệu.
+        Timestamp start = null;
+        Timestamp end = null;
         
-        // Tạm thời trả về dữ liệu mẫu có thể lọc được (Mock data)
-        // Trong thực tế, bạn phải truy vấn OrderRepository theo orderDate
-        Map<String, BigDecimal> monthlyData = new HashMap<>();
+        try {
+            if (startDate != null && !startDate.isEmpty()) start = Timestamp.valueOf(startDate + " 00:00:00");
+            if (endDate != null && !endDate.isEmpty()) end = Timestamp.valueOf(endDate + " 23:59:59");
+        } catch (IllegalArgumentException ignored) {}
 
-        // Ví dụ: Lọc theo năm hiện tại nếu không có tham số
-        if (startDate == null || endDate == null) {
-             monthlyData.put("Tháng 8", new BigDecimal("15000000"));
-             monthlyData.put("Tháng 9", new BigDecimal("22500000"));
-             monthlyData.put("Tháng 10", new BigDecimal("31000000")); 
+        List<Order> deliveredOrders;
+        if (start != null && end != null) {
+            deliveredOrders = orderRepository.findDeliveredOrdersBetween(start, end);
+        } else if (start != null) {
+            deliveredOrders = orderRepository.findDeliveredOrdersAfter(start);
+        } else if (end != null) {
+            deliveredOrders = orderRepository.findDeliveredOrdersBefore(end);
         } else {
-             // Đây là logic giả định cho biểu đồ khi lọc (Cần code thật)
-             monthlyData.put("Tháng 1", new BigDecimal("10000000"));
-             monthlyData.put("Tháng 2", new BigDecimal("15000000"));
+            deliveredOrders = orderRepository.findAllDelivered();
         }
+
+        // Nhóm doanh thu hoa hồng theo tháng và năm
+        Map<String, BigDecimal> monthlyCommission = deliveredOrders.stream()
+            .flatMap(order -> order.getOrderDetails().stream())
+            .filter(detail -> detail.getPrice() != null && detail.getQuantity() != null && detail.getCommissionRate() != null)
+            .collect(Collectors.groupingBy(
+                detail -> "Tháng " + detail.getOrder().getOrderDate().toLocalDateTime().format(DateTimeFormatter.ofPattern("MM/yyyy")),
+                LinkedHashMap::new, // Giữ thứ tự
+                Collectors.mapping(
+                    detail -> {
+                        BigDecimal itemTotal = detail.getPrice().multiply(new BigDecimal(detail.getQuantity()));
+                        BigDecimal commissionRate = detail.getCommissionRate();
+                        return itemTotal.multiply(commissionRate.divide(new BigDecimal("100")));
+                    },
+                    Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                )
+            ));
         
-        return ResponseEntity.ok(monthlyData);
+        return ResponseEntity.ok(monthlyCommission);
     }
 }

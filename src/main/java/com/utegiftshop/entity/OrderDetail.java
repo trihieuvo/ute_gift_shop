@@ -42,4 +42,6 @@ public class OrderDetail {
 
     @Column(precision = 12, scale = 2, nullable = false)
     private BigDecimal price; // Giá tại thời điểm mua
+    @Column(name = "commission_rate", precision = 5, scale = 2, nullable = false)
+    private BigDecimal commissionRate;
 }

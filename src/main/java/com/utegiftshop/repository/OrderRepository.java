@@ -37,12 +37,21 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     // TÌM ĐƠN HÀNG THEO MÃ THANH TOÁN
     Optional<Order> findByPaymentCode(String paymentCode);
 
-    // === BỔ SUNG: TÍNH TỔNG TIỀN COD ĐANG GIỮ ===
+    // TÍNH TỔNG TIỀN COD ĐANG GIỮ ===
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.shipper.id = :shipperId AND o.status = 'DELIVERED' AND o.paymentMethod = 'COD' AND o.isCodReconciled = false")
     BigDecimal sumTotalCodByShipperAndStatusDeliveredAndNotReconciled(@Param("shipperId") Long shipperId);
-    // === KẾT THÚC BỔ SUNG COD ===
 
+    @Query("SELECT o FROM Order o JOIN FETCH o.orderDetails WHERE o.status = 'DELIVERED'")
+    List<Order> findAllDelivered();
+    
+    @Query("SELECT o FROM Order o JOIN FETCH o.orderDetails WHERE o.status = 'DELIVERED' AND o.orderDate BETWEEN :startDate AND :endDate")
+    List<Order> findDeliveredOrdersBetween(@Param("startDate") Timestamp startDate, @Param("endDate") Timestamp endDate);
 
+    @Query("SELECT o FROM Order o JOIN FETCH o.orderDetails WHERE o.status = 'DELIVERED' AND o.orderDate >= :startDate")
+    List<Order> findDeliveredOrdersAfter(@Param("startDate") Timestamp startDate);
+
+    @Query("SELECT o FROM Order o JOIN FETCH o.orderDetails WHERE o.status = 'DELIVERED' AND o.orderDate <= :endDate")
+    List<Order> findDeliveredOrdersBefore(@Param("endDate") Timestamp endDate);
     // === DÙNG CHO CUSTOMER (GIỮ NGUYÊN) ===
     List<Order> findByUserId(Long userId);
     Optional<Order> findByIdAndUserId(Long orderId, Long userId);

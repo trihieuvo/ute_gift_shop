@@ -7,80 +7,138 @@
 >
   <head>
     <title>Admin Dashboard</title>
+    <style>
+      .stats-card {
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        border: none;
+        color: white;
+        height: 100%;
+      }
+      .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      }
+      .stats-card .card-body {
+        position: relative;
+        padding: 1.5rem;
+      }
+      .stats-card h5 {
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.9;
+      }
+      .stats-card .stat-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+      }
+      .stats-card .icon-bg {
+        position: absolute;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 4rem;
+        opacity: 0.2;
+      }
+      .filter-card {
+        background-color: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+      .chart-card {
+        background-color: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+    </style>
   </head>
   <body>
     <div layout:fragment="content">
-      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Admin Dashboard</h1>
+      <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+          <h1 class="h2"><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
+          <button class="btn btn-outline-secondary btn-sm" onclick="fetchDashboardData()">
+              <i class="bi bi-arrow-clockwise"></i> Tải lại
+          </button>
+      </div>
 
-      <div class="card mb-4">
-        <div class="card-header">Bộ lọc Dữ liệu</div>
+      <div class="card filter-card mb-4">
         <div class="card-body">
-          <div class="row align-items-end">
-            <div class="col-md-3 mb-3">
-              <label for="start-date" class="form-label">Từ ngày</label>
-              <input type="date" class="form-control" id="start-date" />
+          <div class="row align-items-end gx-2">
+            <div class="col-md-4">
+              <label for="start-date" class="form-label small">Từ ngày</label>
+              <input type="date" class="form-control form-control-sm" id="start-date" />
             </div>
-            <div class="col-md-3 mb-3">
-              <label for="end-date" class="form-label">Đến ngày</label>
-              <input type="date" class="form-control" id="end-date" />
+            <div class="col-md-4">
+              <label for="end-date" class="form-label small">Đến ngày</label>
+              <input type="date" class="form-control form-control-sm" id="end-date" />
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2">
               <button
-                class="btn btn-primary w-100"
+                class="btn btn-primary btn-sm w-100"
                 onclick="fetchDashboardData()"
               >
-                <i class="bi bi-funnel-fill"></i> Lọc Thống kê
+                <i class="bi bi-funnel-fill"></i> Lọc
               </button>
             </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFilters()">
+                    <i class="bi bi-x-lg"></i> Xóa lọc
+                </button>
+            </div>
           </div>
         </div>
       </div>
+      
       <div class="row mb-4">
-        <div class="col-md-3">
-          <div class="card text-white bg-success mb-3">
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="card stats-card bg-success">
             <div class="card-body">
-              <h5 class="card-title">Tổng Doanh thu</h5>
-              <p class="card-text fs-3 fw-bold" id="total-revenue">
-                Đang tải...
-              </p>
+              <h5>Doanh thu Nền tảng (Hoa hồng)</h5>
+              <p class="stat-value" id="total-commission-revenue">...</p>
+              <i class="bi bi-cash-stack icon-bg"></i>
             </div>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="card text-white bg-primary mb-3">
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="card stats-card bg-primary">
             <div class="card-body">
-              <h5 class="card-title">Đơn hàng Đã giao</h5>
-              <p class="card-text fs-3 fw-bold" id="total-orders">
-                Đang tải...
-              </p>
+              <h5>Đơn hàng Đã giao</h5>
+              <p class="stat-value" id="total-orders">...</p>
+              <i class="bi bi-box-seam icon-bg"></i>
             </div>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="card text-white bg-info mb-3">
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="card stats-card bg-info">
             <div class="card-body">
-              <h5 class="card-title">Người dùng Mới</h5>
-              <p class="card-text fs-3 fw-bold" id="total-users">Đang tải...</p>
+              <h5 class="text-dark">Người dùng Mới</h5>
+              <p class="stat-value text-dark" id="total-users">...</p>
+              <i class="bi bi-people-fill icon-bg"></i>
             </div>
           </div>
         </div>
 
-        <div class="col-md-3">
-          <div class="card text-white bg-warning mb-3">
+        <div class="col-lg-3 col-md-6 mb-4">
+          <div class="card stats-card bg-warning">
             <div class="card-body">
-              <h5 class="card-title">Shop Hoạt động</h5>
-              <p class="card-text fs-3 fw-bold" id="total-shops">Đang tải...</p>
+              <h5 class="text-dark">Shop Hoạt động</h5>
+              <p class="stat-value text-dark" id="total-shops">...</p>
+              <i class="bi bi-shop icon-bg"></i>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card mb-4">
-        <div class="card-header">Doanh thu theo thời gian</div>
+      <div class="card chart-card mb-4">
+        <div class="card-header">
+          <i class="bi bi-bar-chart-line-fill"></i> Doanh thu theo thời gian
+        </div>
         <div class="card-body">
-          <canvas id="revenueChart" width="400" height="150"></canvas>
+          <canvas id="revenueChart" style="min-height: 250px;"></canvas>
         </div>
       </div>
     </div>
@@ -92,11 +150,10 @@
         const token = localStorage.getItem("jwtToken");
         const startDateInput = document.getElementById("start-date");
         const endDateInput = document.getElementById("end-date");
+        let revenueChartInstance = null;
 
-        let revenueChartInstance = null; // Để lưu instance của biểu đồ
-
-        // Định dạng tiền tệ
         const formatVND = (amount) => {
+          if (amount === null || isNaN(amount)) return '0 đ';
           return new Intl.NumberFormat("vi-VN", {
             style: "currency",
             currency: "VND",
@@ -106,60 +163,62 @@
 
         document.addEventListener("DOMContentLoaded", fetchDashboardData);
 
+        function clearFilters() {
+            startDateInput.value = '';
+            endDateInput.value = '';
+            fetchDashboardData();
+        }
+
         async function fetchDashboardData() {
           const startDate = startDateInput.value;
           const endDate = endDateInput.value;
-
           const params = new URLSearchParams();
           if (startDate) params.append("startDate", startDate);
           if (endDate) params.append("endDate", endDate);
-
           const urlParams = "?" + params.toString();
 
-          // 1. Lấy số liệu tổng quan
+          // Reset UI to loading state
+          document.getElementById("total-commission-revenue").textContent = '...';
+          document.getElementById("total-orders").textContent = '...';
+          document.getElementById("total-users").textContent = '...';
+          document.getElementById("total-shops").textContent = '...';
+
+          // 1. Fetch dashboard stats
           try {
-            const response = await fetch(
-              "/api/v1/admin/stats/dashboard" + urlParams,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
+            const response = await fetch(`/api/v1/admin/stats/dashboard${urlParams}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error(`Lỗi ${response.status}`);
             const stats = await response.json();
 
-            document.getElementById("total-revenue").textContent = formatVND(
-              stats.totalRevenue
-            );
-            document.getElementById("total-orders").textContent =
-              stats.totalOrders;
-            document.getElementById("total-users").textContent =
-              stats.totalUsers; // New Users
-            document.getElementById("total-shops").textContent =
-              stats.totalActiveShops;
+            document.getElementById("total-commission-revenue").textContent = formatVND(stats.totalCommissionRevenue);
+            document.getElementById("total-orders").textContent = stats.totalOrders;
+            document.getElementById("total-users").textContent = stats.totalUsers;
+            document.getElementById("total-shops").textContent = stats.totalActiveShops;
           } catch (err) {
             console.error("Lỗi tải số liệu tổng quan:", err);
+            document.getElementById("total-commission-revenue").textContent = 'Lỗi';
+            document.getElementById("total-orders").textContent = 'Lỗi';
+            document.getElementById("total-users").textContent = 'Lỗi';
+            document.getElementById("total-shops").textContent = 'Lỗi';
           }
 
-          // 2. Lấy dữ liệu cho biểu đồ
+          // 2. Fetch chart data
           try {
-            const response = await fetch(
-              "/api/v1/admin/stats/revenue-chart" + urlParams,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
+            const response = await fetch(`/api/v1/admin/stats/revenue-chart${urlParams}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error(`Lỗi ${response.status}`);
             const monthlyData = await response.json();
-
             renderRevenueChart(monthlyData);
           } catch (err) {
             console.error("Lỗi tải dữ liệu biểu đồ:", err);
+            if (revenueChartInstance) revenueChartInstance.destroy(); // Clear old chart on error
           }
         }
 
-        // 3. Hàm vẽ biểu đồ
         function renderRevenueChart(data) {
           const ctx = document.getElementById("revenueChart").getContext("2d");
-
-          // Hủy biểu đồ cũ nếu có
           if (revenueChartInstance) {
             revenueChartInstance.destroy();
           }
@@ -170,22 +229,34 @@
               labels: Object.keys(data),
               datasets: [
                 {
-                  label: "Doanh thu (Đồng)",
+                  label: "Doanh thu Hoa hồng (VNĐ)",
                   data: Object.values(data),
-                  backgroundColor: "rgba(40, 167, 69, 0.5)",
-                  borderColor: "rgba(40, 167, 69, 1)",
+                  backgroundColor: "rgba(13, 110, 253, 0.6)",
+                  borderColor: "rgba(13, 110, 253, 1)",
                   borderWidth: 1,
+                  borderRadius: 4,
                 },
               ],
             },
             options: {
               responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                      callbacks: {
+                          label: function (context) {
+                              return 'Doanh thu: ' + formatVND(context.parsed.y);
+                          }
+                      }
+                  }
+              },
               scales: {
                 y: {
                   beginAtZero: true,
                   ticks: {
-                    callback: function (value, index, values) {
-                      return formatVND(value);
+                    callback: function (value) {
+                      return new Intl.NumberFormat('vi-VN', { notation: 'compact', compactDisplay: 'short' }).format(value);
                     },
                   },
                 },

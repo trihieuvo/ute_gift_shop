@@ -92,7 +92,7 @@ public class OrderController {
             );
 
             if (product.getStockQuantity() < item.getQuantity()) {
-                throw new RuntimeException("Sản phẩm '" + product.getName() + "' (ID: " + productId +") không đủ số lượng trong kho. Yêu cầu: " + item.getQuantity() + ", Còn lại: " + product.getStockQuantity());
+                throw new RuntimeException("Sản phẩm '" + product.getName() + "' không đủ số lượng trong kho.");
             }
 
             OrderDetail detail = new OrderDetail();
@@ -100,6 +100,15 @@ public class OrderController {
             detail.setProduct(product);
             detail.setQuantity(item.getQuantity());
             detail.setPrice(product.getPrice());
+
+          
+            if (product.getShop() != null && product.getShop().getCommissionRate() != null) {
+                detail.setCommissionRate(product.getShop().getCommissionRate());
+            } else {
+                detail.setCommissionRate(BigDecimal.ZERO); // Gán mặc định là 0
+            }
+            
+
             orderDetails.add(detail);
 
             totalAmount = totalAmount.add(product.getPrice().multiply(new BigDecimal(item.getQuantity())));
