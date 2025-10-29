@@ -1,541 +1,934 @@
 <!DOCTYPE html>
-<html lang="vi"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+ <html lang="vi"
+       xmlns:th="http://www.thymeleaf.org"
+       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <title layout:title-pattern="$CONTENT_TITLE | UTE GiftShop">$LAYOUT_TITLE</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            padding-top: 70px; /* Adjust if needed */
-        }
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+     <title layout:title-pattern="$CONTENT_TITLE | UTE GiftShop">UTE GiftShop</title>
+     <style>
+         body {
+             display: flex;
+             flex-direction: column;
+             min-height: 100vh;
+             padding-top: 70px; /* Adjust based on navbar height */
+             background-color: #f8f9fa;
+         }
+         .content-wrapper {
+             flex: 1;
+             padding-top: 2rem;
+             padding-bottom: 2rem;
+         }
+         footer.site-footer {
+             background-color: #e9ecef;
+             padding: 2rem 0;
+             color: #495057;
+             margin-top: auto; /* Push footer to bottom */
+         }
+         footer.site-footer h5 { color: #343a40; margin-bottom: 1rem; font-weight: 600; }
+         footer.site-footer ul { padding-left: 0; list-style: none; }
+         footer.site-footer li { margin-bottom: 0.5rem; }
+         .footer-bottom { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #dee2e6; font-size: 0.875rem; }
+         .social-icons a { color: #6c757d; font-size: 1.5rem; margin-right: 1rem; transition: color 0.3s; }
+         .social-icons a:hover { color: #0d6efd; }
 
-        .content-wrapper {
-            flex: 1;
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
+         /* Navbar styles */
+         .navbar-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; border: 1px solid #dee2e6; background-color: #eee; }
+         #cart-item-count { font-size: 0.75rem; padding: 0.2em 0.5em; vertical-align: top; }
 
-        .main-content-card {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
-        }
+         /* Chat Widget Styles */
+         .chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
+         .chat-btn { width: 60px; height: 60px; border-radius: 50%; font-size: 28px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+         .chat-btn:hover { transform: scale(1.1); }
+         .chat-btn i.text-warning { animation: pulse 1.5s infinite; }
+         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        footer {
-            background-color: #f8f9fa;
-            padding: 1rem 0;
-            text-align: center;
-        }
+         .chat-popup { display: none; position: fixed; bottom: 90px; right: 20px; width: 370px; max-height: 550px; background: #fff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, .3); flex-direction: column; overflow: hidden; border: 1px solid #ddd; }
+         .chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+         .chat-header span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 40px); } /* Limit header text width */
+         .chat-header .btn-close { filter: brightness(0) invert(1); opacity: 0.8; padding: 0.5rem; background-size: 50%; }
+         .chat-header .btn-close:hover { opacity: 1; }
 
-        /* === CSS FOR CHATBOT === */
-        .chat-widget {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1050;
-        }
+         .chat-body { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: #f8f9fa; }
+         .chat-message {
+             padding: 8px 14px;
+             border-radius: 18px;
+             max-width: 80%;
+             word-wrap: break-word; /* Ensure long words wrap */
+             white-space: pre-wrap; /* Preserve line breaks and spaces */
+             line-height: 1.5;
+             font-size: 0.9rem;
+         }
+         .user-message { background: #0d6efd; color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+         .bot-message { background: #e9ecef; color: #212529; align-self: flex-start; border-bottom-left-radius: 5px; }
+         .received-message { background: #fff; color: #212529; align-self: flex-start; border-bottom-left-radius: 5px; border: 1px solid #eee; } /* For vendor messages */
+         .system-message { background-color: transparent; color: #6c757d; align-self: center; font-size: 0.75rem; font-style: italic; border: none; max-width: 90%; text-align: center; padding: 5px 10px; margin: 5px 0; }
+         .system-message .spinner-border-sm { width: 0.8rem; height: 0.8rem; vertical-align: text-bottom; }
 
-        .chat-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            font-size: 28px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
-        }
+         .chat-footer { border-top: 1px solid #ddd; padding: 0.75rem 1rem; display: flex; background-color: #fff; align-items: center; }
+         .chat-footer input { flex: 1; border: 1px solid #ccc; outline: none; box-shadow: none; border-radius: 20px; padding: 0.5rem 1rem; margin-right: 0.5rem; }
+         .chat-footer input:focus { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1); }
+         .chat-footer input:disabled { background-color: #e9ecef; }
+         .chat-footer button { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; background-color: #0d6efd; color: white; border: none; }
+         .chat-footer button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+         .chat-footer button i { font-size: 1.2rem; }
 
-        .chat-popup {
-            display: none;
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            width: 350px;
-            max-height: 500px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, .3);
-            flex-direction: column;
-            overflow: hidden;
-        }
+         /* Markdown Formatting */
+         .chat-message pre { background-color: #282c34; color: #abb2bf; padding: 0.8em; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+         .chat-message code { font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; }
+         .chat-message pre code { background: none; padding: 0; }
+         .chat-message :not(pre) > code { background-color: rgba(175, 184, 193, 0.2); padding: 0.2em 0.4em; border-radius: 3px; font-size: 85%; }
+     </style>
+     <th:block layout:fragment="styles"></th:block>
+     <th:block layout:fragment="scripts_head"></th:block>
+ </head>
 
-        .chat-header {
-            background: #0d6efd;
-            color: white;
-            padding: 1rem;
-            font-weight: bold;
-        }
+ <body>
+     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+         <div class="container">
+             <a class="navbar-brand fw-bold" th:href="@{/home}">
+                 <i class="bi bi-shop"></i> UTE GiftShop
+             </a>
+             <div class="d-flex align-items-center">
+                 <a class="nav-link me-3 position-relative" th:href="@{/cart}">
+                     <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
+                     <span class="badge bg-danger ms-1 position-absolute top-0 start-100 translate-middle" id="cart-item-count" style="display: none;">0</span>
+                 </a>
+                 <div class="dropdown">
+                     <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
+                         <img src="/images/placeholder-avatar-small.png" alt="User Avatar" class="navbar-avatar" id="navbarUserAvatar">
+                         <span id="userGreeting">Tài khoản</span>
+                     </a>
+                     <ul id="user-menu" class="dropdown-menu dropdown-menu-end">
+                         <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
+                         <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
+                     </ul>
+                 </div>
+             </div>
+         </div>
+     </nav>
 
-        .chat-body {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+     <div class="content-wrapper">
+         <div class="container">
+             <th:block layout:fragment="content"></th:block>
+         </div>
+     </div>
 
-        .chat-message {
-            padding: 8px 12px;
-            border-radius: 18px;
-            max-width: 80%;
-            word-wrap: break-word;
-        }
+     <footer class="site-footer mt-auto py-5">
+         <div class="container">
+             <div class="row">
+                 <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                     <h5>Về UTE Gift Shop</h5>
+                     <p class="small text-muted">Dự án môn học Lập trình Web, xây dựng website thương mại điện tử đa nhà cung cấp.</p>
+                 </div>
+                 <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
+                     <h5>Sinh viên</h5>
+                     <ul class="list-unstyled small">
+                         <li>Võ Trí Hiệu - 23110219</li>
+                         <li>Lê Ngô Nhựt Tân - 23110315</li>
+                         <li>Nguyễn Bảo Lợi - 23110256</li>
+                         <li>Huỳnh Ngọc Tài - 23110305</li>
+                     </ul>
+                 </div>
+                 <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
+                     <h5>Liên hệ</h5>
+                     <ul class="list-unstyled small">
+                         <li><i class="bi bi-telephone-fill me-2"></i> 0372008321</li>
+                         <li><i class="bi bi-envelope-fill me-2"></i> hieu981.vn@gmail.com</li>
+                     </ul>
+                 </div>
+                 <div class="col-lg-3 col-md-6">
+                     <h5>Liên kết</h5>
+                     <div class="social-icons">
+                         <a href="https://github.com/trihieuvo" title="Võ Trí Hiệu" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
+                         <a href="https://github.com/Okarin2507" title="Lê Ngô Nhựt Tân" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
+                         <a href="https://github.com/LoiNguyen2k5" title="Nguyễn Bảo Lợi" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
+                         <a href="https://github.com/KickHuynh" title="Huỳnh Ngọc Tài" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
+                     </div>
+                 </div>
+             </div>
+             <div class="footer-bottom text-center text-muted">
+                 &copy; <span th:text="${#dates.year(#dates.createNow())}"></span> UTE GiftShop. All Rights Reserved.
+             </div>
+         </div>
+     </footer>
 
-        .user-message {
-            background: #e9ecef;
-            align-self: flex-end;
-        }
+     <div class="chat-widget">
+         <button class="btn btn-primary chat-btn" id="toggle-chat-btn" title="Trợ lý & Chat">
+             <i class="bi bi-chat-dots-fill"></i>
+         </button>
+         <div class="chat-popup" id="chat-popup">
+             <div class="chat-header" id="chat-header">
+                 <span>UTE GiftShop Assistant</span>
+                 <button type="button" class="btn-close" aria-label="Close" onclick="closeChatPopup()"></button>
+             </div>
+             <div class="chat-body" id="chat-body">
+                 <div class="chat-message bot-message">Chào bạn! Tôi có thể giúp gì?</div>
+             </div>
+             <div class="chat-footer">
+                 <input type="text" class="form-control" id="chat-input" placeholder="Nhập tin nhắn..." disabled>
+                 <button class="btn btn-primary" id="chat-send-btn" disabled><i class="bi bi-send-fill"></i></button>
+             </div>
+         </div>
+     </div>
 
-        .bot-message {
-            background: #0d6efd;
-            color: white;
-            align-self: flex-start;
-        }
+     <div class="modal fade" id="changePaymentModal" tabindex="-1" aria-labelledby="changePaymentModalLabel" aria-hidden="true">
+         <div class="modal-dialog modal-dialog-centered">
+             <div class="modal-content">
+                 <div class="modal-header">
+                     <h5 class="modal-title" id="changePaymentModalLabel">Đổi phương thức thanh toán cho Đơn #<span id="modalOrderId"></span></h5>
+                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                 </div>
+                 <div class="modal-body">
+                     <input type="hidden" id="modalChangeOrderId">
+                     <p>Chọn phương thức thanh toán mới:</p>
+                     <div class="form-check mb-2"> <input class="form-check-input" type="radio" name="newPaymentMethod" id="newCod" value="COD"><label class="form-check-label" for="newCod"><i class="bi bi-cash-coin me-1"></i> Thanh toán khi nhận hàng (COD)</label> </div>
+                     <div class="form-check"> <input class="form-check-input" type="radio" name="newPaymentMethod" id="newSepayQr" value="SEPAY_QR"><label class="form-check-label" for="newSepayQr"><i class="bi bi-qr-code me-1"></i> Thanh toán QR (SePay)</label> </div>
+                 </div>
+                 <div class="modal-footer">
+                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                     <button type="button" class="btn btn-primary" id="savePaymentChangeBtn" onclick="handleChangePaymentSubmit()">Lưu thay đổi</button>
+                 </div>
+             </div>
+         </div>
+     </div>
 
-        .chat-footer {
-            border-top: 1px solid #eee;
-            padding: 0.5rem;
-            display: flex;
-        }
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
 
-        .chat-footer input {
-            flex: 1;
-            border: none;
-            outline: none;
-            box-shadow: none;
-        }
+     <script>
+         // === GLOBAL VARIABLES ===
+         let __uteAppLayoutUserInfo = null; // RENAMED VARIABLE
+         let globalUserStatusChecked = false; // Flag to indicate if user status check is complete
+         let userInfoResolve = null; // Function to resolve the userInfoPromise
+         // Promise that resolves when user info is fetched (or check fails)
+         window.userInfoPromise = new Promise((resolve) => {
+             userInfoResolve = resolve;
+         });
+         let globalWebSocket = null; // Stores the WebSocket connection object
+         let globalChatTarget = { type: 'AI', id: null, name: 'UTE GiftShop Assistant' }; // Current chat target (AI or VENDOR)
+         let currentConversationId = null; // ID of the currently open P2P chat conversation
+         let globalReconnectTimeout = null; // Timeout ID for WebSocket reconnection attempts
+         let isChatPopupOpen = false; // State of the chat popup visibility
 
-        /* === END CSS FOR CHATBOT === */
+         // === DOM ELEMENTS ===
+         const navbarAvatar = document.getElementById('navbarUserAvatar');
+         const userGreetingElem = document.getElementById('userGreeting');
+         const userMenu = document.getElementById('user-menu');
+         const cartCountBadge = document.getElementById('cart-item-count');
+         const chatPopup = document.getElementById('chat-popup');
+         const toggleChatBtn = document.getElementById('toggle-chat-btn');
+         const chatInput = document.getElementById('chat-input');
+         const chatSendBtn = document.getElementById('chat-send-btn');
+         const chatBody = document.getElementById('chat-body');
+         const chatHeaderSpan = document.querySelector('#chat-header span');
 
-        /* === CSS FOR NAVBAR AVATAR === */
-        .navbar-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 8px;
-            border: 1px solid #dee2e6;
-        }
-        /* === END CSS === */
+         // === HELPER FUNCTIONS ===
 
-        /* CSS FOR CART BADGE */
-        #cart-item-count {
-            font-size: 0.75rem;
-            padding: 0.2em 0.5em;
-            vertical-align: top;
-        }
-        /* Style for social icons in footer */
-        .social-icons a {
-            color: #6c757d;
-            font-size: 1.5rem;
-            margin-right: 1rem;
-            transition: color 0.3s;
-        }
-        .social-icons a:hover {
-             color: #0d6efd;
-        }
-        .footer-bottom {
-             margin-top: 1.5rem;
-             padding-top: 1rem;
-             border-top: 1px solid #e9ecef;
-             font-size: 0.875rem;
-        }
-    </style>
-    <th:block layout:fragment="styles"></th:block>
-    <th:block layout:fragment="scripts_head"></th:block>
-</head>
+         /**
+          * Escapes HTML special characters in a string.
+          * @param {string} unsafe The string to escape.
+          * @returns {string} The escaped string.
+          */
+         function escapeHtml(unsafe) {
+             if (typeof unsafe !== 'string') return '';
+             return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+         }
 
-<body>
-
-    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" th:href="@{/home}">
-                <i class="bi bi-shop"></i> UTE GiftShop
-            </a>
-            <div class="d-flex align-items-center">
-                <a class="nav-link me-3 position-relative" th:href="@{/cart}">
-                    <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
-                    <span class="badge bg-danger ms-1 position-absolute top-0 start-100 translate-middle" id="cart-item-count" style="display: none;">0</span>
-                </a>
-                <div class="dropdown">
-                    <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown"
-                       aria-expanded="false">
-                        <img src="/images/placeholder-avatar-small.png" alt="User Avatar" class="navbar-avatar"
-                             id="navbarUserAvatar">
-                        <span id="userGreeting">Tài khoản</span>
-                    </a>
-                    <ul id="user-menu" class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
-                        <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="content-wrapper">
-        <div class="container">
-            <th:block layout:fragment="content"></th:block>
-            </div>
-    </div>
-
-    <footer class="site-footer mt-auto py-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
-                    <h5>Về UTE Gift Shop</h5>
-                    <p class="small text-muted">Dự án môn học Lập trình Web, xây dựng website thương mại điện tử đa nhà cung cấp.</p>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
-                    <h5>Sinh viên thực hiện</h5>
-                    <ul class="list-unstyled small">
-                        <li>Võ Trí Hiệu - 23110219 </li>
-                        <li>Lê Ngô Nhựt Tân - 23110315 </li>
-                        <li>Nguyễn Bảo Lợi - 23110256 </li>
-                        <li>Huỳnh Ngọc Tài - 23110305</li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
-                    <h5>Thông tin liên hệ</h5>
-                    <ul class="list-unstyled small">
-                        <li><i class="bi bi-telephone-fill me-2"></i> 0372008321</li>
-                        <li><i class="bi bi-envelope-fill me-2"></i> hieu981.vn@gmail.com</li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h5>Liên kết</h5>
-                    <div class="social-icons">
-                        <a href="https://github.com/trihieuvo" title="Võ Trí Hiệu" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                        <a href="https://github.com/Okarin2507" title="Lê Ngô Nhựt Tân" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                        <a href="https://github.com/LoiNguyen2k5" title="Nguyễn Bảo Lợi" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                        <a href="https://github.com/KickHuynh" title="Huỳnh Ngọc Tài" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom text-center text-muted">
-                &copy; 2025 UTE GiftShop. All Rights Reserved.
-            </div>
-        </div>
-    </footer>
-
-
-    <div class="chat-widget">
-        <button class="btn btn-primary chat-btn" id="toggle-chat-btn">
-            <i class="bi bi-chat-dots-fill"></i>
-        </button>
-        <div class="chat-popup" id="chat-popup">
-            <div class="chat-header">UTE GiftShop Assistant</div>
-            <div class="chat-body" id="chat-body">
-                <div class="chat-message bot-message">Chào bạn! Tôi có thể giúp gì?</div>
-            </div>
-            <div class="chat-footer">
-                <input type="text" class="form-control" id="chat-input" placeholder="Nhập tin nhắn...">
-                <button class="btn btn-link" id="chat-send-btn"><i class="bi bi-send-fill"></i></button>
-            </div>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        // === GLOBAL FUNCTIONS ===
-        let globalUserInfo = null;
-
-        function logout() {
-            localStorage.removeItem('jwtToken');
-            globalUserInfo = null;
-            Swal.fire({
-                    title: 'Đã đăng xuất',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                })
-                .then(() => {
-                    window.location.href = '/login';
-                });
-        }
-
-        async function updateCartCount() {
-            const token = localStorage.getItem('jwtToken');
-            const cartCountBadge = document.getElementById('cart-item-count');
-
-            if (!token || !cartCountBadge) {
-                if(cartCountBadge) cartCountBadge.style.display = 'none';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/cart', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const items = await response.json();
-                    const count = items.length; // Count distinct items
-                    cartCountBadge.textContent = count;
-                    cartCountBadge.style.display = count > 0 ? 'inline-block' : 'none';
-                } else {
-                    console.error("Error fetching cart for count:", response.status);
-                    cartCountBadge.style.display = 'none';
-                }
-            } catch (error) {
-                console.error("Network error fetching cart count:", error);
-                cartCountBadge.style.display = 'none';
-            }
-        }
-
-        function renderGuestMenu() {
-            const userGreetingElem = document.getElementById('userGreeting');
-            const userMenu = document.getElementById('user-menu');
-            const navbarAvatar = document.getElementById('navbarUserAvatar');
-            const cartCountBadge = document.getElementById('cart-item-count');
-
-            if (userGreetingElem && userMenu && navbarAvatar) {
-                userGreetingElem.textContent = 'Tài khoản';
-                navbarAvatar.src = '/images/placeholder-avatar-small.png';
-                navbarAvatar.alt = 'Guest Avatar';
-                userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
-                                      <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
-                if(cartCountBadge) cartCountBadge.style.display = 'none';
-            } else {
-                console.error("renderGuestMenu: Navbar elements not found!");
-            }
-        }
-
-        // Renamed to avoid conflicts, make it callable
-        async function checkGlobalLoginStatus() {
-            console.log("Checking global login status...");
-            const token = localStorage.getItem('jwtToken');
-            const navbarAvatar = document.getElementById('navbarUserAvatar');
-            const userGreetingElem = document.getElementById('userGreeting');
-            const userMenu = document.getElementById('user-menu');
-
-            if (!userGreetingElem || !userMenu || !navbarAvatar) {
-                console.error("checkGlobalLoginStatus: Navbar elements not found!");
-                renderGuestMenu();
-                return;
-            }
-
-            if (!token) {
-                console.log("No token found. Rendering guest menu.");
-                globalUserInfo = null;
-                renderGuestMenu();
-                return;
-            }
-
-            try {
-                console.log("Token found. Fetching /api/users/me...");
-                const response = await fetch('/api/users/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                console.log("API /me response status:", response.status);
-
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        console.error("Invalid or expired token. Logging out...");
-                        logout();
-                    } else {
-                        console.error(`Server error (${response.status}) fetching /me. Rendering guest menu.`);
-                        globalUserInfo = null;
-                        renderGuestMenu();
-                    }
-                    return;
-                }
-
-                const userInfo = await response.json();
-                console.log("User info fetched:", userInfo);
-
-                if (userInfo && userInfo.authenticated) {
-                    globalUserInfo = userInfo;
-                    console.log("Authentication successful. Updating UI...");
-
-                    userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
-
-                    if (userInfo.avatarUrl) {
-                        navbarAvatar.src = userInfo.avatarUrl + '?t=' + new Date().getTime();
-                        navbarAvatar.alt = userInfo.fullName + ' Avatar';
-                    } else {
-                        navbarAvatar.src = '/images/placeholder-avatar-small.png';
-                        navbarAvatar.alt = 'Default Avatar';
-                    }
-
-                    let menuItems = `<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Thông tin cá nhân</a></li>
-                                     <li><a class="dropdown-item" href="/order-history"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</a></li>`;
-
-                    if (userInfo.role === 'Shipper') {
-                        menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard"><i class="bi bi-truck me-2"></i>Dashboard Shipper</a></li>`;
-                    } else if (userInfo.role === 'Vendor') {
-                        menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard"><i class="bi bi-shop-window me-2"></i>Trang bán hàng</a></li>`;
-                    } else if (userInfo.role === 'Admin') {
-                         menuItems += `<li><a class="dropdown-item" href="/admin/dashboard"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</a></li>`;
-                    }
-
-                    menuItems += `<li><hr class="dropdown-divider"></li>
-                                  <li><button class="dropdown-item" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>`;
-                    userMenu.innerHTML = menuItems;
-                    console.log("UI updated.");
-
-                    updateCartCount(); // Update cart count after successful login check
-
-                } else {
-                    console.log("API response indicates not authenticated. Logging out...");
-                    logout();
-                }
-            } catch (error) {
-                console.error("Network error during login check:", error);
-                Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
-                globalUserInfo = null;
-                renderGuestMenu();
-            }
-        }
-
-        // Call check function when DOM is ready
-        document.addEventListener('DOMContentLoaded', checkGlobalLoginStatus);
-        // === END GLOBAL FUNCTIONS ===
-
-    </script>
-
-    <th:block layout:fragment="scripts_body"></th:block>
-
-    <script>
-        // === CHATBOT CODE ===
-        const chatPopup = document.getElementById('chat-popup');
-        const toggleChatBtn = document.getElementById('toggle-chat-btn');
-        const chatInput = document.getElementById('chat-input');
-        const chatSendBtn = document.getElementById('chat-send-btn');
-        const chatBody = document.getElementById('chat-body');
-        let isChatbotInitialized = false;
-
-        if (toggleChatBtn) toggleChatBtn.addEventListener('click', () => {
-            if (chatPopup && chatPopup.style.display === 'flex') {
-                chatPopup.style.display = 'none';
-            } else {
-                const token = localStorage.getItem('jwtToken');
-                if (!token && !isChatbotInitialized) {
-                    Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để sử dụng trợ lý ảo.', 'info').then(() => window.location.href = '/login');
-                    return;
-                }
-                isChatbotInitialized = true;
-                if (chatPopup) chatPopup.style.display = 'flex';
-            }
-        });
-        if (chatSendBtn) chatSendBtn.addEventListener('click', sendMessage);
-        if (chatInput) chatInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') { sendMessage(); }
-        });
-
-        async function sendMessage() {
-            if (!chatInput || !chatBody) return;
-            const messageText = chatInput.value.trim();
-            if (messageText === '') return;
-            const token = localStorage.getItem('jwtToken');
-            if (!token) { Swal.fire('Lỗi', 'Phiên đăng nhập đã hết hạn.', 'error'); return; }
-            addMessageToChat(messageText, 'user');
-            chatInput.value = '';
-            addMessageToChat('...', 'bot-typing'); // Show typing indicator
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: messageText })
-                });
-                removeTypingIndicator(); // Remove typing indicator
-                if (response.ok) {
-                    const chatResponse = await response.json();
-                    addMessageToChat(chatResponse.reply, 'bot');
-                } else {
-                    const errorText = await response.text();
-                    console.error("Chatbot API Error:", response.status, errorText);
-                    addMessageToChat('Xin lỗi, đã có lỗi xảy ra khi gọi trợ lý.', 'bot');
-                }
-            } catch (error) {
-                removeTypingIndicator(); // Remove typing indicator
-                console.error("Chatbot Network Error:", error);
-                addMessageToChat('Lỗi kết nối mạng khi liên hệ trợ lý.', 'bot');
-            }
-        }
-
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
-        }
-
-        function formatBotMessage(text) {
-             let escapedText = escapeHTML(text);
-             let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-             formattedText = formattedText.replace(/\\`\\`\\`(.*?)\\`\\`\\`/gs, '<pre><code>$1</code></pre>'); // Code blocks
-             formattedText = formattedText.replace(/`(.*?)`/g, '<code>$1</code>'); // Inline code
-             formattedText = formattedText.replace(/\n/g, '<br>');
-             return formattedText;
-        }
+          /**
+           * Formats bot/system messages (simple Markdown: **bold**, newlines).
+           * Also escapes HTML to prevent injection.
+           * @param {string} text The raw text message.
+           * @returns {string} HTML formatted string.
+           */
+          function formatBotMessage(text) {
+              if (typeof text !== 'string') return '';
+              let escapedText = escapeHtml(text); // Escape HTML first
+              // Apply simple Markdown
+              let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // **bold**
+              formattedText = formattedText.replace(/\n/g, '<br>'); // Newlines
+              return formattedText;
+          }
 
 
-        function addMessageToChat(text, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'chat-message';
-            if (type === 'user') {
-                messageDiv.classList.add('user-message');
-                messageDiv.textContent = text;
-            } else if (type === 'bot') {
-                messageDiv.classList.add('bot-message');
-                messageDiv.innerHTML = formatBotMessage(text);
-            } else if (type === 'bot-typing') {
-                messageDiv.classList.add('bot-message');
-                messageDiv.id = 'bot-typing-indicator';
-                messageDiv.innerHTML = '<span class="spinner-grow spinner-grow-sm"></span>'; // Use a spinner
-            }
-            if (chatBody) {
-                chatBody.appendChild(messageDiv);
-                chatBody.scrollTop = chatBody.scrollHeight; // Scroll to bottom
-            }
-        }
+         /**
+          * Formats a timestamp (ISO string or array) into a HH:mm time string.
+          * @param {string|Array} isoStringOrArray Timestamp data.
+          * @returns {string} Formatted time string or empty string on error.
+          */
+         function formatChatTimestamp(isoStringOrArray) {
+             if (!isoStringOrArray) return '';
+             try {
+                 let date;
+                 if (Array.isArray(isoStringOrArray)) { // Handle array format [year, month, day, hour, minute, second]
+                     date = new Date(isoStringOrArray[0], isoStringOrArray[1] - 1, isoStringOrArray[2], isoStringOrArray[3], isoStringOrArray[4], isoStringOrArray[5] || 0);
+                 } else { // Handle ISO string format
+                     date = new Date(isoStringOrArray);
+                 }
+                 if (isNaN(date)) return ''; // Invalid date
+                 return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+             } catch (e) {
+                 console.error("Error formatting chat timestamp:", e);
+                 return '';
+             }
+         }
 
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('bot-typing-indicator');
-            if (indicator && chatBody) {
-                try { chatBody.removeChild(indicator); } catch (e) {}
-            }
-        }
-        // === END CHATBOT CODE ===
-    </script>
+         /**
+          * Generates a consistent conversation ID based on two user IDs.
+          * @param {number|string} userId1 ID of the first user.
+          * @param {number|string} userId2 ID of the second user.
+          * @returns {string|null} The generated conversation ID (e.g., "conv_1_5") or null if IDs are invalid.
+          */
+         function generateConversationIdLayout(userId1, userId2) {
+             if (!userId1 || !userId2) return null;
+             const u1 = Math.min(Number(userId1), Number(userId2));
+             const u2 = Math.max(Number(userId1), Number(userId2));
+             if (isNaN(u1) || isNaN(u2)) return null;
+             return `conv_${u1}_${u2}`;
+         }
+
+         // === AUTHENTICATION & UI UPDATE FUNCTIONS ===
+
+         /**
+          * Logs the user out by removing the token and redirecting.
+          */
+         function logout() {
+             console.log("Layout: [logout] Logging out..."); // ADDED LOG
+             localStorage.removeItem('jwtToken');
+             // === GÁN NULL VÀ LOG ===
+             __uteAppLayoutUserInfo = null; // RENAMED Assignment
+             console.log("Layout: [logout] Set __uteAppLayoutUserInfo to null."); // RENAMED Log
+             // ======================
+             closeWebSocket(); // Close WebSocket connection
+             renderGuestMenu(); // Update UI to guest state
+             disableChatInputLayout("Đã đăng xuất"); // Disable chat
+             globalUserStatusChecked = true; // Mark status check as done
+             // === LOG TRƯỚC KHI RESOLVE ===
+             console.log("Layout: [logout] Resolving userInfoPromise WITH null."); // ADDED LOG
+             if(userInfoResolve) userInfoResolve(null); // Resolve promise with null
+             // =============================
+             setTimeout(() => { window.location.href = '/login'; }, 300); // Redirect after small delay
+         }
+
+         /**
+          * Fetches the cart items count and updates the navbar badge.
+          */
+         async function updateCartCount() {
+             const token = localStorage.getItem('jwtToken');
+             if (!token || !cartCountBadge) { if(cartCountBadge) cartCountBadge.style.display = 'none'; return; }
+             try {
+                 const response = await fetch('/api/cart', { headers: { 'Authorization': `Bearer ${token}` } });
+                 const items = response.ok ? await response.json() : [];
+                 const count = items ? items.length : 0;
+                 cartCountBadge.textContent = count;
+                 cartCountBadge.style.display = count > 0 ? 'inline-block' : 'none';
+             } catch (error) { console.error("Layout: Error fetching cart count:", error); if(cartCountBadge) cartCountBadge.style.display = 'none'; }
+         }
+
+         /**
+          * Updates the navbar to show the guest (login/signup) menu.
+          */
+         function renderGuestMenu() {
+             if (userGreetingElem) userGreetingElem.textContent = 'Tài khoản';
+             if (navbarAvatar) { navbarAvatar.src = '/images/placeholder-avatar-small.png'; navbarAvatar.alt = 'Guest Avatar'; }
+             if (userMenu) userMenu.innerHTML = `<li><a class="dropdown-item" href="/login"><i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập</a></li><li><a class="dropdown-item" href="/signup"><i class="bi bi-person-plus-fill me-2"></i>Đăng ký</a></li>`;
+             if (cartCountBadge) cartCountBadge.style.display = 'none'; // Hide cart count for guests
+         }
+
+         /**
+          * Checks the user's login status via API and updates the UI accordingly.
+          * Resolves the global `userInfoPromise` when the check is complete.
+          */
+         async function checkGlobalLoginStatus() {
+             console.log("Layout: [checkGlobalLoginStatus] Checking global login status..."); // ADDED LOG
+             const token = localStorage.getItem('jwtToken');
+             globalUserStatusChecked = false; // Reset check flag
+
+             // Ensure essential navbar elements exist
+             if (!userGreetingElem || !userMenu || !navbarAvatar) {
+                 console.error("Layout: Critical Navbar elements missing!");
+                 globalUserStatusChecked = true;
+                 if(userInfoResolve) userInfoResolve(null); // Resolve promise with null on critical error
+                 return;
+             }
+
+             // Handle case where there's no token (not logged in)
+             if (!token) {
+                 console.log("Layout: [checkGlobalLoginStatus] No token found."); // ADDED LOG
+                 if (__uteAppLayoutUserInfo) { __uteAppLayoutUserInfo = null; } // Clear stale user info if any
+                 renderGuestMenu();
+                 disableChatInputLayout("Vui lòng đăng nhập");
+                 closeWebSocket(); // Ensure WS is closed
+                 globalUserStatusChecked = true;
+                 // === RESOLVE WITH NULL ===
+                 console.log("Layout: [checkGlobalLoginStatus] Resolving userInfoPromise WITH null (no token)."); // ADDED LOG
+                 if(userInfoResolve) userInfoResolve(null); // Resolve with null for guest
+                 // =========================
+                 return;
+             }
+
+             // Token exists, verify it with the backend
+             try {
+                 console.log("Layout: [checkGlobalLoginStatus] Fetching /api/users/me..."); // ADDED LOG
+                 const response = await fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                 console.log("Layout: [checkGlobalLoginStatus] API Response Status:", response.status); // ADDED LOG
+
+                 if (!response.ok) {
+                     // Handle invalid/expired token
+                     if (response.status === 401 || response.status === 403) {
+                         console.error("Layout: [checkGlobalLoginStatus] Invalid/Expired token. Logging out."); // ADDED LOG
+                         logout(); // Logout handles resolving the promise
+                     } else { // Handle other server errors
+                         console.error("Layout: [checkGlobalLoginStatus] API call failed. Status:", response.status); // ADDED LOG
+                         throw new Error(`Server error ${response.status}`);
+                     }
+                     globalUserStatusChecked = true; // Ensure flag is set on error
+                     // No need to resolve here, logout() does it or catch block handles it
+                     return;
+                 }
+
+                 // Token is valid, process user info
+                 const userInfo = await response.json();
+                 console.log("Layout: [checkGlobalLoginStatus] Parsed userInfo:", JSON.stringify(userInfo)); // ADDED LOG
+
+                 if (userInfo && userInfo.authenticated) {
+                     // === GÁN GIÁ TRỊ VÀ LOG NGAY LẬP TỨC ===
+                     __uteAppLayoutUserInfo = userInfo; // RENAMED Assignment
+                     __uteAppLayoutUserInfo.token = token; // Gán token vào đây nếu cần
+                     console.log("Layout: [checkGlobalLoginStatus] Assigned __uteAppLayoutUserInfo:", JSON.stringify(__uteAppLayoutUserInfo)); // RENAMED Log
+                     // ======================================
+
+                     // --- Update Navbar UI ---
+                     userGreetingElem.textContent = `Chào, ${escapeHtml(userInfo.fullName || userInfo.email)}`;
+                     navbarAvatar.src = (userInfo.avatarUrl ? escapeHtml(userInfo.avatarUrl) : '/images/placeholder-avatar-small.png') + '?t=' + Date.now(); // Add timestamp to prevent caching
+                     let menuItems = `<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Thông tin cá nhân</a></li><li><a class="dropdown-item" href="/order-history"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</a></li>`;
+                     // Add role-specific links
+                     if (userInfo.role === 'Shipper') menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard"><i class="bi bi-truck me-2"></i>Shipper Dashboard</a></li>`;
+                     else if (userInfo.role === 'Vendor') menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard"><i class="bi bi-shop-window me-2"></i>Trang bán hàng</a></li>`;
+                     else if (userInfo.role === 'Admin') menuItems += `<li><a class="dropdown-item" href="/admin/dashboard"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</a></li>`;
+                     menuItems += `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>`;
+                     userMenu.innerHTML = menuItems;
+                     // --- End Update Navbar UI ---
+
+                     updateCartCount(); // Update cart count for logged-in user
+                     connectWebSocketLayout(); // Connect WebSocket
+                     globalUserStatusChecked = true; // Mark check as complete
+                     // === RESOLVE WITH THE USER INFO OBJECT ===
+                     console.log("Layout: [checkGlobalLoginStatus] Resolving userInfoPromise WITH user info:", JSON.stringify(__uteAppLayoutUserInfo)); // RENAMED Log
+                     if(userInfoResolve) userInfoResolve(__uteAppLayoutUserInfo); // RENAMED Resolve
+                     // ===========================================
+
+                 } else { // API response indicates not authenticated (should not happen with valid token)
+                     console.error("Layout: [checkGlobalLoginStatus] API response OK, but userInfo indicates not authenticated. Logging out."); // ADDED LOG
+                     logout(); // Logout handles resolving
+                     globalUserStatusChecked = true;
+                     // No need to resolve here, logout() does it
+                 }
+             } catch (error) { // Handle network errors or JSON parsing errors
+                 console.error("Layout: [checkGlobalLoginStatus] Error during fetch/processing:", error); // ADDED LOG
+                 // === GÁN NULL VÀ LOG TRƯỚC KHI RESOLVE ===
+                 __uteAppLayoutUserInfo = null; // RENAMED Assignment
+                 console.log("Layout: [checkGlobalLoginStatus] Error caught. Set __uteAppLayoutUserInfo to null."); // RENAMED Log
+                 // ======================================
+                 renderGuestMenu(); disableChatInputLayout("Lỗi xác thực"); closeWebSocket();
+                 globalUserStatusChecked = true;
+                 // === LOG TRƯỚC KHI RESOLVE ===
+                 console.log("Layout: [checkGlobalLoginStatus] Resolving userInfoPromise WITH null due to error."); // ADDED LOG
+                 if(userInfoResolve) userInfoResolve(null); // Resolve with null on error
+                 // =============================
+             }
+         }
 
 
-    <div class="modal fade" id="changePaymentModal" tabindex="-1" aria-labelledby="changePaymentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="changePaymentModalLabel">Đổi phương thức thanh toán cho Đơn #<span id="modalOrderId"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="modalChangeOrderId">
-                    <p>Chọn phương thức thanh toán mới:</p>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="newPaymentMethod" id="newCod" value="COD">
-                        <label class="form-check-label" for="newCod">
-                            <i class="bi bi-cash-coin me-1"></i> Thanh toán khi nhận hàng (COD)
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="newPaymentMethod" id="newSepayQr" value="SEPAY_QR">
-                        <label class="form-check-label" for="newSepayQr">
-                            <i class="bi bi-qr-code me-1"></i> Thanh toán qua mã QR (Chuyển khoản - SePay)
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="savePaymentChangeBtn" onclick="handleChangePaymentSubmit()">Lưu thay đổi</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    </body>
-</html>
+         // === CHAT FUNCTIONS ===
+
+         /** Toggles the visibility of the chat popup. Prompts login if not authenticated. */
+         function toggleChatPopup() {
+             // Use RENAMED global variable for the initial check
+             if (!__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.authenticated) { promptLoginForChatLayout(); return; }
+             if (!chatPopup) return;
+             isChatPopupOpen = chatPopup.style.display !== 'flex';
+             chatPopup.style.display = isChatPopupOpen ? 'flex' : 'none';
+             if (isChatPopupOpen) {
+                 console.log("Chat popup opened. Target:", globalChatTarget);
+                 updateChatHeader();
+                 // Ensure WS is connected or try connecting
+                 if (!globalWebSocket || globalWebSocket.readyState !== SockJS.OPEN) { connectWebSocketLayout(); }
+                 else { enableChatInputLayout(globalChatTarget.name); } // Enable input if connected
+
+                 setTimeout(() => { if(chatBody) chatBody.scrollTop = chatBody.scrollHeight; if(chatInput) chatInput.focus(); }, 50);
+                 if (globalChatTarget.type === 'VENDOR' && currentConversationId) { markConversationAsReadLayout(currentConversationId); }
+                 const chatIcon = toggleChatBtn?.querySelector('i');
+                 if(chatIcon) chatIcon.classList.remove('text-warning');
+             } else { console.log("Chat popup closed."); }
+         }
+
+
+         /** Closes the chat popup. */
+         function closeChatPopup() { if (chatPopup) chatPopup.style.display = 'none'; isChatPopupOpen = false; }
+
+         /** Shows a login prompt using SweetAlert. */
+         function promptLoginForChatLayout() { Swal.fire({ title: 'Vui lòng đăng nhập', text: 'Bạn cần đăng nhập để chat.', icon: 'info', showCancelButton: true, confirmButtonText: 'Đăng nhập', cancelButtonText: 'Để sau'}).then((r) => { if (r.isConfirmed) { window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search); }}); }
+
+         /** Enables the chat input and send button, setting appropriate placeholder text. */
+         function enableChatInputLayout(targetName = null) {
+             // Check RENAMED global variable again here
+             if (!__uteAppLayoutUserInfo) { disableChatInputLayout("Vui lòng đăng nhập"); return; }
+             if (chatInput) {
+                 chatInput.disabled = false;
+                 chatInput.placeholder = targetName ? `Nhắn tin tới ${escapeHtml(targetName)}...` : 'Nhập tin nhắn...';
+             }
+             if (chatSendBtn) chatSendBtn.disabled = false;
+         }
+
+         /** Disables the chat input and send button, setting a placeholder message. */
+         function disableChatInputLayout(message = 'Chat không sẵn sàng') {
+             if (chatInput) {
+                 chatInput.disabled = true;
+                 chatInput.placeholder = message;
+             }
+             if (chatSendBtn) chatSendBtn.disabled = true;
+         }
+
+         /** Updates the chat header with the current chat target's name. */
+         function updateChatHeader() { if (chatHeaderSpan) chatHeaderSpan.textContent = escapeHtml(globalChatTarget.name); }
+
+         /** Connects to the WebSocket server using SockJS. Handles open, message, error, and close events. */
+         function connectWebSocketLayout() {
+             // Avoid reconnecting if already open or connecting
+             if (globalWebSocket && (globalWebSocket.readyState === SockJS.OPEN || globalWebSocket.readyState === SockJS.CONNECTING)) {
+                 console.log("Layout: WS already open/connecting.");
+                 enableChatInputLayout(globalChatTarget.name); // Ensure input is enabled
+                 return;
+             }
+             clearTimeout(globalReconnectTimeout); // Clear any pending reconnection attempts
+             const token = localStorage.getItem('jwtToken');
+             // Check for token and RENAMED user info variable before connecting
+             if (!token || !__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) {
+                 console.error("Layout: WS Connect Auth Error - Missing token or user info.");
+                 addMessageLayout('system', 'Lỗi kết nối: Thiếu xác thực.');
+                 disableChatInputLayout("Lỗi kết nối");
+                 return;
+             }
+             console.log("Layout: Connecting WS...");
+             addMessageLayout('system', 'Đang kết nối...');
+             disableChatInputLayout("Đang kết nối..."); // Disable input during connection attempt
+
+             const socketUrl = `/ws/vendor/chat?token=${encodeURIComponent(token)}`; // Pass token as query param
+             const socket = new SockJS(socketUrl);
+
+             socket.onopen = () => {
+                 console.log('Layout: WS Open.');
+                 removeSystemMessagesLayout('Đang kết nối...'); // Remove connecting message
+                 addMessageLayout('system', 'Đã kết nối!'); // Add connected message
+                 globalWebSocket = socket; // Store the active socket connection
+                 enableChatInputLayout(globalChatTarget.name); // Enable input now
+                 clearTimeout(globalReconnectTimeout); // Clear reconnect timer on successful connection
+                 // If a vendor chat was active, fetch history
+                 if (globalChatTarget.type === 'VENDOR' && currentConversationId) {
+                     fetchVendorMessageHistory(currentConversationId);
+                 }
+             };
+
+             socket.onmessage = (e) => {
+                 console.log('Layout: WS Message:', e.data);
+                 try {
+                     const msg = JSON.parse(e.data);
+                     if(msg.type === 'PONG') return; // Ignore PONG messages (if PING/PONG is implemented)
+                     if(msg.type === 'ERROR'){ addMessageLayout('system',`Lỗi: ${escapeHtml(msg.content)}`); return; }
+                     if(msg.type === 'SYSTEM'){ addMessageLayout('system', escapeHtml(msg.content)); return; }
+
+                     // Handle regular chat messages
+                     if (msg.type === 'MESSAGE' && msg.conversationId) {
+                         // USE RENAMED VARIABLE
+                         const isSent = msg.senderId === __uteAppLayoutUserInfo?.id; // Use optional chaining just in case
+                         const type = isSent ? 'sent' : 'received';
+                         const partnerId = isSent ? msg.receiverId : msg.senderId;
+
+                         // If the message belongs to the currently open vendor chat
+                         if (globalChatTarget.type === 'VENDOR' && globalChatTarget.id === partnerId && msg.conversationId === currentConversationId) {
+                             addMessageLayout(type, msg.content);
+                             // If the message was received and the popup is open, mark as read
+                             if (!isSent && isChatPopupOpen) {
+                                 markConversationAsReadLayout(msg.conversationId);
+                             }
+                         } else if (!isSent) { // If it's a received message for a DIFFERENT or AI chat
+                             showNewMessageNotification(msg.senderName, msg.content);
+                         }
+                     }
+                 } catch(err){
+                     console.error("Layout: WS Parse Error:", err);
+                     addMessageLayout('system','Lỗi dữ liệu nhận được từ server.');
+                 }
+             };
+
+             socket.onerror = (err) => {
+                 console.error('Layout: WS Error:', err);
+                 addMessageLayout('system','Lỗi kết nối WebSocket.');
+                 globalWebSocket = null; // Clear socket reference
+                 disableChatInputLayout("Lỗi kết nối"); // Disable input
+             };
+
+             socket.onclose = (e) => {
+                 console.log('Layout: WS Closed.', e.code, e.reason);
+                 const wasConnected = !!globalWebSocket; // Check if there was an active connection before closing
+                 globalWebSocket = null; // Clear socket reference
+                 disableChatInputLayout("Mất kết nối"); // Disable input
+
+                 // Attempt to reconnect only if user is logged in, connection wasn't closed normally/intentionally, and there was a previous connection
+                 // USE RENAMED VARIABLE
+                 if(__uteAppLayoutUserInfo && e.code !== 1000 && e.code !== 4001 && wasConnected){ // 1000=Normal, 4001=Auth Error (example)
+                     addMessageLayout('system','Mất kết nối. Đang thử kết nối lại sau 5 giây...');
+                     clearTimeout(globalReconnectTimeout);
+                     globalReconnectTimeout = setTimeout(connectWebSocketLayout, 5000); // Reconnect after 5s
+                 } else if (e.code === 4001) { // Authentication error
+                     addMessageLayout('system','Lỗi xác thực WebSocket.');
+                 } else if (wasConnected) { // Normal closure or closed unexpectedly without reconnect attempt
+                     addMessageLayout('system','Đã ngắt kết nối chat.');
+                 }
+             };
+         }
+
+         /** Closes the WebSocket connection gracefully. */
+         function closeWebSocket() {
+             clearTimeout(globalReconnectTimeout); // Stop any pending reconnect attempts
+             if (globalWebSocket && globalWebSocket.readyState === SockJS.OPEN) {
+                 globalWebSocket.close(1000, "Manual Close"); // Close with normal code
+             }
+             globalWebSocket = null; // Clear reference
+         }
+
+         /** Sends a message via WebSocket (to AI or Vendor based on globalChatTarget). */
+         async function sendMessageLayout() {
+             const messageText = chatInput.value.trim();
+             // Re-check RENAMED global variable on send attempt
+             if (messageText === '' || !__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) {
+                 console.warn("Attempted to send message while not logged in or with empty message.");
+                 if (!__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) promptLoginForChatLayout(); // Prompt login if necessary
+                 return;
+             }
+
+             const currentInput = messageText; // Store message before clearing input
+             chatInput.value = ''; // Clear input immediately
+
+             // Add the user's message to the chat body UI first (optimistic update)
+             addMessageLayout('user-message', currentInput); // Use 'user-message' class for user input
+
+             if (globalChatTarget.type === 'AI') {
+                 addMessageLayout('system', '<span class="spinner-border spinner-border-sm"></span> AI đang xử lý...');
+                 try {
+                     // USE RENAMED VARIABLE
+                     const response = await fetch('/api/chat', { // Send to AI backend endpoint
+                         method: 'POST',
+                         headers: { 'Authorization': `Bearer ${__uteAppLayoutUserInfo.token}`, 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ message: currentInput })
+                     });
+                     removeSystemMessagesLayout('AI đang xử lý...'); // Remove thinking indicator
+                     if (response.ok) {
+                         const chatResponse = await response.json();
+                         addMessageLayout('bot-message', chatResponse.reply); // Add AI response
+                     } else {
+                         addMessageLayout('system', `Lỗi AI: ${response.status}`);
+                         chatInput.value = currentInput; // Restore input on error
+                     }
+                 } catch (error) {
+                     removeSystemMessagesLayout('AI đang xử lý...');
+                     addMessageLayout('system', 'Lỗi mạng khi gọi AI.');
+                     chatInput.value = currentInput; // Restore input on error
+                 }
+             }
+             else if (globalChatTarget.type === 'VENDOR') {
+                 // Send message via WebSocket
+                 if (globalWebSocket && globalWebSocket.readyState === SockJS.OPEN && globalChatTarget.id) {
+                     const wsMessage = {
+                         type: 'MESSAGE',
+                         receiverId: globalChatTarget.id,
+                         content: currentInput
+                         // Backend determines senderId, senderRole, conversationId
+                     };
+                     try {
+                         globalWebSocket.send(JSON.stringify(wsMessage));
+                     } catch (e) {
+                         addMessageLayout('system', 'Lỗi gửi tin nhắn.');
+                         chatInput.value = currentInput; // Restore input on error
+                     }
+                 } else { // Handle WebSocket not connected
+                     addMessageLayout('system', 'Lỗi kết nối, không thể gửi tin nhắn.');
+                     chatInput.value = currentInput; // Restore input on error
+                 }
+             }
+         }
+
+        /** Adds a message div to the chat body UI. */
+         function addMessageLayout(type, content) {
+             if (!chatBody) return;
+             // Remove initial welcome message if it exists
+             const initialMsg = chatBody.querySelector('.bot-message:only-child, .system-message:only-child');
+             if(initialMsg && (initialMsg.textContent.includes('Chào bạn!') || initialMsg.textContent.includes('Vui lòng chọn'))) {
+                 chatBody.innerHTML = '';
+             }
+
+             const messageDiv = document.createElement('div');
+             // Adjust class based on type (user, bot, received, sent, system)
+             let messageClass = 'chat-message';
+             if (type === 'user-message' || type === 'sent') messageClass += ' user-message'; // Match user input class
+             else if (type === 'bot-message') messageClass += ' bot-message';        // Specific class for AI bot
+             else if (type === 'received') messageClass += ' received-message'; // Specific class for received vendor messages
+             else if (type === 'system') messageClass += ' system-message';        // Specific class for system messages
+             else messageClass += ' received-message'; // Default to received style if type is unknown
+
+             messageDiv.className = messageClass;
+
+             // Format content: Only call formatBotMessage for 'bot-message' or 'system'
+             let formattedContent = '';
+             if (type === 'bot-message' || type === 'system') {
+                 formattedContent = formatBotMessage(content); // Applies Markdown and escaping
+             } else {
+                 formattedContent = escapeHtml(content); // Only escape HTML for user/sent/received messages
+             }
+
+             messageDiv.innerHTML = formattedContent;
+             chatBody.appendChild(messageDiv);
+             // Scroll to bottom after adding message
+             setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 0);
+         }
+
+
+         /** Removes system messages, optionally matching specific text. */
+         function removeSystemMessagesLayout(textToMatch = null) {
+             if (!chatBody) return;
+             const messages = chatBody.querySelectorAll('.system-message');
+             messages.forEach(msg => {
+                 if (!textToMatch || msg.textContent.includes(textToMatch)) {
+                     msg.remove();
+                 }
+             });
+         }
+
+         /** Switches the chat target back to the AI assistant. */
+         function switchToAIChat() {
+             console.log("Layout: Switching chat to AI");
+             globalChatTarget = { type: 'AI', id: null, name: 'UTE GiftShop Assistant' };
+             currentConversationId = null; // Clear P2P conversation ID
+             updateChatHeader();
+             if (chatBody) chatBody.innerHTML = '<div class="chat-message bot-message">Tôi có thể giúp gì về UTE GiftShop?</div>'; // Reset chat body
+             // Enable/disable input based on login status (USE RENAMED VARIABLE)
+             if (__uteAppLayoutUserInfo) enableChatInputLayout(); else disableChatInputLayout("Vui lòng đăng nhập");
+         }
+
+         /** Initiates a P2P chat with a vendor (called from product detail page). */
+         window.initiateVendorChat = function(vendorId, vendorName) {
+             // === LOG RENAMED VARIABLE ===
+             console.log('>>> initiateVendorChat START');
+             console.log('>>> Current __uteAppLayoutUserInfo at chat start:', JSON.stringify(window.__uteAppLayoutUserInfo)); // Stringify để thấy rõ null/undefined
+             console.log('>>> Is __uteAppLayoutUserInfo truthy?', !!window.__uteAppLayoutUserInfo);
+             console.log('>>> Does __uteAppLayoutUserInfo have id?', !!(window.__uteAppLayoutUserInfo && window.__uteAppLayoutUserInfo.id));
+             const tokenExistsNow = !!localStorage.getItem('jwtToken');
+             console.log('>>> Token exists now?', tokenExistsNow);
+             // ============================
+
+             // Sửa điều kiện kiểm tra, thêm cả kiểm tra token lại (USE RENAMED VARIABLE)
+             if (!tokenExistsNow || !__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) {
+                 console.log('>>> initiateVendorChat CONDITION MET: Prompting login.'); // Log khi điều kiện sai
+                 promptLoginForChatLayout();
+                 return;
+             }
+             if (__uteAppLayoutUserInfo.id === vendorId) { Swal.fire('Thông báo','Bạn không thể tự chat với mình.','info'); return; } // Prevent self-chat
+
+             console.log(`Layout: Initiating chat with Vendor: ${vendorId} (${vendorName})`);
+             globalChatTarget = { type: 'VENDOR', id: vendorId, name: vendorName || `Shop #${vendorId}` };
+             // USE RENAMED VARIABLE
+             const conversationId = generateConversationIdLayout(__uteAppLayoutUserInfo.id, vendorId);
+
+             if (!conversationId) { console.error("Layout: Could not generate conversation ID."); Swal.fire('Lỗi', 'Không thể tạo cuộc trò chuyện.', 'error'); return; }
+             currentConversationId = conversationId; // Set the current P2P conversation ID
+
+             // Open chat popup if not already open
+             if (chatPopup && chatPopup.style.display !== 'flex') {
+                 chatPopup.style.display = 'flex';
+                 isChatPopupOpen = true;
+             }
+
+             updateChatHeader(); // Update header to show vendor name
+             if (chatBody) chatBody.innerHTML = `<div class="chat-message system-message"><span class="spinner-border spinner-border-sm"></span> Đang tải lịch sử chat...</div>`; // Show loading
+             enableChatInputLayout(globalChatTarget.name); // Enable input
+
+             // Ensure WebSocket is connected, then fetch history
+             if (!globalWebSocket || globalWebSocket.readyState !== SockJS.OPEN) {
+                  console.log("Layout: WS not open, connecting before fetching history...");
+                  connectWebSocketLayout(); // connectWebSocket will call fetchVendorMessageHistory on successful connection
+             } else {
+                  fetchVendorMessageHistory(conversationId); // Fetch history immediately if already connected
+             }
+             setTimeout(() => { if (chatInput) chatInput.focus(); }, 100); // Focus input after a short delay
+         }
+
+
+         /** Fetches message history for a specific P2P conversation. */
+         async function fetchVendorMessageHistory(conversationId) {
+             const token = localStorage.getItem('jwtToken');
+             if (!token || !conversationId || !chatBody) return;
+             console.log("Layout: Fetching history for:", conversationId);
+             // Keep the loading message until fetch completes
+             // chatBody.innerHTML = `<div class="chat-message system-message"><span class="spinner-border spinner-border-sm"></span> Đang tải...</div>`;
+
+             try {
+                 const response = await fetch(`/api/chat/messages/${conversationId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                 // Remove loading message ONLY after fetch attempt
+                 removeSystemMessagesLayout('Đang tải lịch sử chat...');
+                 removeSystemMessagesLayout('Đang tải...'); // Remove older versions too
+
+                 if (!response.ok) throw new Error(`Lỗi ${response.status}`);
+                 const messages = await response.json();
+                 chatBody.innerHTML = ''; // Clear chat body before adding messages
+                 if (!messages || messages.length === 0) {
+                     addMessageLayout('system', 'Bắt đầu cuộc trò chuyện của bạn.');
+                 } else {
+                     messages.forEach(msg => {
+                         // Determine if message was sent or received by the current user (USE RENAMED VARIABLE)
+                         addMessageLayout((msg.senderId === __uteAppLayoutUserInfo?.id) ? 'sent' : 'received', msg.content);
+                     });
+                 }
+                 markConversationAsReadLayout(conversationId); // Mark messages as read after fetching
+                 // Scroll to bottom after rendering messages
+                 setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 50);
+             } catch (error) {
+                 console.error("Layout: Error fetching history:", error);
+                 if (chatBody) chatBody.innerHTML = ''; // Clear chat body on error too
+                 addMessageLayout('system', `Lỗi tải lịch sử chat: ${error.message}`);
+             }
+         }
+
+         /** Marks messages in a conversation as read via API. */
+         async function markConversationAsReadLayout(conversationId) {
+             const token = localStorage.getItem('jwtToken');
+             // Only proceed if it's a vendor chat, conversationId exists, token exists, and user is logged in (USE RENAMED VARIABLE)
+             if (globalChatTarget.type !== 'VENDOR' || !conversationId || !token || !__uteAppLayoutUserInfo) return;
+             console.log(`Layout: Marking conversation ${conversationId} as read.`);
+             try {
+                 // API endpoint expects conversationId as query parameter
+                 const response = await fetch(`/api/chat/messages/read?conversationId=${encodeURIComponent(conversationId)}`, {
+                     method: 'PUT',
+                     headers: { 'Authorization': `Bearer ${token}` }
+                 });
+                 if (!response.ok) console.error("Layout: Failed to mark messages as read. Status:", response.status);
+             } catch (error) { console.error("Layout: Error calling mark as read API:", error); }
+         }
+
+         /** Shows a visual indicator (changes chat button icon color) for new messages. */
+         function showNewMessageNotification(senderName, messageContent){
+              console.log(`Layout: New message received from ${senderName}: ${messageContent}`);
+              const chatIcon = toggleChatBtn?.querySelector('i');
+              // Change icon color to warning if not already warning and popup is closed
+              if(chatIcon && !isChatPopupOpen && !chatIcon.classList.contains('text-warning')){
+                   chatIcon.classList.add('text-warning');
+              }
+              // Potential: Add a subtle animation or sound here
+         }
+
+         // === Modal Handlers (Change Payment Method) ===
+         /** Displays the 'Change Payment Method' modal. */
+         window.showChangePaymentModal = function(orderId, currentMethod) {
+             console.log(`Layout: Showing change payment modal for order ${orderId}, current method: ${currentMethod}`);
+             const modalEl = document.getElementById('changePaymentModal');
+             if (!modalEl) { console.error("Layout Error: Modal element #changePaymentModal not found!"); return; }
+             const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl); // Use getOrCreateInstance
+
+             // Populate modal fields
+             const modalOrderIdSpan = document.getElementById('modalOrderId');
+             const modalChangeOrderIdInput = document.getElementById('modalChangeOrderId');
+             if(modalOrderIdSpan) modalOrderIdSpan.textContent = orderId;
+             if(modalChangeOrderIdInput) modalChangeOrderIdInput.value = orderId;
+
+             // Select the correct radio button based on current method
+             let radioToCheckId = 'newCod'; // Default to COD
+             const currentMethodUpper = currentMethod?.toUpperCase();
+             if (currentMethodUpper === 'SEPAY_QR' || currentMethodUpper === 'PENDING_PAYMENT') { // Treat PENDING_PAYMENT as QR
+                 radioToCheckId = 'newSepayQr';
+             }
+             const radio = document.getElementById(radioToCheckId);
+             if(radio) radio.checked = true;
+             else { console.warn(`Layout: Radio button for payment method ${currentMethod} not found.`); document.getElementById('newCod').checked = true; } // Fallback check COD
+
+             modalInstance.show(); // Show the modal
+          };
+
+         /** Handles the submission of the 'Change Payment Method' modal. */
+         window.handleChangePaymentSubmit = async function() {
+             const orderId = document.getElementById('modalChangeOrderId').value;
+             const selectedRadio = document.querySelector('#changePaymentModal input[name="newPaymentMethod"]:checked');
+             const saveBtn = document.getElementById('savePaymentChangeBtn');
+             const modalEl = document.getElementById('changePaymentModal');
+             const modalInstance = bootstrap.Modal.getInstance(modalEl); // Get the existing instance
+
+             if (!selectedRadio) { Swal.fire('Lỗi', 'Vui lòng chọn phương thức thanh toán mới.', 'warning'); return; }
+             const newMethod = selectedRadio.value;
+
+             // Disable button and show loading state
+             saveBtn.disabled = true;
+             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+             try {
+                  const token = localStorage.getItem('jwtToken');
+                  const response = await fetch(`/api/orders/${orderId}/change-payment`, {
+                      method:'PUT',
+                      headers:{ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({newPaymentMethod: newMethod})
+                  });
+                  const result = await response.json(); // Assume JSON response always
+                  if (!response.ok) throw new Error(result.message || `Lỗi ${response.status}`); // Throw error on non-OK status
+
+                  if (modalInstance) modalInstance.hide(); // Hide modal on success
+
+                  // Handle navigation or UI update based on new payment method
+                  if (result.paymentMethod === 'SEPAY_QR' && result.paymentCode) { // If switched to QR
+                      sessionStorage.setItem('paymentInfo', JSON.stringify({
+                          orderId: orderId, // Use orderId from context
+                          paymentCode: result.paymentCode,
+                          totalAmount: result.totalAmount
+                      }));
+                      Swal.fire('Thành công', result.message || 'Đổi PTTT thành công. Chuyển đến trang thanh toán QR.', 'success')
+                         .then(() => {
+                             window.location.href = `/payment/${orderId}`; // Redirect using orderId
+                         });
+                  } else { // If switched to COD or no change
+                     Swal.fire('Thành công', result.message || 'Đổi PTTT thành công!', 'success');
+                     // Reload order history if the function exists (on order-history page)
+                     if (typeof fetchOrderHistory === 'function') {
+                         fetchOrderHistory();
+                     }
+                  }
+             } catch (error) { // Handle fetch errors or errors thrown from response check
+                 Swal.fire('Lỗi', `Không thể đổi phương thức thanh toán: ${error.message}`, 'error');
+             } finally { // Always re-enable button and reset text
+                 saveBtn.disabled = false;
+                 saveBtn.innerHTML = 'Lưu thay đổi';
+             }
+          };
+
+         // === INITIAL LOGIN CHECK & EVENT LISTENERS ===
+         document.addEventListener('DOMContentLoaded', checkGlobalLoginStatus);
+         if(toggleChatBtn) toggleChatBtn.addEventListener('click', toggleChatPopup);
+         if(chatSendBtn) chatSendBtn.addEventListener('click', sendMessageLayout);
+         if(chatInput) chatInput.addEventListener('keypress', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessageLayout(); }});
+         // Add listener to switch back to AI chat when closing P2P chat
+         const chatCloseButton = document.querySelector('#chat-header .btn-close');
+         if(chatCloseButton) chatCloseButton.addEventListener('click', () => { if(globalChatTarget.type === 'VENDOR') { switchToAIChat(); } });
+         // Also switch back if popup is closed while in vendor chat
+         if(chatPopup) chatPopup.addEventListener('hidden.bs.modal', () => { // Assuming Bootstrap modal events
+             if(globalChatTarget.type === 'VENDOR') { switchToAIChat(); }
+             isChatPopupOpen = false;
+         });
+         // Cleanup WebSocket on page unload
+         window.addEventListener('beforeunload', closeWebSocket);
+
+     </script>
+
+     <th:block layout:fragment="scripts_body"></th:block>
+
+ </body>
+ </html>

@@ -95,8 +95,6 @@ public class SecurityConfig {
 					"/api/addresses/**", // Tất cả API địa chỉ
 					"/api/orders/**", // API đặt hàng, xem lịch sử, hủy đơn
 					"/api/apply/**", // API để nộp đơn xin vai trò
-					// POST tạo đánh giá mới và PUT cập nhật đánh giá
-					"/api/reviews",
 					"/api/reviews/*" // Cho phép PUT /api/reviews/{reviewId}
 				).hasAuthority("Customer")
 
