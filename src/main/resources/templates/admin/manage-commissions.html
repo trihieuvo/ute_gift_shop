@@ -33,63 +33,63 @@
           </tbody>
         </table>
       </div>
-    </div>
-    <div
-      class="modal fade"
-      id="commissionModal"
-      tabindex="-1"
-      aria-labelledby="commissionModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="commissionModalLabel">
-              Cập nhật Chiết khấu (<span id="modal-shop-name"></span>)
-            </h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="modal-shop-id" />
-            <div class="mb-3">
-              <label for="modal-commission-rate" class="form-label"
-                >Tỷ lệ Chiết khấu (%)</label
-              >
-              <input
-                type="number"
-                class="form-control"
-                id="modal-commission-rate"
-                min="0"
-                max="100"
-                step="0.01"
-                required
-              />
+      
+      <div
+        class="modal fade"
+        id="commissionModal"
+        tabindex="-1"
+        aria-labelledby="commissionModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="commissionModalLabel">
+                Cập nhật Chiết khấu (<span id="modal-shop-name"></span>)
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick="handleSaveCommission()"
-            >
-              Lưu Chiết khấu
-            </button>
+            <div class="modal-body">
+              <input type="hidden" id="modal-shop-id" />
+              <div class="mb-3">
+                <label for="modal-commission-rate" class="form-label">Tỷ lệ Chiết khấu (%)</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="modal-commission-rate"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="handleSaveCommission()"
+              >
+                Lưu Chiết khấu
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
     <th:block layout:fragment="scripts_body">
       <script>
         const token = localStorage.getItem("jwtToken");
@@ -97,14 +97,12 @@
 
         document.addEventListener("DOMContentLoaded", fetchActiveShops);
 
-        // 1. Tải danh sách Shop ĐANG HOẠT ĐỘNG
         async function fetchActiveShops() {
           const tbody = document.getElementById("shop-table-body");
           tbody.innerHTML =
             '<tr><td colspan="6" class="text-center">Đang tải...</td></tr>';
 
           try {
-            // API /list?status=ACTIVE
             const response = await fetch(`${API_URL}/list?status=ACTIVE`, {
               headers: { Authorization: `Bearer ${token}` },
             });
@@ -151,7 +149,6 @@
           }
         }
 
-        // 2. Logic Chiết khấu (Đã sửa lỗi Modal)
         function openCommissionModal(id, name, rate) {
           const modalShopId = document.getElementById("modal-shop-id");
           const modalShopName = document.getElementById("modal-shop-name");
@@ -159,11 +156,9 @@
             "modal-commission-rate"
           );
 
-          // Kiểm tra lại ID để chắc chắn
+          // Đoạn kiểm tra này bây giờ sẽ hoạt động đúng
           if (!modalShopId || !modalShopName || !modalCommissionRate) {
-            console.error(
-              "LỖI KIỂM TRA LẠI: Không tìm thấy các ID ('modal-shop-id', 'modal-shop-name', 'modal-commission-rate') trong HTML Modal."
-            );
+            console.error("Lỗi: Không tìm thấy các ID của modal trong HTML.");
             Swal.fire("Lỗi HTML", "Lỗi cấu trúc Modal Chiết khấu.", "error");
             return;
           }
@@ -172,7 +167,6 @@
           modalShopName.textContent = name;
           modalCommissionRate.value = rate;
 
-          // Lệnh này giờ sẽ tìm thấy Modal vì Bootstrap JS đã được load đúng cách
           const commissionModal = new bootstrap.Modal(
             document.getElementById("commissionModal")
           );
@@ -188,24 +182,10 @@
             return;
           }
 
-          // Lấy instance của Modal để ẩn nó đi
           const modalElement = document.getElementById("commissionModal");
-          if (!modalElement) {
-            console.error("Lỗi không tìm thấy Modal Element để ẩn.");
-            return;
-          }
           const modalInstance = bootstrap.Modal.getInstance(modalElement);
           if (modalInstance) {
             modalInstance.hide();
-          } else {
-            console.warn("Không thể lấy Instance của Modal để ẩn.");
-            // Thử ẩn thủ công nếu instance không tồn tại
-            modalElement.classList.remove("show");
-            modalElement.style.display = "none";
-            const backdrop = document.querySelector(".modal-backdrop");
-            if (backdrop) backdrop.remove();
-            document.body.classList.remove("modal-open");
-            document.body.style.overflow = "";
           }
 
           try {
@@ -224,7 +204,7 @@
               `Đã cập nhật chiết khấu thành ${rate}%.`,
               "success"
             );
-            fetchActiveShops(); // Tải lại danh sách để thấy chiết khấu mới
+            fetchActiveShops();
           } catch (err) {
             Swal.fire("Lỗi", "Không thể lưu. Vui lòng kiểm tra lại.", "error");
           }
