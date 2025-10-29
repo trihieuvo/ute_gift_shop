@@ -1,149 +1,229 @@
 <!DOCTYPE html>
-<html
-  lang="vi"
-  xmlns:th="http://www.thymeleaf.org"
-  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-  layout:decorate="~{layouts/_admin_layout}"
->
-  <head>
-    <title>Quản lý Tài khoản</title>
-  </head>
-  <body>
-    <div layout:fragment="content">
-      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Tài khoản</h1>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}">
 
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Họ Tên</th>
-                  <th>Email</th>
-                  <th>Vai trò</th>
-                  <th>Trạng thái</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody id="user-table-body">
-                <tr>
-                  <td colspan="6" class="text-center">Đang tải...</td>
-                </tr>
-              </tbody>
-            </table>
+<head>
+  <title>Quản lý Tài khoản</title>
+  <style>
+    .avatar-sm {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #e9ecef;
+    }
+
+    .table th {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .table td {
+      vertical-align: middle;
+    }
+
+    .role-badge {
+      font-size: 0.8rem;
+      padding: 0.3em 0.6em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+      <h1 class="h2"><i class="bi bi-people-fill me-2"></i>Quản lý Tài khoản</h1>
+      <button class="btn btn-outline-secondary btn-sm" onclick="fetchUsers()">
+        <i class="bi bi-arrow-clockwise"></i> Tải lại
+      </button>
+    </div>
+
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-light py-3">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <h5 class="mb-0">Danh sách người dùng</h5>
+          </div>
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" id="searchInput" placeholder="Tìm theo tên hoặc email...">
+            </div>
           </div>
         </div>
       </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 5%;">ID</th>
+                <th style="width: 40%;">Người dùng</th>
+                <th style="width: 20%;">Vai trò</th>
+                <th style="width: 15%;" class="text-center">Trạng thái</th>
+                <th style="width: 20%;" class="text-center">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="user-table-body">
+              <tr>
+                <td colspan="5" class="text-center p-5">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                  <p class="mt-2 text-muted">Đang tải danh sách tài khoản...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <th:block layout:fragment="scripts_body">
-      <script>
-        const token = localStorage.getItem("jwtToken");
-        const tableBody = document.getElementById("user-table-body");
+  </div>
 
-        // --- Tải danh sách khi trang được mở ---
-        document.addEventListener("DOMContentLoaded", fetchUsers);
+  <th:block layout:fragment="scripts_body">
+    <script>
+      const token = localStorage.getItem("jwtToken");
+      const tableBody = document.getElementById("user-table-body");
+      const searchInput = document.getElementById("searchInput");
+      let allUsers = []; // Biến để lưu trữ toàn bộ danh sách user
+      let debounceTimer;
 
-        async function fetchUsers() {
-          tableBody.innerHTML =
-            '<tr><td colspan="6" class="text-center">Đang tải...</td></tr>';
-          try {
-            const response = await fetch("/api/v1/admin/users", {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const users = await response.json();
-            tableBody.innerHTML = ""; // Xóa loading
+      // --- Tải danh sách khi trang được mở ---
+      document.addEventListener("DOMContentLoaded", fetchUsers);
 
-            if (users.length === 0) {
-              tableBody.innerHTML =
-                '<tr><td colspan="6" class="text-center">Không có tài khoản nào.</td></tr>';
-              return;
-            }
+      // --- Thêm sự kiện tìm kiếm ---
+      searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          filterUsers(searchInput.value.toLowerCase());
+        }, 300); // Chờ 300ms sau khi người dùng ngừng gõ
+      });
 
-            users.forEach((user) => {
-              const roleName = user.role ? user.role.name : "N/A"; // Lấy tên Role
-              const statusBadge = user.active
-                ? '<span class="badge bg-success">Hoạt động</span>'
-                : '<span class="badge bg-danger">Đã khóa</span>';
-              const toggleButtonText = user.active ? "Khóa" : "Mở khóa";
-              const toggleButtonClass = user.active
-                ? "btn-danger"
-                : "btn-success";
-              const toggleIcon = user.active
-                ? "bi-lock-fill"
-                : "bi-unlock-fill";
-
-              tableBody.innerHTML += `
-                            <tr>
-                                <td>${user.id}</td>
-                                <td>${user.fullName || ""}</td>
-                                <td>${user.email}</td>
-                                <td>${roleName}</td>
-                                <td>${statusBadge}</td>
-                                <td>
-                                    <button class="btn btn-sm ${toggleButtonClass}" onclick="toggleUserStatus(${
-                user.id
-              })">
-                                      <i class="bi ${toggleIcon}"></i> ${toggleButtonText}
-                                    </button>
-                                    </td>
-                            </tr>
-                        `;
-            });
-          } catch (err) {
-            console.error("Lỗi tải user:", err);
-            tableBody.innerHTML =
-              '<tr><td colspan="6" class="text-center text-danger">Lỗi tải danh sách tài khoản.</td></tr>';
-          }
-        }
-
-        // --- Chức năng Khóa/Mở khóa ---
-        async function toggleUserStatus(userId) {
-          const actionText = document
-            .querySelector(`button[onclick='toggleUserStatus(${userId})']`)
-            .textContent.includes("Khóa")
-            ? "KHÓA"
-            : "MỞ KHÓA";
-
-          Swal.fire({
-            title: `Bạn chắc chắn muốn ${actionText} tài khoản này?`,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: actionText === "KHÓA" ? "#dc3545" : "#198754",
-            cancelButtonText: "Hủy",
-            confirmButtonText: `Vâng, ${actionText}!`,
-          }).then(async (result) => {
-            if (result.isConfirmed) {
-              try {
-                const response = await fetch(
-                  `/api/v1/admin/users/${userId}/toggle-status`,
-                  {
-                    method: "PUT", // Dùng PUT để cập nhật trạng thái
-                    headers: { Authorization: `Bearer ${token}` },
-                  }
-                );
-                if (response.ok) {
-                  Swal.fire(
-                    "Thành công!",
-                    `Đã ${actionText.toLowerCase()} tài khoản.`,
-                    "success"
-                  );
-                  fetchUsers(); // Tải lại danh sách
-                } else {
-                  const error = await response.json();
-                  Swal.fire(
-                    "Lỗi!",
-                    error.message || "Không thể thay đổi trạng thái.",
-                    "error"
-                  );
-                }
-              } catch (err) {
-                Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
-              }
-            }
+      // --- Hàm lấy dữ liệu từ API ---
+      async function fetchUsers() {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Đang tải...</p></td></tr>';
+        try {
+          const response = await fetch("/api/v1/admin/users", {
+            headers: { Authorization: `Bearer ${token}` },
           });
+          if (!response.ok) {
+            throw new Error(`Lỗi ${response.status}: Không thể tải dữ liệu.`);
+          }
+          allUsers = await response.json();
+          filterUsers(''); // Hiển thị tất cả lúc ban đầu
+        } catch (err) {
+          console.error("Lỗi tải user:", err);
+          tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-5"><strong>Lỗi:</strong> ${err.message}</td></tr>`;
         }
-      </script>
-    </th:block>
-  </body>
+      }
+
+      // --- Hàm lọc và hiển thị user ---
+      function filterUsers(keyword) {
+        const filteredUsers = allUsers.filter(user =>
+          (user.fullName && user.fullName.toLowerCase().includes(keyword)) ||
+          (user.email && user.email.toLowerCase().includes(keyword))
+        );
+        renderUserTable(filteredUsers);
+      }
+
+      // --- Hàm render bảng ---
+      function renderUserTable(users) {
+        tableBody.innerHTML = ""; // Xóa nội dung cũ
+
+        if (users.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-5 text-muted">Không tìm thấy tài khoản nào.</td></tr>';
+          return;
+        }
+
+        users.forEach((user) => {
+          const defaultAvatar = '/images/placeholder.png';
+          const avatarUrl = user.avatarUrl || defaultAvatar;
+
+          const roleName = user.role ? user.role.name : "N/A";
+          let roleBadgeClass = 'bg-secondary';
+          switch (roleName.toUpperCase()) {
+            case 'ADMIN': roleBadgeClass = 'bg-danger'; break;
+            case 'VENDOR': roleBadgeClass = 'bg-success'; break;
+            case 'SHIPPER': roleBadgeClass = 'bg-info text-dark'; break;
+            case 'CUSTOMER': roleBadgeClass = 'bg-light text-dark'; break;
+          }
+
+          const statusBadge = user.active
+            ? '<span class="badge bg-success-subtle text-success-emphasis rounded-pill">Hoạt động</span>'
+            : '<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">Đã khóa</span>';
+
+          const toggleButtonText = user.active ? "Khóa" : "Mở khóa";
+          const toggleButtonClass = user.active ? "btn-outline-danger" : "btn-outline-success";
+          const toggleIcon = user.active ? "bi-lock-fill" : "bi-unlock-fill";
+
+          const row = `
+            <tr>
+              <td class="fw-bold">#${user.id}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <img src="${avatarUrl}" alt="Avatar" class="avatar-sm me-3" onerror="this.src='${defaultAvatar}'">
+                  <div>
+                    <div class="fw-bold">${user.fullName || "Chưa có tên"}</div>
+                    <div class="text-muted small">${user.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge ${roleBadgeClass} role-badge">${roleName}</span></td>
+              <td class="text-center">${statusBadge}</td>
+              <td class="text-center">
+                <button class="btn btn-sm ${toggleButtonClass}" onclick="toggleUserStatus(${user.id})">
+                  <i class="bi ${toggleIcon}"></i> ${toggleButtonText}
+                </button>
+              </td>
+            </tr>
+          `;
+          tableBody.insertAdjacentHTML('beforeend', row);
+        });
+      }
+
+      // --- Chức năng Khóa/Mở khóa ---
+      async function toggleUserStatus(userId) {
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return;
+        
+        const actionText = user.active ? "KHÓA" : "MỞ KHÓA";
+
+        Swal.fire({
+          title: `Bạn chắc chắn muốn ${actionText} tài khoản này?`,
+          html: `Tài khoản <strong>${user.fullName || user.email}</strong> sẽ bị ${actionText.toLowerCase()}.`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: actionText === "KHÓA" ? "#dc3545" : "#198754",
+          cancelButtonText: "Hủy",
+          confirmButtonText: `Vâng, ${actionText}!`,
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            try {
+              const response = await fetch(`/api/v1/admin/users/${userId}/toggle-status`, {
+                method: "PUT",
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (response.ok) {
+                Swal.fire("Thành công!", `Đã ${actionText.toLowerCase()} tài khoản.`, "success");
+                // Cập nhật lại trạng thái trong mảng `allUsers` và render lại
+                user.active = !user.active;
+                filterUsers(searchInput.value.toLowerCase());
+              } else {
+                const error = await response.json();
+                Swal.fire("Lỗi!", error.message || "Không thể thay đổi trạng thái.", "error");
+              }
+            } catch (err) {
+              Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
+            }
+          }
+        });
+      }
+    </script>
+  </th:block>
+</body>
+
 </html>

@@ -1,4 +1,4 @@
-ư<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
@@ -29,7 +29,6 @@
             text-align: right;
             min-width: 100px;
         }
-        /* Ẩn các trường không cần thiết ban đầu */
         #delivery-note-group, #pod-upload-group {
             display: none;
         }
@@ -43,10 +42,6 @@
         <a th:href="@{/shipper/orders}" class="btn btn-secondary btn-sm">
              <i class="bi bi-arrow-left-circle"></i> Quay lại
          </a>
-        <h1>Chi tiết Đơn hàng #<span th:text="${orderId}">...</span></h1>
-        <a th:href="@{/shipper/orders}" class="btn btn-secondary btn-sm">
-             <i class="bi bi-arrow-left-circle"></i> Quay lại
-         </a>
     </div>
 
     <div id="loading-container" class="text-center p-5">
@@ -55,38 +50,9 @@
         </div>
         <p class="mt-2">Đang tải chi tiết đơn hàng...</p>
     </div>
-    <div id="loading-container" class="text-center p-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-2">Đang tải chi tiết đơn hàng...</p>
-    </div>
 
-    <div id="details-container" class="d-none">
     <div id="details-container" class="d-none">
         <div class="row g-4">
-            <div class="col-lg-5">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-person-fill text-muted"></i> Thông tin người nhận</h5>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><strong>Tên:</strong> <span id="recipient-name">...</span></li>
-                        <li class="list-group-item"><strong>SĐT:</strong> <span id="recipient-phone">...</span></li>
-                        <li class="list-group-item"><strong>Địa chỉ:</strong> <span id="recipient-address">...</span></li>
-                    </ul>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-file-earmark-text-fill text-muted"></i> Thông tin đơn hàng</h5>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><strong>Trạng thái:</strong> <span id="order-status" class="badge bg-primary fs-6">...</span></li>
-                        <li class="list-group-item"><strong>Phương thức TT:</strong> <span id="payment-method">...</span></li>
-                        <li class="list-group-item"><strong>Tổng tiền:</strong> <strong id="total-amount" class="text-danger fs-5">...</strong></li>
-                    </ul>
-                </div>
             <div class="col-lg-5">
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-light">
@@ -118,7 +84,7 @@
                     </div>
                     <div class="card-body">
                         <div id="product-list-container">
-                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -197,7 +163,6 @@
             detailsContainer.classList.add('d-none');
 
             try {
-                // Gọi API chi tiết đơn hàng
                 const response = await fetch(`/api/shipper/orders/${orderId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -206,8 +171,7 @@
                     const order = await response.json();
 
                     document.getElementById('recipient-name').textContent = order.recipientName || 'N/A';
-
-                    // ---> CHỈNH SỬA SĐT VÀ ĐỊA CHỈ <---
+                    
                     const phoneElement = document.getElementById('recipient-phone');
                     if (order.recipientPhone) {
                         phoneElement.innerHTML = `<a href="tel:${order.recipientPhone}" class="phone-link"><i class="bi bi-telephone-fill"></i> ${order.recipientPhone}</a>`;
@@ -217,11 +181,10 @@
 
                     const addressElement = document.getElementById('recipient-address');
                     if (order.shippingAddress) {
-                         addressElement.innerHTML = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.shippingAddress)}" target="_blank" rel="noopener noreferrer" class="address-link"><i class="bi bi-geo-alt-fill"></i> ${order.shippingAddress}</a>`;
+                         addressElement.innerHTML = `<a href="https://maps.google.com/?q=${encodeURIComponent(order.shippingAddress)}" target="_blank" rel="noopener noreferrer" class="address-link"><i class="bi bi-geo-alt-fill"></i> ${order.shippingAddress}</a>`;
                     } else {
                         addressElement.textContent = 'N/A';
                     }
-                     // ---> KẾT THÚC CHỈNH SỬA <---
 
                     const statusElem = document.getElementById('order-status');
                     statusElem.textContent = order.status;
@@ -237,14 +200,12 @@
 
                     document.getElementById('total-amount').textContent = formatter.format(order.totalAmount || 0);
 
-                    // Hiển thị danh sách sản phẩm (không thay đổi)
                     productListContainer.innerHTML = '';
                     if (order.products && order.products.length > 0) {
                         order.products.forEach(item => {
                             const noImageUrl = 'https://via.placeholder.com/60?text=N/A';
-                            let imageUrl = noImageUrl; // Mặc định
-                            // Bạn cần đảm bảo API trả về URL ảnh sản phẩm
-                            // Ví dụ: if(item.productImageUrl) imageUrl = item.productImageUrl;
+                            let imageUrl = noImageUrl;
+                            if(item.productImageUrl) imageUrl = item.productImageUrl;
 
                             productListContainer.innerHTML += `
                                 <div class="product-list-item">
@@ -280,7 +241,6 @@
             }
         }
 
-        // --- Các hàm khác (getStatusBadgeClass, updateActionButtons, showUpdateOptions, cancelUpdateOptions, handleUpdateStatus) giữ nguyên như trước ---
         function getStatusBadgeClass(status) {
             switch(status) {
                 case 'NEW':
@@ -349,8 +309,6 @@
 
             try {
                 const response = await fetch(`/api/shipper/orders/${orderId}/status`, {
-            try {
-                const response = await fetch(`/api/shipper/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -371,7 +329,6 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', fetchOrderDetail);
         document.addEventListener('DOMContentLoaded', fetchOrderDetail);
     </script>
 </th:block>

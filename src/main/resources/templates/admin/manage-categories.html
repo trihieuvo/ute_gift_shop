@@ -1,305 +1,319 @@
 <!DOCTYPE html>
-<html
-  lang="vi"
-  xmlns:th="http://www.thymeleaf.org"
-  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-  layout:decorate="~{layouts/_admin_layout}"
->
-  <head>
-    <title>Quản lý Danh mục</title>
-    <style>
-        .table-hover tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-        .form-card.editing {
-            border: 1px solid #0d6efd;
-            box-shadow: 0 0 10px rgba(13, 110, 253, 0.2);
-        }
-        .category-name-level-0 {
-            font-weight: 600;
-        }
-        .category-name-level-1 {
-            padding-left: 1.5rem;
-        }
-        .category-name-level-2 {
-            padding-left: 3rem;
-        }
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-            color: transparent !important;
-        }
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            height: 1rem;
-            width: 1rem;
-            margin-left: -0.5rem;
-            margin-top: -0.5rem;
-            border: 0.2em solid currentColor;
-            border-right-color: transparent;
-            border-radius: 50%;
-            display: inline-block;
-            animation: spinner-border .75s linear infinite;
-        }
-        @keyframes spinner-border { to { transform: rotate(360deg); } }
-    </style>
-  </head>
-  <body>
-    <div layout:fragment="content">
-      <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Quản lý Danh mục</h1>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layouts/_admin_layout}">
 
-      <div class="row">
-        <div class="col-lg-4">
-          <div class="card shadow-sm form-card" id="form-card">
-            <div class="card-header">
-              <h5 id="form-title">
-                <i class="bi bi-plus-circle-fill text-primary"></i> Thêm Danh mục mới
-              </h5>
-            </div>
-            <div class="card-body">
-              <form id="category-form">
-                <input type="hidden" id="categoryId" />
-                <div class="mb-3">
-                  <label for="categoryName" class="form-label">Tên Danh mục (*)</label>
-                  <input type="text" class="form-control" id="categoryName" required />
-                </div>
-                
-                <div class="mb-3">
-                    <label for="categoryParent" class="form-label">Thuộc danh mục cha</label>
-                    <select class="form-select" id="categoryParent">
-                        <option value="">— Là danh mục gốc —</option>
-                    </select>
-                </div>
+<head>
+  <title>Quản lý Danh mục</title>
+  <style>
+    .form-card.editing {
+      border: 1px solid #0d6efd;
+      box-shadow: 0 0 10px rgba(13, 110, 253, 0.2);
+    }
 
+    .category-name-level-0 {
+      font-weight: 600;
+      color: #212529;
+    }
+
+    .category-name-level-1::before {
+      content: "└─ ";
+      color: #6c757d;
+      margin-right: 0.5rem;
+    }
+    
+    .category-name-level-1 {
+        padding-left: 1.5rem;
+    }
+
+    .category-name-level-2::before {
+      content: "└─ ";
+      color: #ced4da;
+      margin-right: 0.5rem;
+    }
+
+    .category-name-level-2 {
+      padding-left: 3rem;
+    }
+
+    .btn-loading {
+      position: relative;
+      pointer-events: none;
+      color: transparent !important;
+    }
+
+    .btn-loading::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      height: 1rem;
+      width: 1rem;
+      margin-left: -0.5rem;
+      margin-top: -0.5rem;
+      border: 0.2em solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spinner-border .75s linear infinite;
+    }
+
+    #save-btn.btn-loading::after {
+        color: white;
+    }
+
+    @keyframes spinner-border {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-tags-fill me-2"></i>Quản lý Danh mục</h1>
+        <button class="btn btn-outline-secondary btn-sm" onclick="fetchCategories()">
+            <i class="bi bi-arrow-clockwise"></i> Tải lại
+        </button>
+    </div>
+
+
+    <div class="row">
+      <div class="col-lg-4">
+        <div class="card shadow-sm form-card" id="form-card">
+          <div class="card-header py-3">
+            <h5 class="mb-0" id="form-title">
+              <i class="bi bi-plus-circle-fill text-primary"></i> Thêm Danh mục mới
+            </h5>
+          </div>
+          <div class="card-body">
+            <form id="category-form">
+              <input type="hidden" id="categoryId" />
+              <div class="mb-3">
+                <label for="categoryName" class="form-label fw-bold">Tên Danh mục (*)</label>
+                <input type="text" class="form-control" id="categoryName" placeholder="VD: Thời trang nam" required />
+              </div>
+
+              <div class="mb-3">
+                <label for="categoryParent" class="form-label fw-bold">Thuộc danh mục cha</label>
+                <select class="form-select" id="categoryParent">
+                  <option value="">— Là danh mục gốc —</option>
+                </select>
+              </div>
+              
+              <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" id="save-btn">
                   <i class="bi bi-floppy-fill"></i> Lưu
                 </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  id="cancel-btn"
-                  style="display: none;"
-                  onclick="resetForm()"
-                >
+                <button type="button" class="btn btn-secondary" id="cancel-btn" style="display: none;"
+                  onclick="resetForm()">
                   <i class="bi bi-x-circle"></i> Hủy
                 </button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
         </div>
+      </div>
 
-        <div class="col-lg-8">
-          <div class="card shadow-sm">
-            <div class="card-header">
-              <h5><i class="bi bi-list-ul"></i> Danh sách Danh mục</h5>
-            </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Tên Danh mục</th>
-                      <th class="text-center">Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody id="category-table-body">
-                    </tbody>
-                </table>
-              </div>
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Danh sách Danh mục</h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 10%;">ID</th>
+                    <th>Tên Danh mục</th>
+                    <th class="text-center" style="width: 20%;">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="category-table-body">
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <th:block layout:fragment="scripts_body">
-      <script>
-        const token = localStorage.getItem("jwtToken");
-        const form = document.getElementById("category-form");
-        const categoryIdInput = document.getElementById("categoryId");
-        const categoryNameInput = document.getElementById("categoryName");
-        const categoryParentSelect = document.getElementById("categoryParent");
-        const formTitle = document.getElementById("form-title");
-        const saveBtn = document.getElementById("save-btn");
-        const cancelBtn = document.getElementById("cancel-btn");
-        const tableBody = document.getElementById("category-table-body");
-        const formCard = document.getElementById('form-card');
-        
-        let allCategoriesFlat = [];
+  <th:block layout:fragment="scripts_body">
+    <script>
+      const token = localStorage.getItem("jwtToken");
+      const form = document.getElementById("category-form");
+      const categoryIdInput = document.getElementById("categoryId");
+      const categoryNameInput = document.getElementById("categoryName");
+      const categoryParentSelect = document.getElementById("categoryParent");
+      const formTitle = document.getElementById("form-title");
+      const saveBtn = document.getElementById("save-btn");
+      const cancelBtn = document.getElementById("cancel-btn");
+      const tableBody = document.getElementById("category-table-body");
+      const formCard = document.getElementById('form-card');
 
-        document.addEventListener("DOMContentLoaded", fetchCategories);
+      document.addEventListener("DOMContentLoaded", fetchCategories);
 
-        function renderCategoryRows(categories, level = 0) {
-            categories.forEach(cat => {
-                const prefix = '&nbsp;&nbsp;&nbsp;'.repeat(level);
-                const isParent = level === 0;
-
-                allCategoriesFlat.push({ id: cat.id, name: prefix.replace(/&nbsp;/g, ' ') + cat.name });
-
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${cat.id}</td>
-                        <td class="category-name-level-${level}">
-                            <strong style="color: ${isParent ? '#212529' : '#495057'};">${cat.name}</strong>
-                        </td>
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editCategory(${cat.id})" title="Chỉnh sửa">
-                              <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteCategory(${cat.id})" title="Xóa">
-                              <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                if (cat.children && cat.children.length > 0) {
-                    renderCategoryRows(cat.children, level + 1);
-                }
-            });
-        }
-        
-        async function fetchCategories() {
-          tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-4"><div class="spinner-border spinner-border-sm"></div> Đang tải...</td></tr>';
-          allCategoriesFlat = [];
-          try {
-            const response = await fetch("/api/categories");
-            const categories = await response.json();
-            tableBody.innerHTML = ""; 
-
-            if (categories.length === 0) {
-              tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-3">Chưa có danh mục nào.</td></tr>';
-              return;
-            }
-
-            renderCategoryRows(categories);
-
-            categoryParentSelect.innerHTML = '<option value="">— Là danh mục gốc —</option>';
-            // Populate dropdown, chỉ cho phép 2 cấp (cha -> con)
-            const parentCategories = categories.map(c => ({ id: c.id, name: c.name }));
-            parentCategories.forEach(cat => {
-                categoryParentSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
-            });
-
-          } catch (err) {
-            tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger p-3">Lỗi tải danh mục.</td></tr>';
-          }
-        }
-
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const categoryId = categoryIdInput.value;
-          const categoryName = categoryNameInput.value.trim();
-          const parentId = categoryParentSelect.value ? parseInt(categoryParentSelect.value) : null;
-
-          if (!categoryName) {
-              Swal.fire("Lỗi", "Tên danh mục không được để trống.", "warning");
-              return;
-          }
-
-          const isEditMode = categoryId !== "";
-          const url = isEditMode ? `/api/v1/admin/categories/${categoryId}` : "/api/v1/admin/categories";
-          const method = isEditMode ? "PUT" : "POST";
-
-          saveBtn.disabled = true;
-          saveBtn.classList.add('btn-loading');
-
-          try {
-            const response = await fetch(url, {
-              method: method,
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ name: categoryName, parentId: parentId }),
-            });
-
-            if (response.ok) {
-              Swal.fire("Thành công!", `Đã ${isEditMode ? "cập nhật" : "thêm"} danh mục.`, "success");
-              resetForm();
-              fetchCategories();
-            } else {
-              const error = await response.json();
-              Swal.fire("Lỗi!", error.message || "Không thể lưu danh mục.", "error");
-            }
-          } catch (err) {
-            Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
-          } finally {
-            saveBtn.disabled = false;
-            saveBtn.classList.remove('btn-loading');
+      function renderCategoryRows(categories, level = 0) {
+        categories.forEach(cat => {
+          tableBody.innerHTML += `
+            <tr>
+              <td class="fw-bold">#${cat.id}</td>
+              <td class="category-name-level-${level}">
+                ${cat.name}
+              </td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-outline-primary" onclick="editCategory(${cat.id})" title="Chỉnh sửa">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteCategory(${cat.id})" title="Xóa">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+          if (cat.children && cat.children.length > 0) {
+            renderCategoryRows(cat.children, level + 1);
           }
         });
+      }
+
+      async function fetchCategories() {
+        tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-4"><div class="spinner-border spinner-border-sm"></div> Đang tải...</td></tr>';
         
-        // SỬA LỖI HÀM SỬA
-        async function editCategory(id) {
+        try {
+          const response = await fetch("/api/categories");
+          const categories = await response.json();
+          tableBody.innerHTML = "";
+
+          if (categories.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-3 text-muted">Chưa có danh mục nào.</td></tr>';
+            categoryParentSelect.innerHTML = '<option value="">— Là danh mục gốc —</option>';
+            return;
+          }
+
+          renderCategoryRows(categories);
+
+          // Populate dropdown with only top-level categories
+          categoryParentSelect.innerHTML = '<option value="">— Là danh mục gốc —</option>';
+          const parentCategories = categories.map(c => ({ id: c.id, name: c.name }));
+          parentCategories.forEach(cat => {
+            categoryParentSelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+          });
+
+        } catch (err) {
+          tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger p-3">Lỗi tải danh mục.</td></tr>';
+        }
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const categoryId = categoryIdInput.value;
+        const categoryName = categoryNameInput.value.trim();
+        const parentId = categoryParentSelect.value ? parseInt(categoryParentSelect.value) : null;
+
+        if (!categoryName) {
+          Swal.fire("Lỗi", "Tên danh mục không được để trống.", "warning");
+          return;
+        }
+
+        const isEditMode = categoryId !== "";
+        const url = isEditMode ? `/api/v1/admin/categories/${categoryId}` : "/api/v1/admin/categories";
+        const method = isEditMode ? "PUT" : "POST";
+
+        saveBtn.disabled = true;
+        saveBtn.classList.add('btn-loading');
+
+        try {
+          const response = await fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ name: categoryName, parentId: parentId }),
+          });
+
+          if (response.ok) {
+            Swal.fire("Thành công!", `Đã ${isEditMode ? "cập nhật" : "thêm"} danh mục.`, "success");
+            resetForm();
+            fetchCategories();
+          } else {
+            const error = await response.json();
+            Swal.fire("Lỗi!", error.message || "Không thể lưu danh mục.", "error");
+          }
+        } catch (err) {
+          Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.classList.remove('btn-loading');
+        }
+      });
+
+      async function editCategory(id) {
+        try {
+          const response = await fetch(`/api/v1/admin/categories/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!response.ok) throw new Error('Không thể lấy thông tin danh mục để sửa.');
+          const cat = await response.json();
+
+          categoryIdInput.value = cat.id;
+          categoryNameInput.value = cat.name;
+          categoryParentSelect.value = cat.parent ? cat.parent.id : "";
+
+          formTitle.innerHTML = `<i class="bi bi-pencil-square text-primary"></i> Chỉnh sửa Danh mục`;
+          saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Cập nhật';
+          cancelBtn.style.display = "inline-block";
+          formCard.classList.add('editing');
+
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+          Swal.fire("Lỗi!", err.message, "error");
+        }
+      }
+
+      function resetForm() {
+        form.reset();
+        categoryIdInput.value = "";
+        categoryParentSelect.value = "";
+        formTitle.innerHTML = `<i class="bi bi-plus-circle-fill text-primary"></i> Thêm Danh mục mới`;
+        saveBtn.innerHTML = '<i class="bi bi-floppy-fill"></i> Lưu';
+        cancelBtn.style.display = "none";
+        formCard.classList.remove('editing');
+      }
+
+      function deleteCategory(id) {
+        Swal.fire({
+          title: "Bạn chắc chắn muốn xóa?",
+          text: "Việc này có thể ảnh hưởng đến các danh mục con và sản phẩm liên quan!",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#d33",
+          cancelButtonText: "Hủy",
+          confirmButtonText: "Vâng, xóa nó!",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
             try {
-                // Bước 1: Gọi API để lấy thông tin chi tiết của danh mục
-                const response = await fetch(`/api/v1/admin/categories/${id}`, { 
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) throw new Error('Không thể lấy thông tin danh mục để sửa.');
-                const cat = await response.json();
-                
-                // Bước 2: Điền thông tin vào form
-                categoryIdInput.value = cat.id;
-                categoryNameInput.value = cat.name;
-                categoryParentSelect.value = cat.parent ? cat.parent.id : "";
-
-                // Bước 3: Cập nhật giao diện form
-                formTitle.innerHTML = `<i class="bi bi-pencil-square text-primary"></i> Chỉnh sửa Danh mục`;
-                saveBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Cập nhật';
-                cancelBtn.style.display = "inline-block";
-                formCard.classList.add('editing');
-                
-                // Tự động cuộn lên đầu trang để người dùng thấy form
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
+              const response = await fetch(`/api/v1/admin/categories/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (response.ok) {
+                Swal.fire("Đã xóa!", "Danh mục đã được xóa.", "success");
+                fetchCategories();
+                resetForm();
+              } else {
+                const error = await response.json();
+                Swal.fire("Lỗi!", error.message || "Không thể xóa. Danh mục có thể đang chứa sản phẩm.", "error");
+              }
             } catch (err) {
-                 Swal.fire("Lỗi!", err.message, "error");
+              Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
             }
-        }
+          }
+        });
+      }
+    </script>
+  </th:block>
+</body>
 
-        function resetForm() {
-          form.reset();
-          categoryIdInput.value = "";
-          categoryParentSelect.value = "";
-          formTitle.innerHTML = `<i class="bi bi-plus-circle-fill text-primary"></i> Thêm Danh mục mới`;
-          saveBtn.innerHTML = '<i class="bi bi-floppy-fill"></i> Lưu';
-          cancelBtn.style.display = "none";
-          formCard.classList.remove('editing');
-        }
-
-        async function deleteCategory(id) {
-            Swal.fire({
-                title: "Bạn chắc chắn?",
-                text: "Việc xóa danh mục cha có thể ảnh hưởng đến các danh mục con và sản phẩm liên quan!",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonText: "Hủy",
-                confirmButtonText: "Vâng, xóa nó!",
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        const response = await fetch(`/api/v1/admin/categories/${id}`, {
-                            method: "DELETE",
-                            headers: { Authorization: `Bearer ${token}` },
-                        });
-                        if (response.ok) {
-                            Swal.fire("Đã xóa!", "Danh mục đã được xóa.", "success");
-                            fetchCategories();
-                            resetForm(); // Reset form nếu đang sửa danh mục vừa bị xóa
-                        } else {
-                            const error = await response.json();
-                            Swal.fire("Lỗi!", error.message || "Không thể xóa. Danh mục có thể đang chứa sản phẩm.", "error");
-                        }
-                    } catch (err) {
-                        Swal.fire("Lỗi mạng!", "Không thể kết nối.", "error");
-                    }
-                }
-            });
-        }
-      </script>
-    </th:block>
-  </body>
 </html>
