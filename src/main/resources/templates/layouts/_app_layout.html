@@ -9,168 +9,125 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <title layout:title-pattern="$CONTENT_TITLE | UTE GiftShop">$LAYOUT_TITLE</title>
+    <title layout:title-pattern="$CONTENT_TITLE | UTE GiftShop">UTE GiftShop</title>
     <style>
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding-top: 70px; /* Adjust if needed */
-        }
-
-        .content-wrapper {
-            flex: 1;
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-
-        .main-content-card {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
-        }
-
-        footer {
+            padding-top: 70px; /* Adjust based on navbar height */
             background-color: #f8f9fa;
-            padding: 1rem 0;
-            text-align: center;
         }
+        .content-wrapper { flex: 1; padding-top: 2rem; padding-bottom: 2rem; }
+        footer.site-footer { background-color: #e9ecef; padding: 2rem 0; color: #495057; margin-top: auto; }
+        .navbar-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; border: 1px solid #dee2e6; background-color: #eee; }
+        #cart-item-count { font-size: 0.75rem; padding: 0.2em 0.5em; vertical-align: top; }
 
-        /* === CSS FOR CHATBOT === */
-        .chat-widget {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1050;
-        }
-
-        .chat-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            font-size: 28px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
-        }
+        /* === NEW CHAT WIDGET STYLES === */
+        .chat-widget-button { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
+        .chat-toggle-btn { width: 60px; height: 60px; border-radius: 50%; font-size: 28px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+        .chat-toggle-btn:hover { transform: scale(1.1); }
+        .chat-toggle-btn i.text-warning { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
         .chat-popup {
             display: none;
             position: fixed;
             bottom: 90px;
             right: 20px;
-            width: 350px;
-            max-height: 500px;
+            width: 700px;
+            height: 550px;
+            max-width: 90vw;
+            max-height: 75vh;
             background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, .3);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, .3);
+            flex-direction: row; /* Main layout is horizontal */
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .chat-list-panel {
+            width: 35%;
+            border-right: 1px solid #ddd;
+            display: flex;
             flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        .chat-list-header {
+            padding: 0.75rem;
+            border-bottom: 1px solid #ddd;
+        }
+        .chat-list-body {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .conversation-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .conversation-item:hover { background-color: #e9ecef; }
+        .conversation-item.active { background-color: #cfe2ff; }
+        .conversation-item .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: 600; flex-shrink: 0;
+        }
+        .conversation-item .avatar i { font-size: 1.2rem; }
+        .conversation-item .details {
+            flex-grow: 1;
             overflow: hidden;
         }
-
-        .chat-header {
-            background: #0d6efd;
-            color: white;
-            padding: 1rem;
-            font-weight: bold;
+        .conversation-item .name { font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conversation-item .last-message { font-size: 0.85rem; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conversation-item.has-unread .last-message { font-weight: bold; color: #212529; }
+        .conversation-item .meta {
+            position: absolute; top: 0.75rem; right: 0.75rem;
+            text-align: right;
         }
+        .conversation-item .timestamp { font-size: 0.75rem; color: #6c757d; }
+        .conversation-item .unread-badge { font-size: 0.7rem; margin-top: 0.25rem; }
 
-        .chat-body {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
+        .chat-window-panel {
+            width: 65%;
             display: flex;
             flex-direction: column;
-            gap: 10px;
         }
+        .chat-header { background: #fff; color: #212529; border-bottom: 1px solid #ddd; padding: 0.75rem 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header .chat-partner-name { display: flex; align-items: center; gap: 0.75rem; }
+        .chat-body { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: #f0f2f5; }
+        .chat-message { padding: 8px 14px; border-radius: 18px; max-width: 80%; word-wrap: break-word; white-space: pre-wrap; line-height: 1.5; font-size: 0.9rem; }
+        .sent-message { background: #0d6efd; color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+        .received-message { background: #fff; color: #212529; align-self: flex-start; border-bottom-left-radius: 5px; box-shadow: 0 1px 1px rgba(0,0,0,.05); }
+        .system-message { background-color: transparent; color: #6c757d; align-self: center; font-size: 0.75rem; font-style: italic; max-width: 90%; text-align: center; padding: 5px 10px; margin: 5px 0; }
+        .chat-footer { border-top: 1px solid #ddd; padding: 0.75rem 1rem; display: flex; background-color: #fff; align-items: center; gap: 0.5rem; }
+        .chat-footer input { flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 0.5rem 1rem; }
+        .chat-footer input:focus { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1); }
+        .chat-footer button { width: 40px; height: 40px; border-radius: 50%; }
 
-        .chat-message {
-            padding: 8px 12px;
-            border-radius: 18px;
-            max-width: 80%;
-            word-wrap: break-word;
-        }
-
-        .user-message {
-            background: #e9ecef;
-            align-self: flex-end;
-        }
-
-        .bot-message {
-            background: #0d6efd;
-            color: white;
-            align-self: flex-start;
-        }
-
-        .chat-footer {
-            border-top: 1px solid #eee;
-            padding: 0.5rem;
-            display: flex;
-        }
-
-        .chat-footer input {
-            flex: 1;
-            border: none;
-            outline: none;
-            box-shadow: none;
-        }
-
-        /* === END CSS FOR CHATBOT === */
-
-        /* === CSS FOR NAVBAR AVATAR === */
-        .navbar-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 8px;
-            border: 1px solid #dee2e6;
-        }
-        /* === END CSS === */
-
-        /* CSS FOR CART BADGE */
-        #cart-item-count {
-            font-size: 0.75rem;
-            padding: 0.2em 0.5em;
-            vertical-align: top;
-        }
-        /* Style for social icons in footer */
-        .social-icons a {
-            color: #6c757d;
-            font-size: 1.5rem;
-            margin-right: 1rem;
-            transition: color 0.3s;
-        }
-        .social-icons a:hover {
-             color: #0d6efd;
-        }
-        .footer-bottom {
-             margin-top: 1.5rem;
-             padding-top: 1rem;
-             border-top: 1px solid #e9ecef;
-             font-size: 0.875rem;
-        }
     </style>
     <th:block layout:fragment="styles"></th:block>
-    <th:block layout:fragment="scripts_head"></th:block>
 </head>
 
 <body>
-
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" th:href="@{/home}">
-                <i class="bi bi-shop"></i> UTE GiftShop
-            </a>
+            <a class="navbar-brand fw-bold" th:href="@{/home}"><i class="bi bi-shop"></i> UTE GiftShop</a>
             <div class="d-flex align-items-center">
                 <a class="nav-link me-3 position-relative" th:href="@{/cart}">
                     <i class="bi bi-cart3 fs-5"></i> Giỏ hàng
                     <span class="badge bg-danger ms-1 position-absolute top-0 start-100 translate-middle" id="cart-item-count" style="display: none;">0</span>
                 </a>
                 <div class="dropdown">
-                    <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown"
-                       aria-expanded="false">
-                        <img src="/images/placeholder-avatar-small.png" alt="User Avatar" class="navbar-avatar"
-                             id="navbarUserAvatar">
+                    <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="/images/placeholder-avatar-small.png" alt="User Avatar" class="navbar-avatar" id="navbarUserAvatar">
                         <span id="userGreeting">Tài khoản</span>
                     </a>
                     <ul id="user-menu" class="dropdown-menu dropdown-menu-end">
@@ -185,357 +142,421 @@
     <div class="content-wrapper">
         <div class="container">
             <th:block layout:fragment="content"></th:block>
-            </div>
+        </div>
     </div>
 
     <footer class="site-footer mt-auto py-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
-                    <h5>Về UTE Gift Shop</h5>
-                    <p class="small text-muted">Dự án môn học Lập trình Web, xây dựng website thương mại điện tử đa nhà cung cấp.</p>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4 mb-lg-0">
-                    <h5>Sinh viên thực hiện</h5>
-                    <ul class="list-unstyled small">
-                        <li>Võ Trí Hiệu - 23110219 </li>
-                        <li>Lê Ngô Nhựt Tân - 23110315 </li>
-                        <li>Nguyễn Bảo Lợi - 23110256 </li>
-                        <li>Huỳnh Ngọc Tài - 23110305</li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
-                    <h5>Thông tin liên hệ</h5>
-                    <ul class="list-unstyled small">
-                        <li><i class="bi bi-telephone-fill me-2"></i> 0372008321</li>
-                        <li><i class="bi bi-envelope-fill me-2"></i> hieu981.vn@gmail.com</li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <h5>Liên kết</h5>
-                    <div class="social-icons">
-                        <a href="https://github.com/trihieuvo" title="Võ Trí Hiệu" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                        <a href="https://github.com/Okarin2507" title="Lê Ngô Nhựt Tân" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                        <a href="https://github.com/LoiNguyen2k5" title="Nguyễn Bảo Lợi" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                        <a href="https://github.com/KickHuynh" title="Huỳnh Ngọc Tài" target="_blank" rel="noopener noreferrer"><i class="bi bi-github"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom text-center text-muted">
-                &copy; 2025 UTE GiftShop. All Rights Reserved.
-            </div>
-        </div>
-    </footer>
+       </footer>
 
-
-    <div class="chat-widget">
-        <button class="btn btn-primary chat-btn" id="toggle-chat-btn">
+    <div class="chat-widget-button">
+        <button class="btn btn-primary chat-toggle-btn" id="toggle-chat-btn" title="Trợ lý & Tin nhắn">
             <i class="bi bi-chat-dots-fill"></i>
         </button>
-        <div class="chat-popup" id="chat-popup">
-            <div class="chat-header">UTE GiftShop Assistant</div>
-            <div class="chat-body" id="chat-body">
-                <div class="chat-message bot-message">Chào bạn! Tôi có thể giúp gì?</div>
+    </div>
+    <div class="chat-popup" id="chat-popup">
+        <div class="chat-list-panel">
+            <div class="chat-list-header">
+                <input type="text" class="form-control form-control-sm" placeholder="Tìm theo tên...">
             </div>
+            <div class="chat-list-body">
+                <div class="conversation-item" id="ai-chat-btn" data-chat-target="ai">
+                    <div class="avatar"><i class="bi bi-robot"></i></div>
+                    <div class="details">
+                        <div class="name">UTE GiftShop Assistant</div>
+                        <div class="last-message">Trợ lý ảo, sẵn sàng hỗ trợ</div>
+                    </div>
+                </div>
+                <div id="vendor-conversations-list">
+                    <div class="p-3 text-muted small text-center">Đang tải danh sách...</div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-window-panel">
+            <div class="chat-header">
+                <div class="chat-partner-name" id="chat-header-info">
+                    </div>
+                <button type="button" class="btn-close" aria-label="Close" onclick="closeChatPopup()"></button>
+            </div>
+            <div class="chat-body" id="chat-body">
+                </div>
             <div class="chat-footer">
-                <input type="text" class="form-control" id="chat-input" placeholder="Nhập tin nhắn...">
-                <button class="btn btn-link" id="chat-send-btn"><i class="bi bi-send-fill"></i></button>
+                <input type="text" id="chat-input" class="form-control" placeholder="Nhập tin nhắn..." disabled>
+                <button class="btn btn-primary" id="chat-send-btn" disabled><i class="bi bi-send-fill"></i></button>
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="changePaymentModal" tabindex="-1">
+        </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
 
     <script>
-        // === GLOBAL FUNCTIONS ===
-        let globalUserInfo = null;
+    // Make userInfoPromise globally available for other pages
+    window.userInfoPromise = new Promise(resolve => {
+        window.userInfoResolve = resolve;
+    });
 
-        function logout() {
+    // Encapsulate all logic in a single block
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ==================== GLOBAL STATE & DOM ELEMENTS ====================
+        let globalToken = localStorage.getItem('jwtToken');
+        let globalUserInfo = null; // Will be populated by checkGlobalLoginStatus
+        let activeChat = { type: 'AI', id: null, name: 'UTE GiftShop Assistant', conversationId: null };
+        let allVendorConversations = [];
+        let webSocket = null;
+        let reconnectTimeout = null;
+
+        const navbar = {
+            avatar: document.getElementById('navbarUserAvatar'),
+            greeting: document.getElementById('userGreeting'),
+            menu: document.getElementById('user-menu'),
+            cartCount: document.getElementById('cart-item-count'),
+        };
+
+        const chatWidget = {
+            toggleBtn: document.getElementById('toggle-chat-btn'),
+            popup: document.getElementById('chat-popup'),
+            aiChatBtn: document.getElementById('ai-chat-btn'),
+            vendorList: document.getElementById('vendor-conversations-list'),
+            headerInfo: document.getElementById('chat-header-info'),
+            body: document.getElementById('chat-body'),
+            input: document.getElementById('chat-input'),
+            sendBtn: document.getElementById('chat-send-btn'),
+        };
+
+        // ==================== INITIALIZATION & EVENT LISTENERS ====================
+        checkGlobalLoginStatus();
+        if (chatWidget.toggleBtn) chatWidget.toggleBtn.addEventListener('click', toggleChatPopup);
+        if (chatWidget.aiChatBtn) chatWidget.aiChatBtn.addEventListener('click', () => selectChat('AI', null, 'UTE GiftShop Assistant', null));
+        if (chatWidget.sendBtn) chatWidget.sendBtn.addEventListener('click', sendMessage);
+        if (chatWidget.input) chatWidget.input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        // ==================== AUTH & UI UPDATE FUNCTIONS ====================
+        window.logout = function() {
             localStorage.removeItem('jwtToken');
+            globalToken = null;
             globalUserInfo = null;
-            Swal.fire({
-                    title: 'Đã đăng xuất',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                })
-                .then(() => {
-                    window.location.href = '/login';
-                });
+            closeWebSocket();
+            window.location.href = '/login';
+        }
+
+        async function checkGlobalLoginStatus() {
+            if (!globalToken) {
+                renderGuestUI();
+                window.userInfoResolve(null); // Resolve promise for other scripts
+                return;
+            }
+            try {
+                const response = await fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${globalToken}` } });
+                if (!response.ok) {
+                    logout();
+                    window.userInfoResolve(null);
+                    return;
+                }
+                const userInfo = await response.json();
+                if (userInfo && userInfo.authenticated) {
+                    globalUserInfo = userInfo;
+                    window.__uteAppLayoutUserInfo = userInfo; // For backward compatibility if other scripts use it
+                    renderLoggedInUI(userInfo);
+                    updateCartCount();
+                    connectWebSocket();
+                    fetchConversations();
+                    window.userInfoResolve(userInfo); // Resolve promise with user data
+                } else {
+                    logout();
+                    window.userInfoResolve(null);
+                }
+            } catch (error) {
+                console.error("Layout: Error during login check:", error);
+                renderGuestUI();
+                window.userInfoResolve(null);
+            }
+        }
+
+        function renderGuestUI() {
+            if (navbar.greeting) navbar.greeting.textContent = 'Tài khoản';
+            if (navbar.avatar) navbar.avatar.src = '/images/placeholder-avatar-small.png';
+            if (navbar.menu) navbar.menu.innerHTML = `<li><a class="dropdown-item" href="/login"><i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập</a></li><li><a class="dropdown-item" href="/signup"><i class="bi bi-person-plus-fill me-2"></i>Đăng ký</a></li>`;
+            if (navbar.cartCount) navbar.cartCount.style.display = 'none';
+            disableChat('Vui lòng đăng nhập');
+        }
+
+        function renderLoggedInUI(user) {
+            if (navbar.greeting) navbar.greeting.textContent = `Chào, ${user.fullName || user.email}`;
+            if (navbar.avatar) navbar.avatar.src = (user.avatarUrl || '/images/placeholder-avatar-small.png') + `?t=${Date.now()}`;
+            let menuItems = `<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Thông tin cá nhân</a></li><li><a class="dropdown-item" href="/order-history"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</a></li>`;
+            if (user.role === 'Shipper') menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard"><i class="bi bi-truck me-2"></i>Shipper Dashboard</a></li>`;
+            if (user.role === 'Vendor') menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard"><i class="bi bi-shop-window me-2"></i>Trang bán hàng</a></li>`;
+            if (user.role === 'Admin') menuItems += `<li><a class="dropdown-item" href="/admin/dashboard"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</a></li>`;
+            menuItems += `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>`;
+            if (navbar.menu) navbar.menu.innerHTML = menuItems;
         }
 
         async function updateCartCount() {
-            const token = localStorage.getItem('jwtToken');
-            const cartCountBadge = document.getElementById('cart-item-count');
-
-            if (!token || !cartCountBadge) {
-                if(cartCountBadge) cartCountBadge.style.display = 'none';
-                return;
-            }
-
+            if (!globalToken || !navbar.cartCount) return;
             try {
-                const response = await fetch('/api/cart', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const items = await response.json();
-                    const count = items.length; // Count distinct items
-                    cartCountBadge.textContent = count;
-                    cartCountBadge.style.display = count > 0 ? 'inline-block' : 'none';
-                } else {
-                    console.error("Error fetching cart for count:", response.status);
-                    cartCountBadge.style.display = 'none';
-                }
+                const response = await fetch('/api/cart', { headers: { 'Authorization': `Bearer ${globalToken}` } });
+                const items = response.ok ? await response.json() : [];
+                const count = items ? items.length : 0;
+                navbar.cartCount.textContent = count;
+                navbar.cartCount.style.display = count > 0 ? 'inline-block' : 'none';
             } catch (error) {
-                console.error("Network error fetching cart count:", error);
-                cartCountBadge.style.display = 'none';
+                console.error("Layout: Error fetching cart count:", error);
             }
         }
 
-        function renderGuestMenu() {
-            const userGreetingElem = document.getElementById('userGreeting');
-            const userMenu = document.getElementById('user-menu');
-            const navbarAvatar = document.getElementById('navbarUserAvatar');
-            const cartCountBadge = document.getElementById('cart-item-count');
-
-            if (userGreetingElem && userMenu && navbarAvatar) {
-                userGreetingElem.textContent = 'Tài khoản';
-                navbarAvatar.src = '/images/placeholder-avatar-small.png';
-                navbarAvatar.alt = 'Guest Avatar';
-                userMenu.innerHTML = `<li><a class="dropdown-item" href="/login">Đăng nhập</a></li>
-                                      <li><a class="dropdown-item" href="/signup">Đăng ký</a></li>`;
-                if(cartCountBadge) cartCountBadge.style.display = 'none';
-            } else {
-                console.error("renderGuestMenu: Navbar elements not found!");
-            }
-        }
-
-        // Renamed to avoid conflicts, make it callable
-        async function checkGlobalLoginStatus() {
-            console.log("Checking global login status...");
-            const token = localStorage.getItem('jwtToken');
-            const navbarAvatar = document.getElementById('navbarUserAvatar');
-            const userGreetingElem = document.getElementById('userGreeting');
-            const userMenu = document.getElementById('user-menu');
-
-            if (!userGreetingElem || !userMenu || !navbarAvatar) {
-                console.error("checkGlobalLoginStatus: Navbar elements not found!");
-                renderGuestMenu();
+        // ==================== CHAT CORE FUNCTIONS ====================
+        function toggleChatPopup() {
+            if (!globalUserInfo) {
+                Swal.fire({ title: 'Vui lòng đăng nhập', text: 'Bạn cần đăng nhập để sử dụng tính năng chat.', icon: 'info', showCancelButton: true, confirmButtonText: 'Đăng nhập' }).then(r => { if (r.isConfirmed) window.location.href = '/login'; });
                 return;
             }
-
-            if (!token) {
-                console.log("No token found. Rendering guest menu.");
-                globalUserInfo = null;
-                renderGuestMenu();
-                return;
-            }
-
-            try {
-                console.log("Token found. Fetching /api/users/me...");
-                const response = await fetch('/api/users/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                console.log("API /me response status:", response.status);
-
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        console.error("Invalid or expired token. Logging out...");
-                        logout();
-                    } else {
-                        console.error(`Server error (${response.status}) fetching /me. Rendering guest menu.`);
-                        globalUserInfo = null;
-                        renderGuestMenu();
-                    }
-                    return;
-                }
-
-                const userInfo = await response.json();
-                console.log("User info fetched:", userInfo);
-
-                if (userInfo && userInfo.authenticated) {
-                    globalUserInfo = userInfo;
-                    console.log("Authentication successful. Updating UI...");
-
-                    userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
-
-                    if (userInfo.avatarUrl) {
-                        navbarAvatar.src = userInfo.avatarUrl + '?t=' + new Date().getTime();
-                        navbarAvatar.alt = userInfo.fullName + ' Avatar';
-                    } else {
-                        navbarAvatar.src = '/images/placeholder-avatar-small.png';
-                        navbarAvatar.alt = 'Default Avatar';
-                    }
-
-                    let menuItems = `<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Thông tin cá nhân</a></li>
-                                     <li><a class="dropdown-item" href="/order-history"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</a></li>`;
-
-                    if (userInfo.role === 'Shipper') {
-                        menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard"><i class="bi bi-truck me-2"></i>Dashboard Shipper</a></li>`;
-                    } else if (userInfo.role === 'Vendor') {
-                        menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard"><i class="bi bi-shop-window me-2"></i>Trang bán hàng</a></li>`;
-                    } else if (userInfo.role === 'Admin') {
-                         menuItems += `<li><a class="dropdown-item" href="/admin/dashboard"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</a></li>`;
-                    }
-
-                    menuItems += `<li><hr class="dropdown-divider"></li>
-                                  <li><button class="dropdown-item" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>`;
-                    userMenu.innerHTML = menuItems;
-                    console.log("UI updated.");
-
-                    updateCartCount(); // Update cart count after successful login check
-
-                } else {
-                    console.log("API response indicates not authenticated. Logging out...");
-                    logout();
-                }
-            } catch (error) {
-                console.error("Network error during login check:", error);
-                Swal.fire('Lỗi Mạng', 'Không thể kết nối đến máy chủ để xác thực.', 'error');
-                globalUserInfo = null;
-                renderGuestMenu();
+            const isOpening = chatWidget.popup.style.display !== 'flex';
+            chatWidget.popup.style.display = isOpening ? 'flex' : 'none';
+            if (isOpening) {
+                selectChat(activeChat.type, activeChat.id, activeChat.name, activeChat.conversationId);
+                const chatIcon = chatWidget.toggleBtn?.querySelector('i');
+                if (chatIcon) chatIcon.classList.remove('text-warning');
             }
         }
+        window.closeChatPopup = function() { chatWidget.popup.style.display = 'none'; }
 
-        // Call check function when DOM is ready
-        document.addEventListener('DOMContentLoaded', checkGlobalLoginStatus);
-        // === END GLOBAL FUNCTIONS ===
+        function selectChat(type, id, name, conversationId) {
+            console.log(`Switching chat to: ${type} - ${name} (ID: ${id})`);
+            activeChat = { type, id, name, conversationId };
 
-    </script>
+            // Update UI
+            document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
+            const targetEl = type === 'AI' ? chatWidget.aiChatBtn : document.getElementById(`conv-${conversationId}`);
+            if (targetEl) targetEl.classList.add('active');
 
-    <th:block layout:fragment="scripts_body"></th:block>
-
-    <script>
-        // === CHATBOT CODE ===
-        const chatPopup = document.getElementById('chat-popup');
-        const toggleChatBtn = document.getElementById('toggle-chat-btn');
-        const chatInput = document.getElementById('chat-input');
-        const chatSendBtn = document.getElementById('chat-send-btn');
-        const chatBody = document.getElementById('chat-body');
-        let isChatbotInitialized = false;
-
-        if (toggleChatBtn) toggleChatBtn.addEventListener('click', () => {
-            if (chatPopup && chatPopup.style.display === 'flex') {
-                chatPopup.style.display = 'none';
-            } else {
-                const token = localStorage.getItem('jwtToken');
-                if (!token && !isChatbotInitialized) {
-                    Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để sử dụng trợ lý ảo.', 'info').then(() => window.location.href = '/login');
-                    return;
-                }
-                isChatbotInitialized = true;
-                if (chatPopup) chatPopup.style.display = 'flex';
+            if (chatWidget.headerInfo) {
+                const avatarHtml = type === 'AI'
+                    ? `<div class="avatar"><i class="bi bi-robot"></i></div>`
+                    : `<div class="avatar">${name.substring(0, 1)}</div>`;
+                chatWidget.headerInfo.innerHTML = `${avatarHtml}<span>${escapeHtml(name)}</span>`;
             }
-        });
-        if (chatSendBtn) chatSendBtn.addEventListener('click', sendMessage);
-        if (chatInput) chatInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') { sendMessage(); }
-        });
+
+            if (chatWidget.body) chatWidget.body.innerHTML = '';
+
+            if (type === 'AI') {
+                addMessage('received', 'Chào bạn! Tôi là trợ lý ảo của UTE GiftShop. Tôi có thể giúp gì cho bạn?');
+                enableChat('Nhắn tin cho Trợ lý ảo...');
+            } else if (type === 'VENDOR') {
+                addMessage('system', 'Đang tải lịch sử trò chuyện...');
+                enableChat(`Nhắn tin tới ${escapeHtml(name)}...`);
+                fetchMessageHistory(conversationId);
+            }
+        }
 
         async function sendMessage() {
-            if (!chatInput || !chatBody) return;
-            const messageText = chatInput.value.trim();
-            if (messageText === '') return;
-            const token = localStorage.getItem('jwtToken');
-            if (!token) { Swal.fire('Lỗi', 'Phiên đăng nhập đã hết hạn.', 'error'); return; }
-            addMessageToChat(messageText, 'user');
-            chatInput.value = '';
-            addMessageToChat('...', 'bot-typing'); // Show typing indicator
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: messageText })
-                });
-                removeTypingIndicator(); // Remove typing indicator
-                if (response.ok) {
+            const messageText = chatWidget.input.value.trim();
+            if (!messageText) return;
+            //addMessage('sent', messageText);
+            chatWidget.input.value = '';
+
+            if (activeChat.type === 'AI') {
+                addMessage('system', 'Trợ lý đang suy nghĩ...');
+                try {
+                    const response = await fetch('/api/chat', { method: 'POST', headers: { 'Authorization': `Bearer ${globalToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: messageText }) });
+                    document.querySelectorAll('.system-message').forEach(el => el.remove()); // Remove typing indicator
                     const chatResponse = await response.json();
-                    addMessageToChat(chatResponse.reply, 'bot');
-                } else {
-                    const errorText = await response.text();
-                    console.error("Chatbot API Error:", response.status, errorText);
-                    addMessageToChat('Xin lỗi, đã có lỗi xảy ra khi gọi trợ lý.', 'bot');
+                    addMessage('received', chatResponse.reply);
+                } catch (error) {
+                    addMessage('system', 'Lỗi kết nối tới trợ lý AI.');
                 }
-            } catch (error) {
-                removeTypingIndicator(); // Remove typing indicator
-                console.error("Chatbot Network Error:", error);
-                addMessageToChat('Lỗi kết nối mạng khi liên hệ trợ lý.', 'bot');
+            } else if (activeChat.type === 'VENDOR') {
+                if (webSocket && webSocket.readyState === SockJS.OPEN && activeChat.id) {
+                    webSocket.send(JSON.stringify({ type: 'MESSAGE', receiverId: activeChat.id, content: messageText }));
+                } else {
+                    addMessage('system', 'Lỗi gửi tin nhắn: Mất kết nối.');
+                    connectWebSocket(); // Try to reconnect
+                }
             }
         }
 
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
-        }
-
-        function formatBotMessage(text) {
-             let escapedText = escapeHTML(text);
-             let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-             formattedText = formattedText.replace(/\\`\\`\\`(.*?)\\`\\`\\`/gs, '<pre><code>$1</code></pre>'); // Code blocks
-             formattedText = formattedText.replace(/`(.*?)`/g, '<code>$1</code>'); // Inline code
-             formattedText = formattedText.replace(/\n/g, '<br>');
-             return formattedText;
-        }
-
-
-        function addMessageToChat(text, type) {
+        function addMessage(type, content) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'chat-message';
-            if (type === 'user') {
-                messageDiv.classList.add('user-message');
-                messageDiv.textContent = text;
-            } else if (type === 'bot') {
-                messageDiv.classList.add('bot-message');
-                messageDiv.innerHTML = formatBotMessage(text);
-            } else if (type === 'bot-typing') {
-                messageDiv.classList.add('bot-message');
-                messageDiv.id = 'bot-typing-indicator';
-                messageDiv.innerHTML = '<span class="spinner-grow spinner-grow-sm"></span>'; // Use a spinner
+            messageDiv.className = `chat-message ${type}-message`;
+            messageDiv.innerHTML = (type === 'received' && activeChat.type === 'AI') ? formatBotMessage(content) : escapeHtml(content);
+            chatWidget.body.appendChild(messageDiv);
+            chatWidget.body.scrollTop = chatWidget.body.scrollHeight;
+        }
+
+        // ==================== VENDOR CHAT & WEBSOCKET ====================
+        function connectWebSocket() {
+            if (webSocket && (webSocket.readyState === SockJS.OPEN || webSocket.readyState === SockJS.CONNECTING)) return;
+            clearTimeout(reconnectTimeout);
+            if (!globalToken || !globalUserInfo) {
+                console.log("WebSocket: No token/user, connection skipped.");
+                return;
             }
-            if (chatBody) {
-                chatBody.appendChild(messageDiv);
-                chatBody.scrollTop = chatBody.scrollHeight; // Scroll to bottom
+            const socket = new SockJS(`/ws/vendor/chat?token=${encodeURIComponent(globalToken)}`);
+            socket.onopen = () => {
+                console.log('WebSocket Connected.');
+                webSocket = socket;
+                if (activeChat.type !== 'AI') enableChat(`Nhắn tin tới ${escapeHtml(activeChat.name)}...`);
+                clearTimeout(reconnectTimeout);
+            };
+            socket.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg.type !== 'MESSAGE' || !msg.conversationId) return;
+                    // KIỂM TRA NGƯỜI GỬI (SỬA LỖI TẠI ĐÂY)
+                    const isSentByMe = String(msg.senderId) === String(globalUserInfo?.id);
+                    const messageStyle = isSentByMe ? 'sent' : 'received';
+                    
+                    const isForActiveChat = (msg.conversationId === activeChat.conversationId);
+
+                    if (isForActiveChat && chatWidget.popup.style.display === 'flex') {
+                        // Chỉ hiển thị tin nhắn nếu nó thuộc về cuộc trò chuyện đang mở
+                        addMessage(messageStyle, msg.content); 
+                        
+                        // Nếu là tin nhắn nhận được, đánh dấu đã đọc
+                        if (!isSentByMe) {
+                            markConversationAsRead(msg.conversationId);
+                        }
+                    } else if (!isSentByMe) {
+                        // Nếu là tin nhắn mới từ cuộc trò chuyện khác, hiển thị thông báo
+                        showNewMessageNotification();
+                        updateConversationList(msg);
+                    }
+                } catch(err) {
+                    console.error("Layout: Lỗi xử lý tin nhắn WebSocket:", err);
+                    addMessage('system', 'Lỗi dữ liệu nhận được từ server.');
+                }
+            };
+            socket.onerror = (err) => console.error('WebSocket Error:', err);
+            socket.onclose = (e) => {
+                webSocket = null;
+                if (globalUserInfo && e.code !== 1000) { // Don't reconnect on normal close
+                    reconnectTimeout = setTimeout(connectWebSocket, 5000);
+                }
+            };
+        }
+        function closeWebSocket() {
+            clearTimeout(reconnectTimeout);
+            if (webSocket) webSocket.close(1000);
+        }
+
+        async function fetchConversations() {
+            if (!chatWidget.vendorList) return;
+            chatWidget.vendorList.innerHTML = '<div class="p-3 text-muted small text-center">Đang tải...</div>';
+            try {
+                const response = await fetch('/api/chat/conversations', { headers: { 'Authorization': `Bearer ${globalToken}` } });
+                allVendorConversations = await response.json();
+                renderConversationsList();
+            } catch (error) {
+                chatWidget.vendorList.innerHTML = '<div class="p-3 text-danger small text-center">Lỗi tải.</div>';
             }
         }
 
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('bot-typing-indicator');
-            if (indicator && chatBody) {
-                try { chatBody.removeChild(indicator); } catch (e) {}
+        function renderConversationsList() {
+            chatWidget.vendorList.innerHTML = '';
+            if (!allVendorConversations || allVendorConversations.length === 0) {
+                 chatWidget.vendorList.innerHTML = '<div class="p-3 text-muted small text-center">Không có cuộc trò chuyện nào.</div>';
+                 return;
+            }
+             allVendorConversations.forEach(conv => {
+                const item = document.createElement('div');
+                item.className = 'conversation-item';
+                item.id = `conv-${conv.conversationId}`;
+                if (conv.unreadCount > 0) item.classList.add('has-unread');
+                item.onclick = () => selectChat('VENDOR', conv.partnerId, conv.partnerName, conv.conversationId);
+                item.innerHTML = `
+                    <div class="avatar">${escapeHtml(conv.partnerName).substring(0, 1)}</div>
+                    <div class="details">
+                        <div class="name">${escapeHtml(conv.partnerName)}</div>
+                        <div class="last-message">${escapeHtml(conv.lastMessage)}</div>
+                    </div>
+                    <div class="meta">
+                        <div class="timestamp">${formatChatTimestamp(conv.lastMessageTime)}</div>
+                        ${conv.unreadCount > 0 ? `<span class="badge bg-danger rounded-pill unread-badge">${conv.unreadCount}</span>` : ''}
+                    </div>
+                `;
+                chatWidget.vendorList.appendChild(item);
+            });
+        }
+        
+        function updateConversationList(newMessage) {
+            // This is a simplified version; a full implementation would re-sort the list.
+            // For now, it just updates the unread count and last message.
+            fetchConversations(); // The simplest way to keep it accurate.
+        }
+
+        async function fetchMessageHistory(conversationId) {
+            try {
+                const response = await fetch(`/api/chat/messages/${conversationId}`, { headers: { 'Authorization': `Bearer ${globalToken}` } });
+                const messages = await response.json();
+                if (chatWidget.body) chatWidget.body.innerHTML = '';
+                messages.forEach(msg => addMessage(msg.senderId === globalUserInfo.id ? 'sent' : 'received', msg.content));
+                markConversationAsRead(conversationId);
+            } catch (error) {
+                addMessage('system', 'Lỗi tải lịch sử tin nhắn.');
             }
         }
-        // === END CHATBOT CODE ===
+
+        function markConversationAsRead(conversationId) {
+             if (!conversationId) return;
+             fetch(`/api/chat/messages/read?conversationId=${encodeURIComponent(conversationId)}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${globalToken}` }})
+             .then(() => fetchConversations()); // Refresh list to update counts
+        }
+
+        function showNewMessageNotification() {
+            const chatIcon = chatWidget.toggleBtn?.querySelector('i');
+            if(chatIcon && chatWidget.popup.style.display !== 'flex'){
+                chatIcon.classList.add('text-warning');
+            }
+        }
+        
+        // This function is exposed globally for other pages like product-detail to call
+        window.initiateVendorChat = function(vendorId, vendorName) {
+            if (!globalUserInfo) { promptLoginForChatLayout(); return; }
+            if (globalUserInfo.id === vendorId) { Swal.fire('Thông báo', 'Bạn không thể tự chat với mình.', 'info'); return; }
+            
+            const conversationId = `conv_${Math.min(globalUserInfo.id, vendorId)}_${Math.max(globalUserInfo.id, vendorId)}`;
+            
+            // Open the popup if not already open
+            if(chatWidget.popup.style.display !== 'flex') {
+                toggleChatPopup();
+            }
+            // Switch to the selected chat
+            selectChat('VENDOR', vendorId, vendorName, conversationId);
+        };
+
+
+        // ==================== UTILITY & HELPER FUNCTIONS ====================
+        function enableChat(placeholder) {
+            if (chatWidget.input) { chatWidget.input.disabled = false; chatWidget.input.placeholder = placeholder; }
+            if (chatWidget.sendBtn) chatWidget.sendBtn.disabled = false;
+        }
+
+        function disableChat(placeholder) {
+            if (chatWidget.input) { chatWidget.input.disabled = true; chatWidget.input.placeholder = placeholder; }
+            if (chatWidget.sendBtn) chatWidget.sendBtn.disabled = true;
+        }
+
+        function formatChatTimestamp(ts) {
+            if (!ts) return '';
+            try {
+                const date = Array.isArray(ts) ? new Date(ts[0], ts[1]-1, ts[2], ts[3], ts[4], ts[5]||0) : new Date(ts);
+                const now = new Date();
+                if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+                return date.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
+            } catch (e) { return ''; }
+        }
+        
+        function escapeHtml(str) { return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
+        function formatBotMessage(text) { return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); }
+
+    }); // End DOMContentLoaded
     </script>
+    <th:block layout:fragment="scripts_body"></th:block>
 
-
-    <div class="modal fade" id="changePaymentModal" tabindex="-1" aria-labelledby="changePaymentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="changePaymentModalLabel">Đổi phương thức thanh toán cho Đơn #<span id="modalOrderId"></span></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="modalChangeOrderId">
-                    <p>Chọn phương thức thanh toán mới:</p>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="newPaymentMethod" id="newCod" value="COD">
-                        <label class="form-check-label" for="newCod">
-                            <i class="bi bi-cash-coin me-1"></i> Thanh toán khi nhận hàng (COD)
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="newPaymentMethod" id="newSepayQr" value="SEPAY_QR">
-                        <label class="form-check-label" for="newSepayQr">
-                            <i class="bi bi-qr-code me-1"></i> Thanh toán qua mã QR (Chuyển khoản - SePay)
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="savePaymentChangeBtn" onclick="handleChangePaymentSubmit()">Lưu thay đổi</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    </body>
+</body>
 </html>

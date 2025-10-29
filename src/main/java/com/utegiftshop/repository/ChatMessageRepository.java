@@ -10,39 +10,31 @@ import java.util.List;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
-    
+
     /**
-     * Tìm tất cả tin nhắn theo conversationId, sắp xếp theo createdAt
+     * Tìm tất cả tin nhắn theo conversationId, sắp xếp theo createdAt TĂNG DẦN (cũ nhất trước)
      */
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.conversationId = :conversationId ORDER BY " +
-           "CASE WHEN cm.createdAt IS NOT NULL THEN cm.createdAt ELSE cm.timestamp END ASC")
+    // Sửa ORDER BY chỉ dùng createdAt
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.conversationId = :conversationId ORDER BY cm.createdAt ASC")
     List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(@Param("conversationId") String conversationId);
-    
+
     /**
-     * Tìm tất cả tin nhắn liên quan đến một user (là sender hoặc receiver)
+     * Tìm tất cả tin nhắn liên quan đến một user (là sender hoặc receiver), sắp xếp theo createdAt GIẢM DẦN (mới nhất trước)
+     * Dùng để lấy danh sách conversations
      */
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.senderId = :userId OR cm.receiverId = :userId")
-    List<ChatMessage> findBySenderIdOrReceiverId(
-        @Param("userId") Long senderId, 
-        @Param("userId") Long receiverId
-    );
-    
+    // Sửa ORDER BY chỉ dùng createdAt
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.senderId = :userId OR cm.receiverId = :userId ORDER BY cm.createdAt DESC")
+    List<ChatMessage> findBySenderIdOrReceiverIdOrderByCreatedAtDesc(@Param("userId") Long userId);
+
     /**
-     * Đếm số tin nhắn chưa đọc của một người nhận
+     * Đếm số tin nhắn chưa đọc của một người nhận TRONG MỘT conversation cụ thể
      */
-    @Query("SELECT COUNT(cm) FROM ChatMessage cm WHERE cm.receiverId = :receiverId AND cm.isRead = false")
-    long countByReceiverIdAndIsReadFalse(@Param("receiverId") Long receiverId);
-    
+    long countByConversationIdAndReceiverIdAndIsReadFalse(String conversationId, Long receiverId);
+
     /**
-     * Tìm tin nhắn cuối cùng của một cuộc trò chuyện
+     * Lấy các tin nhắn chưa đọc của một người nhận TRONG MỘT conversation cụ thể
      */
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.conversationId = :conversationId ORDER BY " +
-           "CASE WHEN cm.createdAt IS NOT NULL THEN cm.createdAt ELSE cm.timestamp END DESC")
-    ChatMessage findLastMessageByConversationId(@Param("conversationId") String conversationId);
-    
-    /**
-     * Tìm tất cả conversationIds liên quan đến một user
-     */
-    @Query("SELECT DISTINCT cm.conversationId FROM ChatMessage cm WHERE cm.senderId = :userId OR cm.receiverId = :userId")
-    List<String> findConversationsByUserId(@Param("userId") Long userId);
+     List<ChatMessage> findByConversationIdAndReceiverIdAndIsReadFalse(String conversationId, Long receiverId);
+
+    // Không cần hàm findLastMessageByConversationId nữa vì hàm findBySenderIdOrReceiverIdOrderByCreatedAtDesc đã sắp xếp mới nhất lên đầu
 }
