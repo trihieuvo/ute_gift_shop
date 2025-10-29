@@ -33,12 +33,13 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addViewController("/cart").setViewName("cart"); // Trang giỏ hàng
         registry.addViewController("/checkout").setViewName("checkout"); // Trang thanh toán
         registry.addViewController("/profile").setViewName("profile"); // Trang thông tin cá nhân
-        registry.addViewController("/payment/{orderId}").setViewName("payment"); // Trang thanh toán cho đơn hàng cụ thể
+        registry.addViewController("/payment/{orderId}").setViewName("payment");
+
         // ÁNH XẠ CHO LỊCH SỬ ĐƠN HÀNG ===
         registry.addViewController("/order-history").setViewName("order-history");
         // Ánh xạ cho trang chi tiết, {id} sẽ được xử lý bởi JS ở frontend
-        registry.addViewController("/orders/{id}").setViewName("order-details"); 
-       
+        registry.addViewController("/orders/{id}").setViewName("order-details");
+
         registry.addViewController("/products/{id}").setViewName("product-detail");
         // BỎ CÁC VIEW CONTROLLER CHO /shipper/... ở đây nếu có
 
@@ -66,10 +67,10 @@ public class MvcConfig implements WebMvcConfigurer {
             // Chuyển đường dẫn thành dạng URI hợp lệ (vd: file:/C:/...)
             String uploadLocationUri = uploadPath.toUri().toString();
 
-            logger.info("Mapping URL path /uploaded-images/** to location: {}", uploadLocationUri);
+            logger.info("Mapping URL path /images/** to location: {}", uploadLocationUri); // *** SỬA URL PATH ***
 
             // Đăng ký resource handler
-            registry.addResourceHandler("/uploaded-images/**") // URL pattern trình duyệt gọi
+            registry.addResourceHandler("/images/**") // *** SỬA URL PATTERN ***
                     .addResourceLocations(uploadLocationUri); // Đường dẫn thư mục vật lý
 
         } catch (IOException e) {
@@ -78,5 +79,5 @@ public class MvcConfig implements WebMvcConfigurer {
              logger.error("Error configuring resource handler for upload directory: {}", uploadDir, e);
         }
     }
- 
+
 }
