@@ -16,8 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping; // Import UriComponentsBuilder
-import org.springframework.web.bind.annotation.RequestParam; // Import Collections
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -52,15 +52,19 @@ public class PaymentController {
         }
         Order order = orderOpt.get();
 
+        // === THAY ĐỔI KIỂM TRA STATUS ===
+        // Nếu không phải là PENDING_PAYMENT, tức là đã xử lý (thành công hoặc lỗi khác)
         if (!"PENDING_PAYMENT".equals(order.getStatus())) {
             logger.info("Order {} already processed with status: {}", order.getId(), order.getStatus());
-            return ResponseEntity.ok(Map.of("paid", true));
+            // Trả về true nếu trạng thái là CONFIRMED (hoặc các trạng thái sau CONFIRMED)
+            // Trả về false nếu là CANCELLED hoặc trạng thái lỗi khác
+            boolean isPaid = List.of("CONFIRMED", "PREPARING", "READY_FOR_SHIPMENT", "DELIVERING", "DELIVERED").contains(order.getStatus());
+             return ResponseEntity.ok(Map.of("paid", isPaid));
         }
+        // === KẾT THÚC THAY ĐỔI ===
 
         // 2. Gọi API SePay
-        // --- !!! THAY TOKEN CỦA BẠN VÀO ĐÂY !!! ---
-        String apiToken = "HL1TIEXVOABXCTRDJFHOYNRJZULNZKC4IJTZQDSZM5B7NVQGSSPOY0W26MKEPWMU";
-        // ------------------------------------------
+        String apiToken = "HL1TIEXVOABXCTRDJFHOYNRJZULNZKC4IJTZQDSZM5B7NVQGSSPOY0W26MKEPWMU"; // Thay Token của bạn
 
         // --- CẬP NHẬT URL API ---
         String sepayUrl = UriComponentsBuilder.fromHttpUrl("https://my.sepay.vn/userapi/transactions/list")
@@ -70,7 +74,7 @@ public class PaymentController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + apiToken);
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON)); // Sửa Accept header
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         RestTemplate restTemplate = new RestTemplate();
@@ -89,20 +93,19 @@ public class PaymentController {
                     logger.debug("Found {} transactions in response.", transactions.size());
 
                     for (Map<String, Object> tx : transactions) {
-                        // --- SỬA TÊN TRƯỜNG ---
                         String transactionContent = (String) tx.get("transaction_content");
-                        // -----------------------
 
-                        // Kiểm tra xem transaction_content có chứa paymentCode không
                         if (transactionContent != null && transactionContent.contains(paymentCode)) {
                             logger.info("Payment found for code: {}! Transaction ID: {}", paymentCode, tx.get("id"));
 
-                            // Cập nhật trạng thái đơn hàng
+                            // === THAY ĐỔI CẬP NHẬT STATUS ===
+                            // Cập nhật trạng thái đơn hàng chính
                             order.setStatus("CONFIRMED"); // Đã xác nhận thanh toán
-                            order.setPaymentStatus("SUCCESS");
+                            // order.setPaymentStatus("SUCCESS"); // <<<--- XÓA DÒNG NÀY
                             order.setPaymentTransId(String.valueOf(tx.get("id")));
                             orderRepository.save(order);
                             logger.info("Order {} status updated to CONFIRMED.", order.getId());
+                            // === KẾT THÚC THAY ĐỔI ===
 
                             return ResponseEntity.ok(Map.of("paid", true));
                         }
@@ -127,4 +130,3 @@ public class PaymentController {
         return ResponseEntity.ok(Map.of("paid", false));
     }
 }
-

@@ -30,6 +30,17 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
+        // Không cần khởi tạo modal ở đây nữa vì nó nằm trong layout
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sử dụng setTimeout để đảm bảo DOM (bao gồm cả layout) đã sẵn sàng
+            // Mặc dù không bắt buộc nhưng an toàn hơn
+            setTimeout(() => {
+                console.log("DOM fully loaded for order-history, fetching order history...");
+                fetchOrderHistory();
+            }, 0);
+        });
+
         async function fetchOrderHistory() {
             const token = localStorage.getItem('jwtToken');
             const tableBody = document.getElementById('orders-table-body');
@@ -38,15 +49,16 @@
                 return;
             }
 
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5">Đang tải lịch sử đơn hàng...</td></tr>';
+
             try {
-                // 1. Gọi API /api/orders/my-history (sẽ được tạo ở OrderController)
                 const response = await fetch('/api/orders/my-history', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
                     const orders = await response.json();
-                    tableBody.innerHTML = ''; // Xóa dòng "Đang tải..."
+                    tableBody.innerHTML = '';
 
                     if (orders.length === 0) {
                         tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5">Bạn chưa có đơn hàng nào.</td></tr>';
@@ -55,24 +67,39 @@
 
                     orders.forEach(order => {
                         const row = tableBody.insertRow();
-                        let statusBadge = '';
+                        let statusText = order.status;
+                        let statusBadge = 'bg-secondary'; // Default
+
                         switch (order.status) {
-                            case 'NEW': statusBadge = 'bg-info'; break;
-                            case 'CONFIRMED': statusBadge = 'bg-primary'; break;
-                            case 'DELIVERING': statusBadge = 'bg-warning text-dark'; break;
-                            case 'DELIVERED': statusBadge = 'bg-success'; break;
-                            case 'CANCELLED': statusBadge = 'bg-danger'; break;
-                            default: statusBadge = 'bg-secondary';
+                            case 'NEW': statusText = 'Mới'; statusBadge = 'bg-info text-dark'; break;
+                            case 'PENDING_PAYMENT': statusText = 'Chờ thanh toán QR'; statusBadge = 'bg-warning text-dark'; break;
+                            case 'CONFIRMED': statusText = 'Đã xác nhận'; statusBadge = 'bg-primary'; break;
+                            case 'PREPARING': statusText = 'Đang chuẩn bị'; statusBadge = 'bg-primary'; break;
+                            case 'READY_FOR_SHIPMENT': statusText = 'Sẵn sàng giao'; statusBadge = 'bg-primary'; break;
+                            case 'DELIVERING': statusText = 'Đang giao'; statusBadge = 'bg-warning text-dark'; break;
+                            case 'DELIVERED': statusText = 'Đã giao thành công'; statusBadge = 'bg-success'; break;
+                            case 'CANCELLED': statusText = 'Đã hủy'; statusBadge = 'bg-danger'; break;
+                            case 'RETURN_PENDING': statusText = 'Chờ trả hàng'; statusBadge = 'bg-danger'; break;
+                            case 'RETURNED': statusText = 'Đã trả hàng'; statusBadge = 'bg-dark'; break;
                         }
-                        
+
+                        const canChangePayment = order.status === 'NEW' || order.status === 'PENDING_PAYMENT';
+                        const changePaymentButtonHtml = canChangePayment ?
+                            // *** Quan trọng: Đảm bảo hàm showChangePaymentModal là global hoặc được định nghĩa trong scope này ***
+                            `<button class="btn btn-warning btn-sm ms-1" onclick="showChangePaymentModal(${order.id}, '${order.paymentMethod}')">
+                                <i class="bi bi-pencil-square"></i> Đổi PTTT
+                            </button>`
+                            : '';
+
                         row.innerHTML = `
                             <td>#${order.id}</td>
                             <td>${new Date(order.orderDate).toLocaleDateString('vi-VN')}</td>
                             <td>${order.shippingAddress}</td>
                             <td>${order.totalAmount.toLocaleString('vi-VN')} đ</td>
-                            <td><span class="badge ${statusBadge}">${order.status}</span></td>
+                            <td><span class="badge ${statusBadge}">${statusText}</span></td>
                             <td>
                                 <a href="/orders/${order.id}" class="btn btn-primary btn-sm">Xem chi tiết</a>
+                                ${changePaymentButtonHtml}
                             </td>
                         `;
                     });
@@ -80,14 +107,132 @@
                 } else if (response.status === 401 || response.status === 403) {
                      Swal.fire('Lỗi', 'Không có quyền truy cập hoặc phiên đăng nhập hết hạn.', 'error').then(() => window.location.href = '/login');
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5 text-danger">Lỗi tải lịch sử đơn hàng.</td></tr>';
+                     const errorText = await response.text();
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-5 text-danger">Lỗi tải lịch sử đơn hàng (${response.status}): ${errorText}</td></tr>`;
                 }
             } catch (error) {
+                 console.error("Lỗi mạng khi tải lịch sử:", error);
                  tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-5 text-danger">Lỗi kết nối mạng.</td></tr>';
             }
         }
 
-        document.addEventListener('DOMContentLoaded', fetchOrderHistory);
+        // Hàm hiển thị modal (modal HTML nằm trong layout _app_layout.html)
+        function showChangePaymentModal(orderId, currentMethod) {
+            console.log(`Attempting to show modal for order ${orderId}, current method ${currentMethod}`);
+            const modalEl = document.getElementById('changePaymentModal'); // Modal này từ layout
+
+            if (!modalEl) {
+                // Lỗi này không nên xảy ra nếu modal đã ở trong layout
+                console.error("CRITICAL ERROR: Modal element #changePaymentModal not found in layout DOM!");
+                Swal.fire('Lỗi giao diện nghiêm trọng', 'Không tìm thấy cấu trúc cửa sổ.', 'error');
+                return;
+            }
+
+            // Sử dụng getOrCreateInstance để đảm bảo an toàn
+            const changePaymentModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+            if (!changePaymentModalInstance) {
+                console.error("Failed to get or create Bootstrap Modal instance!");
+                 Swal.fire('Lỗi giao diện', 'Không thể khởi tạo cửa sổ.', 'error');
+                 return;
+            }
+
+            // --- Phần còn lại của hàm giữ nguyên ---
+            const modalOrderIdSpan = document.getElementById('modalOrderId');
+            const modalChangeOrderIdInput = document.getElementById('modalChangeOrderId');
+            if(modalOrderIdSpan) modalOrderIdSpan.textContent = orderId;
+            if(modalChangeOrderIdInput) modalChangeOrderIdInput.value = orderId;
+
+            const currentMethodUpper = currentMethod.toUpperCase();
+            let radioToCheck = document.querySelector(`input[name="newPaymentMethod"][value="${currentMethodUpper}"]`);
+
+             if (!radioToCheck && currentMethodUpper === 'SEPAY_QR') {
+                 radioToCheck = document.getElementById('newSepayQr');
+             } else if (!radioToCheck && currentMethodUpper === 'COD') {
+                 radioToCheck = document.getElementById('newCod');
+             }
+
+             // Nếu đang PENDING_PAYMENT (tức là QR), mặc định check QR
+             if (currentMethodUpper === 'PENDING_PAYMENT') {
+                  radioToCheck = document.getElementById('newSepayQr');
+             } else if (!radioToCheck) { // Nếu vẫn ko tìm thấy (lỗi?), mặc định COD
+                 radioToCheck = document.getElementById('newCod');
+                 console.warn(`Could not find radio for current method '${currentMethodUpper}', defaulting to COD.`);
+             }
+
+
+             if (radioToCheck) {
+                 radioToCheck.checked = true;
+             } else {
+                 console.error("Could not find any payment method radio buttons!");
+             }
+
+            console.log("Showing modal instance from layout...");
+            changePaymentModalInstance.show();
+        }
+
+        // Hàm xử lý khi nhấn nút Lưu thay đổi trong modal
+        // *** Đảm bảo hàm này có thể truy cập được (là hàm global) ***
+        async function handleChangePaymentSubmit() {
+            const orderId = document.getElementById('modalChangeOrderId').value;
+            const selectedPaymentRadio = document.querySelector('input[name="newPaymentMethod"]:checked');
+            const saveButton = document.getElementById('savePaymentChangeBtn');
+
+            const modalEl = document.getElementById('changePaymentModal'); // Modal từ layout
+            // Lấy instance đang hiển thị (nếu có)
+            const changePaymentModalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+
+
+            if (!selectedPaymentRadio) {
+                Swal.fire('Lỗi', 'Vui lòng chọn phương thức thanh toán mới.', 'warning');
+                return;
+            }
+            const newPaymentMethod = selectedPaymentRadio.value;
+
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+            try {
+                const token = localStorage.getItem('jwtToken');
+                const response = await fetch(`/api/orders/${orderId}/change-payment`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newPaymentMethod: newPaymentMethod })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (changePaymentModalInstance) changePaymentModalInstance.hide(); // Hide modal first
+
+                    if (result.paymentMethod === 'SEPAY_QR' && result.paymentCode) {
+                        sessionStorage.setItem('paymentInfo', JSON.stringify({
+                            orderId: orderId,
+                            paymentCode: result.paymentCode,
+                            totalAmount: result.totalAmount
+                        }));
+                         Swal.fire('Thành công', result.message || 'Đổi PTTT thành công. Bạn sẽ được chuyển đến trang thanh toán QR.', 'success')
+                         .then(() => {
+                             window.location.href = `/payment/${orderId}`;
+                         });
+
+                    } else {
+                         Swal.fire('Thành công', result.message || 'Đổi PTTT thành công!', 'success');
+                         fetchOrderHistory(); // Reload table
+                    }
+                } else {
+                    throw new Error(result.message || `Lỗi ${response.status}`);
+                }
+            } catch (error) {
+                Swal.fire('Lỗi', `Không thể thay đổi phương thức thanh toán: ${error.message}`, 'error');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'Lưu thay đổi';
+            }
+        }
     </script>
 </th:block>
 

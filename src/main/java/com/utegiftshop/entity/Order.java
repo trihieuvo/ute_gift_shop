@@ -39,27 +39,28 @@ public class Order {
     private BigDecimal totalAmount;
 
     @Column(length = 50, nullable = false)
-    private String status;
+    private String status; // <-- Trạng thái chính của đơn hàng (NEW, PENDING_PAYMENT, CONFIRMED, DELIVERING, DELIVERED, CANCELLED, etc.)
 
     @Column(name = "shipping_address", nullable = false, columnDefinition = "TEXT")
     private String shippingAddress;
 
     @Column(name = "payment_method", length = 50, nullable = false)
-    private String paymentMethod;
-    
-    @Column(name = "payment_code", length = 50, unique = true)
-    private String paymentCode; // Dùng để dò giao dịch trên SePay
+    private String paymentMethod; // COD, SEPAY_QR
 
-    // === BỔ SUNG CÁC TRƯỜNG CHO CỔNG THANH TOÁN ===
-    @Column(name = "payment_status", length = 20)
-    private String paymentStatus; // PENDING, SUCCESS, FAILED
+    @Column(name = "payment_code", length = 50, unique = true)
+    private String paymentCode; // Dùng để dò giao dịch trên SePay (chỉ dùng cho SEPAY_QR)
+
+    // === CÁC TRƯỜNG CHO CỔNG THANH TOÁN (GIỮ LẠI ĐỂ LƯU THÔNG TIN GIAO DỊCH) ===
+    // @Column(name = "payment_status", length = 20) // <<<----- XÓA DÒNG NÀY
+    // private String paymentStatus; // PENDING, SUCCESS, FAILED <<<----- XÓA DÒNG NÀY
 
     @Column(name = "payment_trans_id", length = 50)
-    private String paymentTransId; // Mã giao dịch của cổng thanh toán
+    private String paymentTransId; // Mã giao dịch của cổng thanh toán (nếu có)
 
     @Column(name = "payment_request_id", length = 50)
-    private String paymentRequestId; // Mã requestId của đơn hàng
+    private String paymentRequestId; // Mã requestId của đơn hàng (nếu dùng VNPay, Momo...)
 
+    // === CÁC TRƯỜNG KHÁC GIỮ NGUYÊN ===
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "shipper_id")
     private User shipper; // Người giao hàng
@@ -73,16 +74,10 @@ public class Order {
     @Column(name = "proof_of_delivery_image_url", columnDefinition = "TEXT")
     private String proofOfDeliveryImageUrl;
 
-
     @Column(name = "is_cod_reconciled", nullable = false, columnDefinition = "boolean default false")
     private boolean isCodReconciled = false; // Đã đối soát tiền COD hay chưa
-  
 
     @JsonManagedReference
     @OneToMany(mappedBy = "order", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
-    
-
-
-    
 }
