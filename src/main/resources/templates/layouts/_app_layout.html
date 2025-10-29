@@ -451,6 +451,12 @@
                  if (!window.__uteAppLayoutUserInfo || !window.__uteAppLayoutUserInfo.id) promptLoginForChatLayout();
                  return;
              }
+             const token = localStorage.getItem('jwtToken');
+            if (!token) {
+                addMessageLayout('system', 'Lỗi xác thực. Vui lòng đăng nhập lại.');
+                Swal.fire('Lỗi', 'Phiên đăng nhập đã hết hạn.', 'error').then(() => logout());
+                return;
+            }
              const currentInput = messageText;
              chatInput.value = '';
              addMessageLayout('user-message', currentInput);
@@ -459,7 +465,7 @@
                  try {
                      const response = await fetch('/api/chat', {
                          method: 'POST',
-                         headers: { 'Authorization': `Bearer ${window.__uteAppLayoutUserInfo.token}`, 'Content-Type': 'application/json' },
+                         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                          body: JSON.stringify({ message: currentInput })
                      });
                      removeSystemMessagesLayout('AI đang xử lý...');
