@@ -92,7 +92,11 @@
 
                     // Kiểm tra vai trò và chuyển hướng
                     let redirectUrl = '/home'; // Mặc định cho Customer
-                    if (data.role === 'Shipper') {
+                    if (data.role === 'Admin') {
+                        redirectUrl = '/admin/dashboard';
+                    } else if (data.role === 'Vendor') {
+                        redirectUrl = '/vendor/dashboard';
+                    } else if (data.role === 'Shipper') {
                         redirectUrl = '/shipper/dashboard';
                     }
 
