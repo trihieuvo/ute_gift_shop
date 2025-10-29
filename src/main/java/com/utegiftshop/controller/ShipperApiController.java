@@ -1,37 +1,43 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.dto.request.UpdateOrderStatusRequest;
-import com.utegiftshop.dto.response.ShipperStatsDto; 
-import com.utegiftshop.dto.response.ShipperOrderDto;
-import com.utegiftshop.dto.response.ShipperOrderDetailDto;
-import com.utegiftshop.entity.Order;
-import com.utegiftshop.repository.OrderRepository;
-import com.utegiftshop.security.service.UserDetailsImpl;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors; // BỔ SUNG
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Autowired; // BỔ SUNG
 import org.springframework.data.domain.Page; // BỔ SUNG
 import org.springframework.data.domain.PageRequest; // BỔ SUNG
 import org.springframework.data.domain.Pageable; // BỔ SUNG
-import org.springframework.data.domain.Sort; // BỔ SUNG
-import org.springframework.format.annotation.DateTimeFormat; // BỔ SUNG
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StringUtils; 
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StringUtils; // BỔ SUNG
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable; // BỔ SUNG
+import org.springframework.web.bind.annotation.PutMapping; // BỔ SUNG
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal; // BỔ SUNG
-import java.sql.Timestamp; 
-import java.time.LocalDate; // BỔ SUNG
-import java.time.LocalTime; // BỔ SUNG
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set; 
-import java.util.stream.Collectors; 
+import com.utegiftshop.dto.request.UpdateOrderStatusRequest;
+import com.utegiftshop.dto.response.ShipperOrderDetailDto;
+import com.utegiftshop.dto.response.ShipperOrderDto;
+import com.utegiftshop.dto.response.ShipperStatsDto;
+import com.utegiftshop.entity.Order;
+import com.utegiftshop.repository.OrderRepository;
+import com.utegiftshop.security.service.UserDetailsImpl; 
 
 @RestController
 @RequestMapping("/api/shipper")
@@ -45,7 +51,7 @@ public class ShipperApiController {
     
     // 1. Đơn hàng đang xử lý (Hiển thị ở trang "Đơn hàng cần giao")
     // BAO GỒM CẢ ĐƠN ĐANG GIAO
-    private static final List<String> ACTIVE_STATUSES = List.of("CONFIRMED", "PREPARING", "DELIVERING");
+    private static final List<String> ACTIVE_STATUSES = List.of("READY_FOR_SHIPMENT", "DELIVERING");
     
     // 2. Đơn hàng đã hoàn tất (Hiển thị ở trang "Lịch sử")
     // THÊM TRẠNG THÁI MỚI 'RETURN_PENDING' và 'RETURNED'
@@ -176,7 +182,9 @@ public class ShipperApiController {
         // Kiểm tra logic trạng thái
         switch (newStatus) {
             case "DELIVERING":
-                if (!List.of("CONFIRMED", "PREPARING").contains(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể bắt đầu giao hàng từ trạng thái " + List.of("CONFIRMED", "PREPARING"));
+                if (!"READY_FOR_SHIPMENT".equals(currentStatus)) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể bắt đầu giao hàng từ trạng thái 'Sẵn sàng giao'.");
+                }
                 break;
             case "DELIVERED":
                 if (!"DELIVERING".equals(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể xác nhận đã giao hàng từ trạng thái Đang giao hàng.");

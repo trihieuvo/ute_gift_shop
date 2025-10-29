@@ -1,17 +1,24 @@
 package com.utegiftshop.controller;
 
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.utegiftshop.entity.Order;
 import com.utegiftshop.entity.User;
 import com.utegiftshop.repository.OrderRepository;
 import com.utegiftshop.repository.UserRepository;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.persistence.criteria.Predicate;
 
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Optional;
+import jakarta.persistence.criteria.Predicate;
 
 @RestController
 @RequestMapping("/api/v1/admin/orders")
@@ -102,11 +109,7 @@ public class AdminOrderApiController {
 
         // Cập nhật Shipper ID
         order.setShipper(shipper); 
-        // Admin gán -> Đơn hàng chuyển sang trạng thái "Đang giao" (DELIVERING) nếu đang là 'CONFIRMED'
-        if (order.getStatus().equals("CONFIRMED") || order.getStatus().equals("NEW")) {
-             order.setStatus("DELIVERING"); 
-        }
-        
+        // KHÔNG tự động chuyển trạng thái nữa. Việc này sẽ do Shipper thực hiện.
         orderRepository.save(order);
         return ResponseEntity.ok().build();
     }

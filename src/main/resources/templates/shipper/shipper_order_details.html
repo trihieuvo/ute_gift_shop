@@ -257,7 +257,8 @@
 
         function updateActionButtons(status) {
             [btnStartDelivery, btnDelivered, btnFailed, finalStatusMsg].forEach(btn => btn.classList.add('d-none'));
-            if (['CONFIRMED', 'PREPARING'].includes(status)) {
+            // Chỉ hiển thị nút "Bắt đầu giao" khi trạng thái là "READY_FOR_SHIPMENT"
+            if (status === 'READY_FOR_SHIPMENT') {
                 btnStartDelivery.classList.remove('d-none');
             } else if (status === 'DELIVERING') {
                 btnDelivered.classList.remove('d-none');
