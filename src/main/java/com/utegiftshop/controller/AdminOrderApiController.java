@@ -94,13 +94,17 @@ public class AdminOrderApiController {
     {
         Optional<Order> orderOpt = orderRepository.findById(orderId);
         Optional<User> shipperOpt = userRepository.findById(shipperId);
-
+        
         if (orderOpt.isEmpty() || shipperOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         Order order = orderOpt.get();
         User shipper = shipperOpt.get();
+        if (!"READY_FOR_SHIPMENT".equals(order.getStatus())) {
+        // Trả về lỗi 400 Bad Request nếu trạng thái không hợp lệ
+        return ResponseEntity.badRequest().build(); 
+        }   
         
         // Kiểm tra xem người được gán có phải là Shipper không (tùy chọn)
         if (!shipper.getRole().getName().equals("Shipper")) {
@@ -109,7 +113,11 @@ public class AdminOrderApiController {
 
         // Cập nhật Shipper ID
         order.setShipper(shipper); 
-        // KHÔNG tự động chuyển trạng thái nữa. Việc này sẽ do Shipper thực hiện.
+        // Admin gán -> Đơn hàng chuyển sang trạng thái "Đang giao" (DELIVERING) nếu đang là 'CONFIRMED'
+        if (order.getStatus().equals("CONFIRMED") || order.getStatus().equals("NEW")) {
+             order.setStatus("DELIVERING"); 
+        }
+        
         orderRepository.save(order);
         return ResponseEntity.ok().build();
     }

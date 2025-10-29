@@ -30,6 +30,7 @@
                           <option value="">Tất cả</option>
                           <option value="NEW">Đơn mới</option>
                           <option value="CONFIRMED">Đã xác nhận</option>
+                          <option value="READY_FOR_SHIPMENT">Sẵn sàng giao</option>
                           <option value="DELIVERING">Đang giao</option>
                           <option value="DELIVERED">Đã giao</option>
                           <option value="CANCELLED">Đã hủy</option>
@@ -167,14 +168,15 @@
                 </select>`;
 
             let assignButton = '';
-            // Chỉ cho phép gán shipper nếu đơn hàng chưa được giao hoặc chưa bị hủy
-            if (order.status !== 'DELIVERED' && order.status !== 'CANCELLED') {
+            // CHỈ cho phép gán shipper nếu đơn hàng ở trạng thái "READY_FOR_SHIPMENT"
+            if (order.status === 'READY_FOR_SHIPMENT') {
                 assignButton = `
                     <button class="btn btn-sm btn-primary mt-1" onclick="handleAssignShipper(${order.id})">
                         <i class="bi bi-person-fill-add"></i> Gán
                     </button>`;
             } else {
-                shipperSelect = `<span class="fw-bold">${order.shipper ? order.shipper.fullName : 'N/A'}</span>`;
+                // Với các trạng thái khác, chỉ hiển thị tên shipper đã gán (nếu có)
+                shipperSelect = `<span class="fw-bold">${order.shipper ? order.shipper.fullName : 'Chưa gán'}</span>`;
             }
             
 
@@ -213,7 +215,7 @@
 
                 if (!response.ok) throw new Error("Lỗi khi gán Shipper");
 
-                Swal.fire('Thành công!', 'Đơn hàng đã được gán và chuyển sang trạng thái "Đang giao".', 'success');
+                Swal.fire('Thành công!', 'Đơn hàng đã được gán cho Shipper.', 'success');
                 fetchAllOrders(); // Tải lại danh sách
             } catch (err) {
                 Swal.fire('Lỗi', 'Không thể gán Shipper. Vui lòng thử lại.', 'error');
