@@ -49,23 +49,15 @@
 
          .chat-popup { display: none; position: fixed; bottom: 90px; right: 20px; width: 370px; max-height: 550px; background: #fff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0, 0, 0, .3); flex-direction: column; overflow: hidden; border: 1px solid #ddd; }
          .chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-         .chat-header span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 40px); } /* Limit header text width */
+         .chat-header span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 40px); }
          .chat-header .btn-close { filter: brightness(0) invert(1); opacity: 0.8; padding: 0.5rem; background-size: 50%; }
          .chat-header .btn-close:hover { opacity: 1; }
 
          .chat-body { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: #f8f9fa; }
-         .chat-message {
-             padding: 8px 14px;
-             border-radius: 18px;
-             max-width: 80%;
-             word-wrap: break-word; /* Ensure long words wrap */
-             white-space: pre-wrap; /* Preserve line breaks and spaces */
-             line-height: 1.5;
-             font-size: 0.9rem;
-         }
+         .chat-message { padding: 8px 14px; border-radius: 18px; max-width: 80%; word-wrap: break-word; white-space: pre-wrap; line-height: 1.5; font-size: 0.9rem; }
          .user-message { background: #0d6efd; color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
          .bot-message { background: #e9ecef; color: #212529; align-self: flex-start; border-bottom-left-radius: 5px; }
-         .received-message { background: #fff; color: #212529; align-self: flex-start; border-bottom-left-radius: 5px; border: 1px solid #eee; } /* For vendor messages */
+         .received-message { background: #fff; color: #212529; align-self: flex-start; border-bottom-left-radius: 5px; border: 1px solid #eee; }
          .system-message { background-color: transparent; color: #6c757d; align-self: center; font-size: 0.75rem; font-style: italic; border: none; max-width: 90%; text-align: center; padding: 5px 10px; margin: 5px 0; }
          .system-message .spinner-border-sm { width: 0.8rem; height: 0.8rem; vertical-align: text-bottom; }
 
@@ -77,7 +69,6 @@
          .chat-footer button:disabled { background-color: #adb5bd; cursor: not-allowed; }
          .chat-footer button i { font-size: 1.2rem; }
 
-         /* Markdown Formatting */
          .chat-message pre { background-color: #282c34; color: #abb2bf; padding: 0.8em; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
          .chat-message code { font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; }
          .chat-message pre code { background: none; padding: 0; }
@@ -202,18 +193,12 @@
 
      <script>
          // === GLOBAL VARIABLES ===
-         let __uteAppLayoutUserInfo = null; // RENAMED VARIABLE
-         let globalUserStatusChecked = false; // Flag to indicate if user status check is complete
-         let userInfoResolve = null; // Function to resolve the userInfoPromise
-         // Promise that resolves when user info is fetched (or check fails)
-         window.userInfoPromise = new Promise((resolve) => {
-             userInfoResolve = resolve;
-         });
-         let globalWebSocket = null; // Stores the WebSocket connection object
-         let globalChatTarget = { type: 'AI', id: null, name: 'UTE GiftShop Assistant' }; // Current chat target (AI or VENDOR)
-         let currentConversationId = null; // ID of the currently open P2P chat conversation
-         let globalReconnectTimeout = null; // Timeout ID for WebSocket reconnection attempts
-         let isChatPopupOpen = false; // State of the chat popup visibility
+         let globalUserInfo = null;
+         let globalWebSocket = null;
+         let globalChatTarget = { type: 'AI', id: null, name: 'UTE GiftShop Assistant' };
+         let currentConversationId = null;
+         let globalReconnectTimeout = null;
+         let isChatPopupOpen = false;
 
          // === DOM ELEMENTS ===
          const navbarAvatar = document.getElementById('navbarUserAvatar');
@@ -228,48 +213,29 @@
          const chatHeaderSpan = document.querySelector('#chat-header span');
 
          // === HELPER FUNCTIONS ===
-
-         /**
-          * Escapes HTML special characters in a string.
-          * @param {string} unsafe The string to escape.
-          * @returns {string} The escaped string.
-          */
          function escapeHtml(unsafe) {
              if (typeof unsafe !== 'string') return '';
              return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
          }
 
-          /**
-           * Formats bot/system messages (simple Markdown: **bold**, newlines).
-           * Also escapes HTML to prevent injection.
-           * @param {string} text The raw text message.
-           * @returns {string} HTML formatted string.
-           */
           function formatBotMessage(text) {
               if (typeof text !== 'string') return '';
-              let escapedText = escapeHtml(text); // Escape HTML first
-              // Apply simple Markdown
-              let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // **bold**
-              formattedText = formattedText.replace(/\n/g, '<br>'); // Newlines
+              let escapedText = escapeHtml(text);
+              let formattedText = escapedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+              formattedText = formattedText.replace(/\n/g, '<br>');
               return formattedText;
           }
 
-
-         /**
-          * Formats a timestamp (ISO string or array) into a HH:mm time string.
-          * @param {string|Array} isoStringOrArray Timestamp data.
-          * @returns {string} Formatted time string or empty string on error.
-          */
          function formatChatTimestamp(isoStringOrArray) {
              if (!isoStringOrArray) return '';
              try {
                  let date;
-                 if (Array.isArray(isoStringOrArray)) { // Handle array format [year, month, day, hour, minute, second]
+                 if (Array.isArray(isoStringOrArray)) {
                      date = new Date(isoStringOrArray[0], isoStringOrArray[1] - 1, isoStringOrArray[2], isoStringOrArray[3], isoStringOrArray[4], isoStringOrArray[5] || 0);
-                 } else { // Handle ISO string format
+                 } else {
                      date = new Date(isoStringOrArray);
                  }
-                 if (isNaN(date)) return ''; // Invalid date
+                 if (isNaN(date)) return '';
                  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
              } catch (e) {
                  console.error("Error formatting chat timestamp:", e);
@@ -277,12 +243,6 @@
              }
          }
 
-         /**
-          * Generates a consistent conversation ID based on two user IDs.
-          * @param {number|string} userId1 ID of the first user.
-          * @param {number|string} userId2 ID of the second user.
-          * @returns {string|null} The generated conversation ID (e.g., "conv_1_5") or null if IDs are invalid.
-          */
          function generateConversationIdLayout(userId1, userId2) {
              if (!userId1 || !userId2) return null;
              const u1 = Math.min(Number(userId1), Number(userId2));
@@ -292,31 +252,15 @@
          }
 
          // === AUTHENTICATION & UI UPDATE FUNCTIONS ===
-
-         /**
-          * Logs the user out by removing the token and redirecting.
-          */
          function logout() {
-             console.log("Layout: [logout] Logging out..."); // ADDED LOG
              localStorage.removeItem('jwtToken');
-             // === GÁN NULL VÀ LOG ===
-             __uteAppLayoutUserInfo = null; // RENAMED Assignment
-             console.log("Layout: [logout] Set __uteAppLayoutUserInfo to null."); // RENAMED Log
-             // ======================
-             closeWebSocket(); // Close WebSocket connection
-             renderGuestMenu(); // Update UI to guest state
-             disableChatInputLayout("Đã đăng xuất"); // Disable chat
-             globalUserStatusChecked = true; // Mark status check as done
-             // === LOG TRƯỚC KHI RESOLVE ===
-             console.log("Layout: [logout] Resolving userInfoPromise WITH null."); // ADDED LOG
-             if(userInfoResolve) userInfoResolve(null); // Resolve promise with null
-             // =============================
-             setTimeout(() => { window.location.href = '/login'; }, 300); // Redirect after small delay
+             globalUserInfo = null;
+             closeWebSocket();
+             renderGuestMenu();
+             disableChatInputLayout("Đã đăng xuất");
+             window.location.href = '/login';
          }
 
-         /**
-          * Fetches the cart items count and updates the navbar badge.
-          */
          async function updateCartCount() {
              const token = localStorage.getItem('jwtToken');
              if (!token || !cartCountBadge) { if(cartCountBadge) cartCountBadge.style.display = 'none'; return; }
@@ -329,234 +273,142 @@
              } catch (error) { console.error("Layout: Error fetching cart count:", error); if(cartCountBadge) cartCountBadge.style.display = 'none'; }
          }
 
-         /**
-          * Updates the navbar to show the guest (login/signup) menu.
-          */
          function renderGuestMenu() {
              if (userGreetingElem) userGreetingElem.textContent = 'Tài khoản';
              if (navbarAvatar) { navbarAvatar.src = '/images/placeholder-avatar-small.png'; navbarAvatar.alt = 'Guest Avatar'; }
              if (userMenu) userMenu.innerHTML = `<li><a class="dropdown-item" href="/login"><i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập</a></li><li><a class="dropdown-item" href="/signup"><i class="bi bi-person-plus-fill me-2"></i>Đăng ký</a></li>`;
-             if (cartCountBadge) cartCountBadge.style.display = 'none'; // Hide cart count for guests
+             if (cartCountBadge) cartCountBadge.style.display = 'none';
          }
 
-         /**
-          * Checks the user's login status via API and updates the UI accordingly.
-          * Resolves the global `userInfoPromise` when the check is complete.
-          */
-         async function checkGlobalLoginStatus() {
-             console.log("Layout: [checkGlobalLoginStatus] Checking global login status..."); // ADDED LOG
-             const token = localStorage.getItem('jwtToken');
-             globalUserStatusChecked = false; // Reset check flag
+        (async function checkLoginStatus() {
+            console.log("Checking login status...");
+            const token = localStorage.getItem('jwtToken');
 
-             // Ensure essential navbar elements exist
-             if (!userGreetingElem || !userMenu || !navbarAvatar) {
-                 console.error("Layout: Critical Navbar elements missing!");
-                 globalUserStatusChecked = true;
-                 if(userInfoResolve) userInfoResolve(null); // Resolve promise with null on critical error
-                 return;
-             }
+            if (!token) {
+                console.log("No token found. Rendering guest menu.");
+                renderGuestMenu();
+                // Phải resolve promise ở đây để các trang khác biết đã kiểm tra xong
+                if(typeof window.userInfoResolve === 'function') window.userInfoResolve(null);
+                return;
+            }
 
-             // Handle case where there's no token (not logged in)
-             if (!token) {
-                 console.log("Layout: [checkGlobalLoginStatus] No token found."); // ADDED LOG
-                 if (__uteAppLayoutUserInfo) { __uteAppLayoutUserInfo = null; } // Clear stale user info if any
-                 renderGuestMenu();
-                 disableChatInputLayout("Vui lòng đăng nhập");
-                 closeWebSocket(); // Ensure WS is closed
-                 globalUserStatusChecked = true;
-                 // === RESOLVE WITH NULL ===
-                 console.log("Layout: [checkGlobalLoginStatus] Resolving userInfoPromise WITH null (no token)."); // ADDED LOG
-                 if(userInfoResolve) userInfoResolve(null); // Resolve with null for guest
-                 // =========================
-                 return;
-             }
+            try {
+                const response = await fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                
+                if (!response.ok) {
+                    logout(); // Token hỏng, đăng xuất
+                    if(typeof window.userInfoResolve === 'function') window.userInfoResolve(null);
+                    return;
+                }
 
-             // Token exists, verify it with the backend
-             try {
-                 console.log("Layout: [checkGlobalLoginStatus] Fetching /api/users/me..."); // ADDED LOG
-                 const response = await fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } });
-                 console.log("Layout: [checkGlobalLoginStatus] API Response Status:", response.status); // ADDED LOG
+                const userInfo = await response.json();
 
-                 if (!response.ok) {
-                     // Handle invalid/expired token
-                     if (response.status === 401 || response.status === 403) {
-                         console.error("Layout: [checkGlobalLoginStatus] Invalid/Expired token. Logging out."); // ADDED LOG
-                         logout(); // Logout handles resolving the promise
-                     } else { // Handle other server errors
-                         console.error("Layout: [checkGlobalLoginStatus] API call failed. Status:", response.status); // ADDED LOG
-                         throw new Error(`Server error ${response.status}`);
-                     }
-                     globalUserStatusChecked = true; // Ensure flag is set on error
-                     // No need to resolve here, logout() does it or catch block handles it
-                     return;
-                 }
+                if (userInfo && userInfo.authenticated) {
+                    // Cập nhật biến global
+                    window.__uteAppLayoutUserInfo = userInfo; // Gán vào biến global mới
+                    
+                    userGreetingElem.textContent = `Chào, ${userInfo.fullName || userInfo.email}`;
+                    navbarAvatar.src = (userInfo.avatarUrl ? userInfo.avatarUrl : '/images/placeholder-avatar-small.png') + '?t=' + Date.now();
+                    
+                    let menuItems = `<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Thông tin cá nhân</a></li>
+                                     <li><a class="dropdown-item" href="/order-history"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</a></li>`;
+                    
+                    if (userInfo.role === 'Shipper') menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard"><i class="bi bi-truck me-2"></i>Shipper Dashboard</a></li>`;
+                    else if (userInfo.role === 'Vendor') menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard"><i class="bi bi-shop-window me-2"></i>Trang bán hàng</a></li>`;
+                    else if (userInfo.role === 'Admin') menuItems += `<li><a class="dropdown-item" href="/admin/dashboard"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</a></li>`;
 
-                 // Token is valid, process user info
-                 const userInfo = await response.json();
-                 console.log("Layout: [checkGlobalLoginStatus] Parsed userInfo:", JSON.stringify(userInfo)); // ADDED LOG
+                    menuItems += `<li><hr class="dropdown-divider"></li>
+                                  <li><button class="dropdown-item" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>`;
+                    userMenu.innerHTML = menuItems;
 
-                 if (userInfo && userInfo.authenticated) {
-                     // === GÁN GIÁ TRỊ VÀ LOG NGAY LẬP TỨC ===
-                     __uteAppLayoutUserInfo = userInfo; // RENAMED Assignment
-                     __uteAppLayoutUserInfo.token = token; // Gán token vào đây nếu cần
-                     console.log("Layout: [checkGlobalLoginStatus] Assigned __uteAppLayoutUserInfo:", JSON.stringify(__uteAppLayoutUserInfo)); // RENAMED Log
-                     // ======================================
+                    updateCartCount();
+                    connectWebSocketLayout();
 
-                     // --- Update Navbar UI ---
-                     userGreetingElem.textContent = `Chào, ${escapeHtml(userInfo.fullName || userInfo.email)}`;
-                     navbarAvatar.src = (userInfo.avatarUrl ? escapeHtml(userInfo.avatarUrl) : '/images/placeholder-avatar-small.png') + '?t=' + Date.now(); // Add timestamp to prevent caching
-                     let menuItems = `<li><a class="dropdown-item" href="/profile"><i class="bi bi-person-circle me-2"></i>Thông tin cá nhân</a></li><li><a class="dropdown-item" href="/order-history"><i class="bi bi-receipt me-2"></i>Lịch sử đơn hàng</a></li>`;
-                     // Add role-specific links
-                     if (userInfo.role === 'Shipper') menuItems += `<li><a class="dropdown-item" href="/shipper/dashboard"><i class="bi bi-truck me-2"></i>Shipper Dashboard</a></li>`;
-                     else if (userInfo.role === 'Vendor') menuItems += `<li><a class="dropdown-item" href="/vendor/dashboard"><i class="bi bi-shop-window me-2"></i>Trang bán hàng</a></li>`;
-                     else if (userInfo.role === 'Admin') menuItems += `<li><a class="dropdown-item" href="/admin/dashboard"><i class="bi bi-shield-lock-fill me-2"></i>Admin Dashboard</a></li>`;
-                     menuItems += `<li><hr class="dropdown-divider"></li><li><button class="dropdown-item" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button></li>`;
-                     userMenu.innerHTML = menuItems;
-                     // --- End Update Navbar UI ---
-
-                     updateCartCount(); // Update cart count for logged-in user
-                     connectWebSocketLayout(); // Connect WebSocket
-                     globalUserStatusChecked = true; // Mark check as complete
-                     // === RESOLVE WITH THE USER INFO OBJECT ===
-                     console.log("Layout: [checkGlobalLoginStatus] Resolving userInfoPromise WITH user info:", JSON.stringify(__uteAppLayoutUserInfo)); // RENAMED Log
-                     if(userInfoResolve) userInfoResolve(__uteAppLayoutUserInfo); // RENAMED Resolve
-                     // ===========================================
-
-                 } else { // API response indicates not authenticated (should not happen with valid token)
-                     console.error("Layout: [checkGlobalLoginStatus] API response OK, but userInfo indicates not authenticated. Logging out."); // ADDED LOG
-                     logout(); // Logout handles resolving
-                     globalUserStatusChecked = true;
-                     // No need to resolve here, logout() does it
-                 }
-             } catch (error) { // Handle network errors or JSON parsing errors
-                 console.error("Layout: [checkGlobalLoginStatus] Error during fetch/processing:", error); // ADDED LOG
-                 // === GÁN NULL VÀ LOG TRƯỚC KHI RESOLVE ===
-                 __uteAppLayoutUserInfo = null; // RENAMED Assignment
-                 console.log("Layout: [checkGlobalLoginStatus] Error caught. Set __uteAppLayoutUserInfo to null."); // RENAMED Log
-                 // ======================================
-                 renderGuestMenu(); disableChatInputLayout("Lỗi xác thực"); closeWebSocket();
-                 globalUserStatusChecked = true;
-                 // === LOG TRƯỚC KHI RESOLVE ===
-                 console.log("Layout: [checkGlobalLoginStatus] Resolving userInfoPromise WITH null due to error."); // ADDED LOG
-                 if(userInfoResolve) userInfoResolve(null); // Resolve with null on error
-                 // =============================
-             }
-         }
+                    // Resolve promise với thông tin người dùng
+                    if(typeof window.userInfoResolve === 'function') window.userInfoResolve(userInfo);
+                } else {
+                    logout();
+                    if(typeof window.userInfoResolve === 'function') window.userInfoResolve(null);
+                }
+            } catch (error) {
+                console.error("Error during login check:", error);
+                renderGuestMenu();
+                if(typeof window.userInfoResolve === 'function') window.userInfoResolve(null);
+            }
+        })();
 
 
          // === CHAT FUNCTIONS ===
-
-         /** Toggles the visibility of the chat popup. Prompts login if not authenticated. */
-         function toggleChatPopup() {
-             // Use RENAMED global variable for the initial check
-             if (!__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.authenticated) { promptLoginForChatLayout(); return; }
+        function toggleChatPopup() {
+             if (!window.__uteAppLayoutUserInfo || !window.__uteAppLayoutUserInfo.authenticated) { promptLoginForChatLayout(); return; }
              if (!chatPopup) return;
              isChatPopupOpen = chatPopup.style.display !== 'flex';
              chatPopup.style.display = isChatPopupOpen ? 'flex' : 'none';
              if (isChatPopupOpen) {
-                 console.log("Chat popup opened. Target:", globalChatTarget);
                  updateChatHeader();
-                 // Ensure WS is connected or try connecting
                  if (!globalWebSocket || globalWebSocket.readyState !== SockJS.OPEN) { connectWebSocketLayout(); }
-                 else { enableChatInputLayout(globalChatTarget.name); } // Enable input if connected
-
+                 else { enableChatInputLayout(globalChatTarget.name); }
                  setTimeout(() => { if(chatBody) chatBody.scrollTop = chatBody.scrollHeight; if(chatInput) chatInput.focus(); }, 50);
                  if (globalChatTarget.type === 'VENDOR' && currentConversationId) { markConversationAsReadLayout(currentConversationId); }
                  const chatIcon = toggleChatBtn?.querySelector('i');
                  if(chatIcon) chatIcon.classList.remove('text-warning');
-             } else { console.log("Chat popup closed."); }
+             }
          }
 
-
-         /** Closes the chat popup. */
          function closeChatPopup() { if (chatPopup) chatPopup.style.display = 'none'; isChatPopupOpen = false; }
-
-         /** Shows a login prompt using SweetAlert. */
          function promptLoginForChatLayout() { Swal.fire({ title: 'Vui lòng đăng nhập', text: 'Bạn cần đăng nhập để chat.', icon: 'info', showCancelButton: true, confirmButtonText: 'Đăng nhập', cancelButtonText: 'Để sau'}).then((r) => { if (r.isConfirmed) { window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search); }}); }
-
-         /** Enables the chat input and send button, setting appropriate placeholder text. */
          function enableChatInputLayout(targetName = null) {
-             // Check RENAMED global variable again here
-             if (!__uteAppLayoutUserInfo) { disableChatInputLayout("Vui lòng đăng nhập"); return; }
+             if (!window.__uteAppLayoutUserInfo) { disableChatInputLayout("Vui lòng đăng nhập"); return; }
              if (chatInput) {
                  chatInput.disabled = false;
                  chatInput.placeholder = targetName ? `Nhắn tin tới ${escapeHtml(targetName)}...` : 'Nhập tin nhắn...';
              }
              if (chatSendBtn) chatSendBtn.disabled = false;
          }
-
-         /** Disables the chat input and send button, setting a placeholder message. */
          function disableChatInputLayout(message = 'Chat không sẵn sàng') {
-             if (chatInput) {
-                 chatInput.disabled = true;
-                 chatInput.placeholder = message;
-             }
+             if (chatInput) { chatInput.disabled = true; chatInput.placeholder = message; }
              if (chatSendBtn) chatSendBtn.disabled = true;
          }
-
-         /** Updates the chat header with the current chat target's name. */
          function updateChatHeader() { if (chatHeaderSpan) chatHeaderSpan.textContent = escapeHtml(globalChatTarget.name); }
-
-         /** Connects to the WebSocket server using SockJS. Handles open, message, error, and close events. */
          function connectWebSocketLayout() {
-             // Avoid reconnecting if already open or connecting
-             if (globalWebSocket && (globalWebSocket.readyState === SockJS.OPEN || globalWebSocket.readyState === SockJS.CONNECTING)) {
-                 console.log("Layout: WS already open/connecting.");
-                 enableChatInputLayout(globalChatTarget.name); // Ensure input is enabled
-                 return;
-             }
-             clearTimeout(globalReconnectTimeout); // Clear any pending reconnection attempts
+             if (globalWebSocket && (globalWebSocket.readyState === SockJS.OPEN || globalWebSocket.readyState === SockJS.CONNECTING)) { enableChatInputLayout(globalChatTarget.name); return; }
+             clearTimeout(globalReconnectTimeout);
              const token = localStorage.getItem('jwtToken');
-             // Check for token and RENAMED user info variable before connecting
-             if (!token || !__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) {
-                 console.error("Layout: WS Connect Auth Error - Missing token or user info.");
+             if (!token || !window.__uteAppLayoutUserInfo || !window.__uteAppLayoutUserInfo.id) {
                  addMessageLayout('system', 'Lỗi kết nối: Thiếu xác thực.');
                  disableChatInputLayout("Lỗi kết nối");
                  return;
              }
-             console.log("Layout: Connecting WS...");
              addMessageLayout('system', 'Đang kết nối...');
-             disableChatInputLayout("Đang kết nối..."); // Disable input during connection attempt
-
-             const socketUrl = `/ws/vendor/chat?token=${encodeURIComponent(token)}`; // Pass token as query param
+             disableChatInputLayout("Đang kết nối...");
+             const socketUrl = `/ws/vendor/chat?token=${encodeURIComponent(token)}`;
              const socket = new SockJS(socketUrl);
-
              socket.onopen = () => {
-                 console.log('Layout: WS Open.');
-                 removeSystemMessagesLayout('Đang kết nối...'); // Remove connecting message
-                 addMessageLayout('system', 'Đã kết nối!'); // Add connected message
-                 globalWebSocket = socket; // Store the active socket connection
-                 enableChatInputLayout(globalChatTarget.name); // Enable input now
-                 clearTimeout(globalReconnectTimeout); // Clear reconnect timer on successful connection
-                 // If a vendor chat was active, fetch history
+                 removeSystemMessagesLayout('Đang kết nối...');
+                 addMessageLayout('system', 'Đã kết nối!');
+                 globalWebSocket = socket;
+                 enableChatInputLayout(globalChatTarget.name);
+                 clearTimeout(globalReconnectTimeout);
                  if (globalChatTarget.type === 'VENDOR' && currentConversationId) {
                      fetchVendorMessageHistory(currentConversationId);
                  }
              };
-
              socket.onmessage = (e) => {
-                 console.log('Layout: WS Message:', e.data);
                  try {
                      const msg = JSON.parse(e.data);
-                     if(msg.type === 'PONG') return; // Ignore PONG messages (if PING/PONG is implemented)
+                     if(msg.type === 'PONG') return;
                      if(msg.type === 'ERROR'){ addMessageLayout('system',`Lỗi: ${escapeHtml(msg.content)}`); return; }
                      if(msg.type === 'SYSTEM'){ addMessageLayout('system', escapeHtml(msg.content)); return; }
-
-                     // Handle regular chat messages
                      if (msg.type === 'MESSAGE' && msg.conversationId) {
-                         // USE RENAMED VARIABLE
-                         const isSent = msg.senderId === __uteAppLayoutUserInfo?.id; // Use optional chaining just in case
+                         const isSent = msg.senderId === window.__uteAppLayoutUserInfo?.id;
                          const type = isSent ? 'sent' : 'received';
                          const partnerId = isSent ? msg.receiverId : msg.senderId;
-
-                         // If the message belongs to the currently open vendor chat
                          if (globalChatTarget.type === 'VENDOR' && globalChatTarget.id === partnerId && msg.conversationId === currentConversationId) {
                              addMessageLayout(type, msg.content);
-                             // If the message was received and the popup is open, mark as read
                              if (!isSent && isChatPopupOpen) {
                                  markConversationAsReadLayout(msg.conversationId);
                              }
-                         } else if (!isSent) { // If it's a received message for a DIFFERENT or AI chat
+                         } else if (!isSent) {
                              showNewMessageNotification(msg.senderName, msg.content);
                          }
                      }
@@ -565,252 +417,162 @@
                      addMessageLayout('system','Lỗi dữ liệu nhận được từ server.');
                  }
              };
-
              socket.onerror = (err) => {
                  console.error('Layout: WS Error:', err);
                  addMessageLayout('system','Lỗi kết nối WebSocket.');
-                 globalWebSocket = null; // Clear socket reference
-                 disableChatInputLayout("Lỗi kết nối"); // Disable input
+                 globalWebSocket = null;
+                 disableChatInputLayout("Lỗi kết nối");
              };
-
              socket.onclose = (e) => {
-                 console.log('Layout: WS Closed.', e.code, e.reason);
-                 const wasConnected = !!globalWebSocket; // Check if there was an active connection before closing
-                 globalWebSocket = null; // Clear socket reference
-                 disableChatInputLayout("Mất kết nối"); // Disable input
-
-                 // Attempt to reconnect only if user is logged in, connection wasn't closed normally/intentionally, and there was a previous connection
-                 // USE RENAMED VARIABLE
-                 if(__uteAppLayoutUserInfo && e.code !== 1000 && e.code !== 4001 && wasConnected){ // 1000=Normal, 4001=Auth Error (example)
+                 const wasConnected = !!globalWebSocket;
+                 globalWebSocket = null;
+                 disableChatInputLayout("Mất kết nối");
+                 if(window.__uteAppLayoutUserInfo && e.code !== 1000 && e.code !== 4001 && wasConnected){
                      addMessageLayout('system','Mất kết nối. Đang thử kết nối lại sau 5 giây...');
                      clearTimeout(globalReconnectTimeout);
-                     globalReconnectTimeout = setTimeout(connectWebSocketLayout, 5000); // Reconnect after 5s
-                 } else if (e.code === 4001) { // Authentication error
+                     globalReconnectTimeout = setTimeout(connectWebSocketLayout, 5000);
+                 } else if (e.code === 4001) {
                      addMessageLayout('system','Lỗi xác thực WebSocket.');
-                 } else if (wasConnected) { // Normal closure or closed unexpectedly without reconnect attempt
+                 } else if (wasConnected) {
                      addMessageLayout('system','Đã ngắt kết nối chat.');
                  }
              };
          }
-
-         /** Closes the WebSocket connection gracefully. */
          function closeWebSocket() {
-             clearTimeout(globalReconnectTimeout); // Stop any pending reconnect attempts
+             clearTimeout(globalReconnectTimeout);
              if (globalWebSocket && globalWebSocket.readyState === SockJS.OPEN) {
-                 globalWebSocket.close(1000, "Manual Close"); // Close with normal code
+                 globalWebSocket.close(1000, "Manual Close");
              }
-             globalWebSocket = null; // Clear reference
+             globalWebSocket = null;
          }
-
-         /** Sends a message via WebSocket (to AI or Vendor based on globalChatTarget). */
          async function sendMessageLayout() {
              const messageText = chatInput.value.trim();
-             // Re-check RENAMED global variable on send attempt
-             if (messageText === '' || !__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) {
-                 console.warn("Attempted to send message while not logged in or with empty message.");
-                 if (!__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) promptLoginForChatLayout(); // Prompt login if necessary
+             if (messageText === '' || !window.__uteAppLayoutUserInfo || !window.__uteAppLayoutUserInfo.id) {
+                 if (!window.__uteAppLayoutUserInfo || !window.__uteAppLayoutUserInfo.id) promptLoginForChatLayout();
                  return;
              }
-
-             const currentInput = messageText; // Store message before clearing input
-             chatInput.value = ''; // Clear input immediately
-
-             // Add the user's message to the chat body UI first (optimistic update)
-             addMessageLayout('user-message', currentInput); // Use 'user-message' class for user input
-
+             const currentInput = messageText;
+             chatInput.value = '';
+             addMessageLayout('user-message', currentInput);
              if (globalChatTarget.type === 'AI') {
                  addMessageLayout('system', '<span class="spinner-border spinner-border-sm"></span> AI đang xử lý...');
                  try {
-                     // USE RENAMED VARIABLE
-                     const response = await fetch('/api/chat', { // Send to AI backend endpoint
+                     const response = await fetch('/api/chat', {
                          method: 'POST',
-                         headers: { 'Authorization': `Bearer ${__uteAppLayoutUserInfo.token}`, 'Content-Type': 'application/json' },
+                         headers: { 'Authorization': `Bearer ${window.__uteAppLayoutUserInfo.token}`, 'Content-Type': 'application/json' },
                          body: JSON.stringify({ message: currentInput })
                      });
-                     removeSystemMessagesLayout('AI đang xử lý...'); // Remove thinking indicator
+                     removeSystemMessagesLayout('AI đang xử lý...');
                      if (response.ok) {
                          const chatResponse = await response.json();
-                         addMessageLayout('bot-message', chatResponse.reply); // Add AI response
+                         addMessageLayout('bot-message', chatResponse.reply);
                      } else {
                          addMessageLayout('system', `Lỗi AI: ${response.status}`);
-                         chatInput.value = currentInput; // Restore input on error
+                         chatInput.value = currentInput;
                      }
                  } catch (error) {
                      removeSystemMessagesLayout('AI đang xử lý...');
                      addMessageLayout('system', 'Lỗi mạng khi gọi AI.');
-                     chatInput.value = currentInput; // Restore input on error
+                     chatInput.value = currentInput;
                  }
              }
              else if (globalChatTarget.type === 'VENDOR') {
-                 // Send message via WebSocket
                  if (globalWebSocket && globalWebSocket.readyState === SockJS.OPEN && globalChatTarget.id) {
-                     const wsMessage = {
-                         type: 'MESSAGE',
-                         receiverId: globalChatTarget.id,
-                         content: currentInput
-                         // Backend determines senderId, senderRole, conversationId
-                     };
-                     try {
-                         globalWebSocket.send(JSON.stringify(wsMessage));
-                     } catch (e) {
+                     const wsMessage = { type: 'MESSAGE', receiverId: globalChatTarget.id, content: currentInput };
+                     try { globalWebSocket.send(JSON.stringify(wsMessage)); } catch (e) {
                          addMessageLayout('system', 'Lỗi gửi tin nhắn.');
-                         chatInput.value = currentInput; // Restore input on error
+                         chatInput.value = currentInput;
                      }
-                 } else { // Handle WebSocket not connected
+                 } else {
                      addMessageLayout('system', 'Lỗi kết nối, không thể gửi tin nhắn.');
-                     chatInput.value = currentInput; // Restore input on error
+                     chatInput.value = currentInput;
                  }
              }
          }
-
-        /** Adds a message div to the chat body UI. */
          function addMessageLayout(type, content) {
              if (!chatBody) return;
-             // Remove initial welcome message if it exists
              const initialMsg = chatBody.querySelector('.bot-message:only-child, .system-message:only-child');
              if(initialMsg && (initialMsg.textContent.includes('Chào bạn!') || initialMsg.textContent.includes('Vui lòng chọn'))) {
                  chatBody.innerHTML = '';
              }
-
              const messageDiv = document.createElement('div');
-             // Adjust class based on type (user, bot, received, sent, system)
              let messageClass = 'chat-message';
-             if (type === 'user-message' || type === 'sent') messageClass += ' user-message'; // Match user input class
-             else if (type === 'bot-message') messageClass += ' bot-message';        // Specific class for AI bot
-             else if (type === 'received') messageClass += ' received-message'; // Specific class for received vendor messages
-             else if (type === 'system') messageClass += ' system-message';        // Specific class for system messages
-             else messageClass += ' received-message'; // Default to received style if type is unknown
-
+             if (type === 'user-message' || type === 'sent') messageClass += ' user-message';
+             else if (type === 'bot-message') messageClass += ' bot-message';
+             else if (type === 'received') messageClass += ' received-message';
+             else if (type === 'system') messageClass += ' system-message';
+             else messageClass += ' received-message';
              messageDiv.className = messageClass;
-
-             // Format content: Only call formatBotMessage for 'bot-message' or 'system'
-             let formattedContent = '';
-             if (type === 'bot-message' || type === 'system') {
-                 formattedContent = formatBotMessage(content); // Applies Markdown and escaping
-             } else {
-                 formattedContent = escapeHtml(content); // Only escape HTML for user/sent/received messages
-             }
-
+             let formattedContent = (type === 'bot-message' || type === 'system') ? formatBotMessage(content) : escapeHtml(content);
              messageDiv.innerHTML = formattedContent;
              chatBody.appendChild(messageDiv);
-             // Scroll to bottom after adding message
              setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 0);
          }
-
-
-         /** Removes system messages, optionally matching specific text. */
          function removeSystemMessagesLayout(textToMatch = null) {
              if (!chatBody) return;
              const messages = chatBody.querySelectorAll('.system-message');
-             messages.forEach(msg => {
-                 if (!textToMatch || msg.textContent.includes(textToMatch)) {
-                     msg.remove();
-                 }
-             });
+             messages.forEach(msg => { if (!textToMatch || msg.textContent.includes(textToMatch)) { msg.remove(); } });
          }
-
-         /** Switches the chat target back to the AI assistant. */
          function switchToAIChat() {
-             console.log("Layout: Switching chat to AI");
              globalChatTarget = { type: 'AI', id: null, name: 'UTE GiftShop Assistant' };
-             currentConversationId = null; // Clear P2P conversation ID
+             currentConversationId = null;
              updateChatHeader();
-             if (chatBody) chatBody.innerHTML = '<div class="chat-message bot-message">Tôi có thể giúp gì về UTE GiftShop?</div>'; // Reset chat body
-             // Enable/disable input based on login status (USE RENAMED VARIABLE)
-             if (__uteAppLayoutUserInfo) enableChatInputLayout(); else disableChatInputLayout("Vui lòng đăng nhập");
+             if (chatBody) chatBody.innerHTML = '<div class="chat-message bot-message">Tôi có thể giúp gì về UTE GiftShop?</div>';
+             if (window.__uteAppLayoutUserInfo) enableChatInputLayout(); else disableChatInputLayout("Vui lòng đăng nhập");
          }
-
-         /** Initiates a P2P chat with a vendor (called from product detail page). */
-         window.initiateVendorChat = function(vendorId, vendorName) {
-             // === LOG RENAMED VARIABLE ===
-             console.log('>>> initiateVendorChat START');
-             console.log('>>> Current __uteAppLayoutUserInfo at chat start:', JSON.stringify(window.__uteAppLayoutUserInfo)); // Stringify để thấy rõ null/undefined
-             console.log('>>> Is __uteAppLayoutUserInfo truthy?', !!window.__uteAppLayoutUserInfo);
-             console.log('>>> Does __uteAppLayoutUserInfo have id?', !!(window.__uteAppLayoutUserInfo && window.__uteAppLayoutUserInfo.id));
-             const tokenExistsNow = !!localStorage.getItem('jwtToken');
-             console.log('>>> Token exists now?', tokenExistsNow);
-             // ============================
-
-             // Sửa điều kiện kiểm tra, thêm cả kiểm tra token lại (USE RENAMED VARIABLE)
-             if (!tokenExistsNow || !__uteAppLayoutUserInfo || !__uteAppLayoutUserInfo.id) {
-                 console.log('>>> initiateVendorChat CONDITION MET: Prompting login.'); // Log khi điều kiện sai
+         window.initiateVendorChat = async function(vendorId, vendorName) {
+             await window.userInfoPromise; // ĐỢI PROMISE TỪ HÀM CHECK LOGIN
+             if (!window.__uteAppLayoutUserInfo || !window.__uteAppLayoutUserInfo.id) {
                  promptLoginForChatLayout();
                  return;
              }
-             if (__uteAppLayoutUserInfo.id === vendorId) { Swal.fire('Thông báo','Bạn không thể tự chat với mình.','info'); return; } // Prevent self-chat
-
-             console.log(`Layout: Initiating chat with Vendor: ${vendorId} (${vendorName})`);
+             if (window.__uteAppLayoutUserInfo.id === vendorId) { Swal.fire('Thông báo','Bạn không thể tự chat với mình.','info'); return; }
              globalChatTarget = { type: 'VENDOR', id: vendorId, name: vendorName || `Shop #${vendorId}` };
-             // USE RENAMED VARIABLE
-             const conversationId = generateConversationIdLayout(__uteAppLayoutUserInfo.id, vendorId);
-
-             if (!conversationId) { console.error("Layout: Could not generate conversation ID."); Swal.fire('Lỗi', 'Không thể tạo cuộc trò chuyện.', 'error'); return; }
-             currentConversationId = conversationId; // Set the current P2P conversation ID
-
-             // Open chat popup if not already open
+             const conversationId = generateConversationIdLayout(window.__uteAppLayoutUserInfo.id, vendorId);
+             if (!conversationId) { Swal.fire('Lỗi', 'Không thể tạo cuộc trò chuyện.', 'error'); return; }
+             currentConversationId = conversationId;
              if (chatPopup && chatPopup.style.display !== 'flex') {
                  chatPopup.style.display = 'flex';
                  isChatPopupOpen = true;
              }
-
-             updateChatHeader(); // Update header to show vendor name
-             if (chatBody) chatBody.innerHTML = `<div class="chat-message system-message"><span class="spinner-border spinner-border-sm"></span> Đang tải lịch sử chat...</div>`; // Show loading
-             enableChatInputLayout(globalChatTarget.name); // Enable input
-
-             // Ensure WebSocket is connected, then fetch history
+             updateChatHeader();
+             if (chatBody) chatBody.innerHTML = `<div class="chat-message system-message"><span class="spinner-border spinner-border-sm"></span> Đang tải lịch sử chat...</div>`;
+             enableChatInputLayout(globalChatTarget.name);
              if (!globalWebSocket || globalWebSocket.readyState !== SockJS.OPEN) {
-                  console.log("Layout: WS not open, connecting before fetching history...");
-                  connectWebSocketLayout(); // connectWebSocket will call fetchVendorMessageHistory on successful connection
+                  connectWebSocketLayout();
              } else {
-                  fetchVendorMessageHistory(conversationId); // Fetch history immediately if already connected
+                  fetchVendorMessageHistory(conversationId);
              }
-             setTimeout(() => { if (chatInput) chatInput.focus(); }, 100); // Focus input after a short delay
+             setTimeout(() => { if (chatInput) chatInput.focus(); }, 100);
          }
-
-
-         /** Fetches message history for a specific P2P conversation. */
          async function fetchVendorMessageHistory(conversationId) {
              const token = localStorage.getItem('jwtToken');
              if (!token || !conversationId || !chatBody) return;
-             console.log("Layout: Fetching history for:", conversationId);
-             // Keep the loading message until fetch completes
-             // chatBody.innerHTML = `<div class="chat-message system-message"><span class="spinner-border spinner-border-sm"></span> Đang tải...</div>`;
-
+             removeSystemMessagesLayout('Đang tải lịch sử chat...');
              try {
                  const response = await fetch(`/api/chat/messages/${conversationId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                 // Remove loading message ONLY after fetch attempt
-                 removeSystemMessagesLayout('Đang tải lịch sử chat...');
-                 removeSystemMessagesLayout('Đang tải...'); // Remove older versions too
-
+                 removeSystemMessagesLayout('Đang tải...');
                  if (!response.ok) throw new Error(`Lỗi ${response.status}`);
                  const messages = await response.json();
-                 chatBody.innerHTML = ''; // Clear chat body before adding messages
+                 chatBody.innerHTML = '';
                  if (!messages || messages.length === 0) {
                      addMessageLayout('system', 'Bắt đầu cuộc trò chuyện của bạn.');
                  } else {
                      messages.forEach(msg => {
-                         // Determine if message was sent or received by the current user (USE RENAMED VARIABLE)
-                         addMessageLayout((msg.senderId === __uteAppLayoutUserInfo?.id) ? 'sent' : 'received', msg.content);
+                         addMessageLayout((msg.senderId === window.__uteAppLayoutUserInfo?.id) ? 'sent' : 'received', msg.content);
                      });
                  }
-                 markConversationAsReadLayout(conversationId); // Mark messages as read after fetching
-                 // Scroll to bottom after rendering messages
+                 markConversationAsReadLayout(conversationId);
                  setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 50);
              } catch (error) {
-                 console.error("Layout: Error fetching history:", error);
-                 if (chatBody) chatBody.innerHTML = ''; // Clear chat body on error too
+                 if (chatBody) chatBody.innerHTML = '';
                  addMessageLayout('system', `Lỗi tải lịch sử chat: ${error.message}`);
              }
          }
-
-         /** Marks messages in a conversation as read via API. */
          async function markConversationAsReadLayout(conversationId) {
              const token = localStorage.getItem('jwtToken');
-             // Only proceed if it's a vendor chat, conversationId exists, token exists, and user is logged in (USE RENAMED VARIABLE)
-             if (globalChatTarget.type !== 'VENDOR' || !conversationId || !token || !__uteAppLayoutUserInfo) return;
-             console.log(`Layout: Marking conversation ${conversationId} as read.`);
+             if (globalChatTarget.type !== 'VENDOR' || !conversationId || !token || !window.__uteAppLayoutUserInfo) return;
              try {
-                 // API endpoint expects conversationId as query parameter
                  const response = await fetch(`/api/chat/messages/read?conversationId=${encodeURIComponent(conversationId)}`, {
                      method: 'PUT',
                      headers: { 'Authorization': `Bearer ${token}` }
@@ -818,60 +580,42 @@
                  if (!response.ok) console.error("Layout: Failed to mark messages as read. Status:", response.status);
              } catch (error) { console.error("Layout: Error calling mark as read API:", error); }
          }
-
-         /** Shows a visual indicator (changes chat button icon color) for new messages. */
          function showNewMessageNotification(senderName, messageContent){
-              console.log(`Layout: New message received from ${senderName}: ${messageContent}`);
               const chatIcon = toggleChatBtn?.querySelector('i');
-              // Change icon color to warning if not already warning and popup is closed
               if(chatIcon && !isChatPopupOpen && !chatIcon.classList.contains('text-warning')){
                    chatIcon.classList.add('text-warning');
               }
-              // Potential: Add a subtle animation or sound here
          }
 
          // === Modal Handlers (Change Payment Method) ===
-         /** Displays the 'Change Payment Method' modal. */
          window.showChangePaymentModal = function(orderId, currentMethod) {
-             console.log(`Layout: Showing change payment modal for order ${orderId}, current method: ${currentMethod}`);
              const modalEl = document.getElementById('changePaymentModal');
              if (!modalEl) { console.error("Layout Error: Modal element #changePaymentModal not found!"); return; }
-             const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl); // Use getOrCreateInstance
-
-             // Populate modal fields
+             const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
              const modalOrderIdSpan = document.getElementById('modalOrderId');
              const modalChangeOrderIdInput = document.getElementById('modalChangeOrderId');
              if(modalOrderIdSpan) modalOrderIdSpan.textContent = orderId;
              if(modalChangeOrderIdInput) modalChangeOrderIdInput.value = orderId;
-
-             // Select the correct radio button based on current method
-             let radioToCheckId = 'newCod'; // Default to COD
+             let radioToCheckId = 'newCod';
              const currentMethodUpper = currentMethod?.toUpperCase();
-             if (currentMethodUpper === 'SEPAY_QR' || currentMethodUpper === 'PENDING_PAYMENT') { // Treat PENDING_PAYMENT as QR
+             if (currentMethodUpper === 'SEPAY_QR' || currentMethodUpper === 'PENDING_PAYMENT') {
                  radioToCheckId = 'newSepayQr';
              }
              const radio = document.getElementById(radioToCheckId);
              if(radio) radio.checked = true;
-             else { console.warn(`Layout: Radio button for payment method ${currentMethod} not found.`); document.getElementById('newCod').checked = true; } // Fallback check COD
-
-             modalInstance.show(); // Show the modal
+             else { document.getElementById('newCod').checked = true; }
+             modalInstance.show();
           };
-
-         /** Handles the submission of the 'Change Payment Method' modal. */
          window.handleChangePaymentSubmit = async function() {
              const orderId = document.getElementById('modalChangeOrderId').value;
              const selectedRadio = document.querySelector('#changePaymentModal input[name="newPaymentMethod"]:checked');
              const saveBtn = document.getElementById('savePaymentChangeBtn');
              const modalEl = document.getElementById('changePaymentModal');
-             const modalInstance = bootstrap.Modal.getInstance(modalEl); // Get the existing instance
-
+             const modalInstance = bootstrap.Modal.getInstance(modalEl);
              if (!selectedRadio) { Swal.fire('Lỗi', 'Vui lòng chọn phương thức thanh toán mới.', 'warning'); return; }
              const newMethod = selectedRadio.value;
-
-             // Disable button and show loading state
              saveBtn.disabled = true;
              saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
-
              try {
                   const token = localStorage.getItem('jwtToken');
                   const response = await fetch(`/api/orders/${orderId}/change-payment`, {
@@ -879,51 +623,46 @@
                       headers:{ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                       body: JSON.stringify({newPaymentMethod: newMethod})
                   });
-                  const result = await response.json(); // Assume JSON response always
-                  if (!response.ok) throw new Error(result.message || `Lỗi ${response.status}`); // Throw error on non-OK status
-
-                  if (modalInstance) modalInstance.hide(); // Hide modal on success
-
-                  // Handle navigation or UI update based on new payment method
-                  if (result.paymentMethod === 'SEPAY_QR' && result.paymentCode) { // If switched to QR
+                  const result = await response.json();
+                  if (!response.ok) throw new Error(result.message || `Lỗi ${response.status}`);
+                  if (modalInstance) modalInstance.hide();
+                  if (result.paymentMethod === 'SEPAY_QR' && result.paymentCode) {
                       sessionStorage.setItem('paymentInfo', JSON.stringify({
-                          orderId: orderId, // Use orderId from context
+                          orderId: orderId,
                           paymentCode: result.paymentCode,
                           totalAmount: result.totalAmount
                       }));
                       Swal.fire('Thành công', result.message || 'Đổi PTTT thành công. Chuyển đến trang thanh toán QR.', 'success')
-                         .then(() => {
-                             window.location.href = `/payment/${orderId}`; // Redirect using orderId
-                         });
-                  } else { // If switched to COD or no change
+                         .then(() => { window.location.href = `/payment/${orderId}`; });
+                  } else {
                      Swal.fire('Thành công', result.message || 'Đổi PTTT thành công!', 'success');
-                     // Reload order history if the function exists (on order-history page)
                      if (typeof fetchOrderHistory === 'function') {
                          fetchOrderHistory();
                      }
                   }
-             } catch (error) { // Handle fetch errors or errors thrown from response check
+             } catch (error) {
                  Swal.fire('Lỗi', `Không thể đổi phương thức thanh toán: ${error.message}`, 'error');
-             } finally { // Always re-enable button and reset text
+             } finally {
                  saveBtn.disabled = false;
                  saveBtn.innerHTML = 'Lưu thay đổi';
              }
           };
 
-         // === INITIAL LOGIN CHECK & EVENT LISTENERS ===
-         document.addEventListener('DOMContentLoaded', checkGlobalLoginStatus);
+         // === INITIAL LISTENERS ===
+         document.addEventListener('DOMContentLoaded', () => {
+             // Promise resolver setup for other scripts
+             window.userInfoPromise = new Promise(resolve => { window.userInfoResolve = resolve; });
+             checkGlobalLoginStatus();
+         });
          if(toggleChatBtn) toggleChatBtn.addEventListener('click', toggleChatPopup);
          if(chatSendBtn) chatSendBtn.addEventListener('click', sendMessageLayout);
          if(chatInput) chatInput.addEventListener('keypress', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessageLayout(); }});
-         // Add listener to switch back to AI chat when closing P2P chat
          const chatCloseButton = document.querySelector('#chat-header .btn-close');
          if(chatCloseButton) chatCloseButton.addEventListener('click', () => { if(globalChatTarget.type === 'VENDOR') { switchToAIChat(); } });
-         // Also switch back if popup is closed while in vendor chat
-         if(chatPopup) chatPopup.addEventListener('hidden.bs.modal', () => { // Assuming Bootstrap modal events
+         if(chatPopup) chatPopup.addEventListener('hidden.bs.modal', () => {
              if(globalChatTarget.type === 'VENDOR') { switchToAIChat(); }
              isChatPopupOpen = false;
          });
-         // Cleanup WebSocket on page unload
          window.addEventListener('beforeunload', closeWebSocket);
 
      </script>
