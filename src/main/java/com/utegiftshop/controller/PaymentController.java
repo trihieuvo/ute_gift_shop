@@ -98,15 +98,14 @@ public class PaymentController {
                         if (transactionContent != null && transactionContent.contains(paymentCode)) {
                             logger.info("Payment found for code: {}! Transaction ID: {}", paymentCode, tx.get("id"));
 
-                            // === THAY ĐỔI CẬP NHẬT STATUS ===
+                         
                             // Cập nhật trạng thái đơn hàng chính
-                            order.setStatus("CONFIRMED"); // Đã xác nhận thanh toán
-                            // order.setPaymentStatus("SUCCESS"); // <<<--- XÓA DÒNG NÀY
+                            order.setStatus("NEW"); // Đã xác nhận thanh toán
+                          
                             order.setPaymentTransId(String.valueOf(tx.get("id")));
                             orderRepository.save(order);
                             logger.info("Order {} status updated to CONFIRMED.", order.getId());
-                            // === KẾT THÚC THAY ĐỔI ===
-
+                        
                             return ResponseEntity.ok(Map.of("paid", true));
                         }
                     }

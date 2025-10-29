@@ -81,7 +81,7 @@ public class SecurityConfig {
                     "/api/users/me/change-password", 
                     "/api/users/me", 
 					"/api/chat/**", 
-					"/api/addresses",
+					"/api/addresses/**", // Tất cả API địa chỉ
 					"/api/cart/**",
 					"/api/reviews/eligibility/**",
 					"/api/orders/**"
@@ -92,7 +92,7 @@ public class SecurityConfig {
 				// ===== 3. CÁC API CỦA CUSTOMER (YÊU CẦU ROLE "Customer") =====
 				.requestMatchers(
 					"/api/cart/**", // Tất cả API giỏ hàng
-					"/api/addresses/**", // Tất cả API địa chỉ
+					
 					"/api/orders/**", // API đặt hàng, xem lịch sử, hủy đơn
 					"/api/apply/**", // API để nộp đơn xin vai trò
 					"/api/reviews/*" // Cho phép PUT /api/reviews/{reviewId}

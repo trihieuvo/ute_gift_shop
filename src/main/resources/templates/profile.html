@@ -43,6 +43,8 @@
         }
         .address-card.is-default {
             border-left: 4px solid #0d6efd;
+            border-color: #0d6efd; /* Làm nổi bật toàn bộ viền */
+            background-color: #f8faff; /* Thêm nền hơi xanh nhạt */
         }
 
         .address-actions {
@@ -560,70 +562,70 @@
 
             // Hàm tải danh sách địa chỉ (Phiên bản sửa lỗi hiển thị + Thêm log + Bold tên)
             async function fetchAddressesForProfile() {
-    const container = document.getElementById('address-list-profile');
-    if (!container) return;
-    container.innerHTML = '<p class="text-center p-3">Đang tải danh sách địa chỉ...</p>';
-    try {
-        const response = await fetch('/api/addresses', {
-            headers: {
-                'Authorization': `Bearer ${token}`
+                const container = document.getElementById('address-list-profile');
+                if (!container) return;
+                container.innerHTML = '<p class="text-center p-3">Đang tải danh sách địa chỉ...</p>';
+                try {
+                    const response = await fetch('/api/addresses', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (!response.ok) throw new Error('Không thể tải địa chỉ');
+                    userAddresses = await response.json();
+                    
+                    // Debug: Xem dữ liệu thô từ API
+                    console.log("Raw API Response:", JSON.stringify(userAddresses, null, 2));
+                    
+                    // Sắp xếp mặc định lên đầu
+                    userAddresses.sort((a, b) => {
+                        const aDefault = a.isDefault === true || a.isDefault === 'true' || a.isDefault === 1;
+                        const bDefault = b.isDefault === true || b.isDefault === 'true' || b.isDefault === 1;
+                        return (bDefault ? 1 : 0) - (aDefault ? 1 : 0);
+                    });
+                    
+                    container.innerHTML = ''; // Xóa loading
+                    
+                    if (userAddresses.length === 0) {
+                        container.innerHTML = '<p class="text-center text-muted p-3">Bạn chưa có địa chỉ nào.</p>';
+                        return;
+                    }
+
+                    userAddresses.forEach(addr => {
+                        // Chuyển đổi isDefault về boolean rõ ràng
+                        const isDefault = addr.default === true;
+                        
+                        console.log(`Rendering Address ID: ${addr.id}, isDefault: ${isDefault}, Raw: ${addr.isDefault}`);
+
+                        const defaultCardClass = isDefault ? 'is-default' : '';
+                        const defaultNameClass = isDefault ? 'recipient-name-default' : '';
+
+                        const deleteButton = isDefault 
+                            ? `<button class="btn btn-sm btn-outline-danger" disabled title="Không thể xóa địa chỉ mặc định"><i class="bi bi-trash"></i></button>` 
+                            : `<button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${addr.id})"><i class="bi bi-trash"></i></button>`;
+
+                        const setDefaultButton = isDefault
+                            ? `<span class="badge bg-primary fw-bold">Mặc định</span>` 
+                            : `<button class="btn btn-sm btn-outline-success" onclick="setDefaultAddress(${addr.id})">Đặt làm mặc định</button>`;
+                        const editButton = `<button class="btn btn-sm btn-outline-primary" onclick="openEditModal(${addr.id})"><i class="bi bi-pencil-square"></i></button>`;
+
+                        container.innerHTML += `
+                            <div class="address-card ${defaultCardClass}">
+                                <div class="address-actions d-flex gap-2">
+                                    ${setDefaultButton}
+                                    ${editButton}
+                                    ${deleteButton}
+                                </div>
+                                <div><strong class="${defaultNameClass}">${addr.recipientName}</strong></div>
+                                <p class="text-muted mb-1">${addr.phoneNumber}</p>
+                                <p class="mb-0">${addr.fullAddress}</p>
+                            </div>`;
+                    });
+                } catch (error) {
+                    console.error("Lỗi khi tải địa chỉ:", error);
+                    if (container) container.innerHTML = '<p class="text-danger text-center p-3">Lỗi tải danh sách địa chỉ.</p>';
+                }
             }
-        });
-        if (!response.ok) throw new Error('Không thể tải địa chỉ');
-        userAddresses = await response.json();
-        
-        // Debug: Xem dữ liệu thô từ API
-        console.log("Raw API Response:", JSON.stringify(userAddresses, null, 2));
-        
-        // Sắp xếp mặc định lên đầu
-        userAddresses.sort((a, b) => {
-            const aDefault = a.isDefault === true || a.isDefault === 'true' || a.isDefault === 1;
-            const bDefault = b.isDefault === true || b.isDefault === 'true' || b.isDefault === 1;
-            return (bDefault ? 1 : 0) - (aDefault ? 1 : 0);
-        });
-        
-        container.innerHTML = ''; // Xóa loading
-        
-        if (userAddresses.length === 0) {
-            container.innerHTML = '<p class="text-center text-muted p-3">Bạn chưa có địa chỉ nào.</p>';
-            return;
-        }
-
-        userAddresses.forEach(addr => {
-            // Chuyển đổi isDefault về boolean rõ ràng
-            const isDefault = addr.isDefault === true || addr.isDefault === 'true' || addr.isDefault === 1;
-            
-            console.log(`Rendering Address ID: ${addr.id}, isDefault: ${isDefault}, Raw: ${addr.isDefault}`);
-
-            const defaultCardClass = isDefault ? 'is-default' : '';
-            const defaultNameClass = isDefault ? 'recipient-name-default' : '';
-
-            const deleteButton = isDefault 
-                ? `<button class="btn btn-sm btn-outline-danger" disabled title="Không thể xóa địa chỉ mặc định"><i class="bi bi-trash"></i></button>` 
-                : `<button class="btn btn-sm btn-outline-danger" onclick="deleteAddress(${addr.id})"><i class="bi bi-trash"></i></button>`;
-
-            const setDefaultButton = isDefault
-                ? `<span class="badge bg-primary fw-bold">Mặc định</span>` 
-                : `<button class="btn btn-sm btn-outline-success" onclick="setDefaultAddress(${addr.id})">Đặt làm mặc định</button>`;
-            const editButton = `<button class="btn btn-sm btn-outline-primary" onclick="openEditModal(${addr.id})"><i class="bi bi-pencil-square"></i></button>`;
-
-            container.innerHTML += `
-                <div class="address-card ${defaultCardClass}">
-                    <div class="address-actions d-flex gap-2">
-                        ${setDefaultButton}
-                        ${editButton}
-                        ${deleteButton}
-                    </div>
-                    <div><strong class="${defaultNameClass}">${addr.recipientName}</strong></div>
-                    <p class="text-muted mb-1">${addr.phoneNumber}</p>
-                    <p class="mb-0">${addr.fullAddress}</p>
-                </div>`;
-        });
-    } catch (error) {
-        console.error("Lỗi khi tải địa chỉ:", error);
-        if (container) container.innerHTML = '<p class="text-danger text-center p-3">Lỗi tải danh sách địa chỉ.</p>';
-    }
-}
 
             // Form thêm địa chỉ
             const addAddressForm = document.getElementById('addAddressForm');

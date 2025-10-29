@@ -250,7 +250,7 @@
 
                 // Tìm địa chỉ mặc định hoặc địa chỉ đầu tiên
                 let defaultAddressId = null;
-                const defaultAddress = addresses.find(addr => addr.isDefault === true || addr.isDefault === 'true' || addr.isDefault === 1);
+                const defaultAddress = addresses.find(addr => addr.default === true) ;
                 if (defaultAddress) {
                     defaultAddressId = defaultAddress.id;
                     console.log("Default address found:", defaultAddressId);
@@ -261,7 +261,7 @@
 
                 addresses.forEach((addr) => {
                     const isChecked = (addr.id === defaultAddressId); // Kiểm tra ID để chọn
-                    const isDefaultBadge = (addr.isDefault === true || addr.isDefault === 'true' || addr.isDefault === 1);
+                    const isDefaultBadge = (addr.default === true );
 
                     const div = document.createElement('div');
                     // Sử dụng addr.id thay vì index
@@ -271,10 +271,11 @@
                     div.innerHTML = `
                         <input class="form-check-input" type="radio" name="address" id="addr-${addr.id}" value="${addr.id}" ${isChecked ? 'checked' : ''}>
                         <label class="form-check-label w-100" for="addr-${addr.id}">
-                            <div class="d-flex justify-content-between">
-                                <span><strong>${addr.recipientName}</strong> - ${addr.phoneNumber}</span>
-                                 ${isDefaultBadge ? '<span class="badge bg-primary default-badge">Mặc định</span>' : ''} 
+                            <div>
+                                <strong>${addr.recipientName}</strong>
+                                ${isDefaultBadge ? '<span class="text-primary small fw-bold ms-2">(Địa chỉ mặc định)</span>' : ''}
                             </div>
+                            <div class="text-muted small">${addr.phoneNumber}</div>
                             <div class="text-muted small">${addr.fullAddress}</div>
                         </label>
                     `;
