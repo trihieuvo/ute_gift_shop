@@ -357,7 +357,7 @@
         async function sendMessage() {
             const messageText = chatWidget.input.value.trim();
             if (!messageText) return;
-            //addMessage('sent', messageText);
+            addMessage('sent', messageText);
             chatWidget.input.value = '';
 
             if (activeChat.type === 'AI') {
@@ -404,33 +404,31 @@
                 clearTimeout(reconnectTimeout);
             };
             socket.onmessage = (e) => {
-                try {
-                    const msg = JSON.parse(e.data);
-                    if (msg.type !== 'MESSAGE' || !msg.conversationId) return;
-                    // KIỂM TRA NGƯỜI GỬI (SỬA LỖI TẠI ĐÂY)
-                    const isSentByMe = String(msg.senderId) === String(globalUserInfo?.id);
-                    const messageStyle = isSentByMe ? 'sent' : 'received';
-                    
-                    const isForActiveChat = (msg.conversationId === activeChat.conversationId);
+            try {
+                const msg = JSON.parse(e.data);
+                if (msg.type !== 'MESSAGE' || !msg.conversationId) return;
 
-                    if (isForActiveChat && chatWidget.popup.style.display === 'flex') {
-                        // Chỉ hiển thị tin nhắn nếu nó thuộc về cuộc trò chuyện đang mở
-                        addMessage(messageStyle, msg.content); 
-                        
-                        // Nếu là tin nhắn nhận được, đánh dấu đã đọc
-                        if (!isSentByMe) {
-                            markConversationAsRead(msg.conversationId);
-                        }
-                    } else if (!isSentByMe) {
-                        // Nếu là tin nhắn mới từ cuộc trò chuyện khác, hiển thị thông báo
-                        showNewMessageNotification();
-                        updateConversationList(msg);
+                const isSentByMe = String(msg.senderId) === String(globalUserInfo?.id);
+                const isForActiveChat = (msg.conversationId === activeChat.conversationId);
+
+                // BƯỚC 2: CHỈ HIỂN THỊ TIN NHẮN NẾU NGƯỜI GỬI KHÔNG PHẢI LÀ MÌNH
+                if (isForActiveChat && chatWidget.popup.style.display === 'flex') {
+                    // Tin nhắn của mình đã được hiển thị ngay lúc gửi (ở hàm sendMessage)
+                    // nên ở đây ta chỉ cần hiển thị tin nhắn của người khác.
+                    if (!isSentByMe) {
+                        addMessage('received', msg.content);
+                        markConversationAsRead(msg.conversationId);
                     }
-                } catch(err) {
-                    console.error("Layout: Lỗi xử lý tin nhắn WebSocket:", err);
-                    addMessage('system', 'Lỗi dữ liệu nhận được từ server.');
+                } else if (!isSentByMe) {
+                    // Tin nhắn mới cho cuộc trò chuyện khác, hiển thị thông báo
+                    showNewMessageNotification();
+                    updateConversationList(msg);
                 }
-            };
+            } catch(err) {
+                console.error("Layout: Lỗi xử lý tin nhắn WebSocket:", err);
+                addMessage('system', 'Lỗi dữ liệu nhận được từ server.');
+            }
+        };
             socket.onerror = (err) => console.error('WebSocket Error:', err);
             socket.onclose = (e) => {
                 webSocket = null;
