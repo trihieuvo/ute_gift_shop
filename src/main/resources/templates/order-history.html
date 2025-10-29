@@ -30,11 +30,11 @@
 
 <th:block layout:fragment="scripts_body">
     <script>
-        // Không cần khởi tạo modal ở đây nữa vì nó nằm trong layout
+        // No need to initialize modal instance here anymore
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Sử dụng setTimeout để đảm bảo DOM (bao gồm cả layout) đã sẵn sàng
-            // Mặc dù không bắt buộc nhưng an toàn hơn
+            // Use setTimeout to ensure the layout DOM (including the modal) is fully ready
+            // Although likely not strictly necessary now, it adds robustness
             setTimeout(() => {
                 console.log("DOM fully loaded for order-history, fetching order history...");
                 fetchOrderHistory();
@@ -85,11 +85,26 @@
 
                         const canChangePayment = order.status === 'NEW' || order.status === 'PENDING_PAYMENT';
                         const changePaymentButtonHtml = canChangePayment ?
-                            // *** Quan trọng: Đảm bảo hàm showChangePaymentModal là global hoặc được định nghĩa trong scope này ***
+                            // *** IMPORTANT: Ensure showChangePaymentModal is globally accessible or defined here ***
                             `<button class="btn btn-warning btn-sm ms-1" onclick="showChangePaymentModal(${order.id}, '${order.paymentMethod}')">
                                 <i class="bi bi-pencil-square"></i> Đổi PTTT
                             </button>`
                             : '';
+
+                         // Add Review button if DELIVERED
+                         let reviewButtonHtml = '';
+                         if (order.status === 'DELIVERED' && order.orderDetails && order.orderDetails.length > 0) {
+                             const firstProductId = order.orderDetails[0].product?.id;
+                             if (firstProductId) {
+                                 reviewButtonHtml = `
+                                     <a href="/products/${firstProductId}" class="btn btn-info btn-sm ms-1">
+                                         <i class="bi bi-star-fill"></i> Đánh giá
+                                     </a>`;
+                             } else {
+                                 console.warn(`Order ${order.id}: Could not get product ID for review button.`);
+                             }
+                         }
+
 
                         row.innerHTML = `
                             <td>#${order.id}</td>
@@ -100,6 +115,7 @@
                             <td>
                                 <a href="/orders/${order.id}" class="btn btn-primary btn-sm">Xem chi tiết</a>
                                 ${changePaymentButtonHtml}
+                                ${reviewButtonHtml}
                             </td>
                         `;
                     });
@@ -116,19 +132,19 @@
             }
         }
 
-        // Hàm hiển thị modal (modal HTML nằm trong layout _app_layout.html)
-        function showChangePaymentModal(orderId, currentMethod) {
+        // Function to show the modal (modal HTML is now in the layout)
+        // Ensure this function is accessible globally if called from HTML onclick
+        window.showChangePaymentModal = function(orderId, currentMethod) {
             console.log(`Attempting to show modal for order ${orderId}, current method ${currentMethod}`);
-            const modalEl = document.getElementById('changePaymentModal'); // Modal này từ layout
+            const modalEl = document.getElementById('changePaymentModal'); // Get modal from layout
 
             if (!modalEl) {
-                // Lỗi này không nên xảy ra nếu modal đã ở trong layout
                 console.error("CRITICAL ERROR: Modal element #changePaymentModal not found in layout DOM!");
                 Swal.fire('Lỗi giao diện nghiêm trọng', 'Không tìm thấy cấu trúc cửa sổ.', 'error');
                 return;
             }
 
-            // Sử dụng getOrCreateInstance để đảm bảo an toàn
+            // Use getOrCreateInstance for safety
             const changePaymentModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
 
             if (!changePaymentModalInstance) {
@@ -137,7 +153,7 @@
                  return;
             }
 
-            // --- Phần còn lại của hàm giữ nguyên ---
+            // --- Rest of the function remains the same ---
             const modalOrderIdSpan = document.getElementById('modalOrderId');
             const modalChangeOrderIdInput = document.getElementById('modalChangeOrderId');
             if(modalOrderIdSpan) modalOrderIdSpan.textContent = orderId;
@@ -152,14 +168,13 @@
                  radioToCheck = document.getElementById('newCod');
              }
 
-             // Nếu đang PENDING_PAYMENT (tức là QR), mặc định check QR
+             // Handle PENDING_PAYMENT status correctly checking QR
              if (currentMethodUpper === 'PENDING_PAYMENT') {
                   radioToCheck = document.getElementById('newSepayQr');
-             } else if (!radioToCheck) { // Nếu vẫn ko tìm thấy (lỗi?), mặc định COD
+             } else if (!radioToCheck) { // Default to COD if still not found
                  radioToCheck = document.getElementById('newCod');
                  console.warn(`Could not find radio for current method '${currentMethodUpper}', defaulting to COD.`);
              }
-
 
              if (radioToCheck) {
                  radioToCheck.checked = true;
@@ -171,15 +186,15 @@
             changePaymentModalInstance.show();
         }
 
-        // Hàm xử lý khi nhấn nút Lưu thay đổi trong modal
-        // *** Đảm bảo hàm này có thể truy cập được (là hàm global) ***
-        async function handleChangePaymentSubmit() {
+        // Function to handle the form submission within the modal
+        // Ensure this function is accessible globally if called from HTML onclick
+        window.handleChangePaymentSubmit = async function() {
             const orderId = document.getElementById('modalChangeOrderId').value;
             const selectedPaymentRadio = document.querySelector('input[name="newPaymentMethod"]:checked');
             const saveButton = document.getElementById('savePaymentChangeBtn');
 
-            const modalEl = document.getElementById('changePaymentModal'); // Modal từ layout
-            // Lấy instance đang hiển thị (nếu có)
+            const modalEl = document.getElementById('changePaymentModal'); // Get modal from layout
+            // Get the currently shown instance (if any)
             const changePaymentModalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
 
 
