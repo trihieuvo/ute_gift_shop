@@ -28,20 +28,15 @@ public class ProductVendorDto {
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             // Lấy URL gốc từ ảnh đầu tiên
              firstImageUrl = product.getImages().get(0).getImageUrl();
+             // *** XÓA BỎ LOGIC THÊM TIMESTAMP Ở ĐÂY ***
+             // if (firstImageUrl != null && !firstImageUrl.isBlank()) {
+             //     if (firstImageUrl.contains("?")) { ... } else { ... }
+             // } else { ... }
+             // *** KẾT THÚC XÓA BỎ ***
         }
 
-        // *** THÊM TIMESTAMP VÀO ĐÂY ***
-        if (firstImageUrl != null && !firstImageUrl.isBlank()) {
-            // Kiểm tra xem URL đã có dấu ? chưa để tránh lỗi ?t=...?t=...
-            if (firstImageUrl.contains("?")) {
-                 this.imageUrl = firstImageUrl + "&t=" + System.currentTimeMillis(); // Dùng & nếu đã có ?
-            } else {
-                 this.imageUrl = firstImageUrl + "?t=" + System.currentTimeMillis(); // Dùng ? nếu chưa có
-            }
-        } else {
-            this.imageUrl = null; // Hoặc URL ảnh mặc định của bạn
-        }
-        // *** KẾT THÚC THÊM TIMESTAMP ***
+        // Gán trực tiếp URL gốc (có thể là null)
+        this.imageUrl = firstImageUrl; // <-- SỬA LẠI DÒNG NÀY
 
         this.categoryName = (product.getCategory() != null) ? product.getCategory().getName() : "N/A";
     }

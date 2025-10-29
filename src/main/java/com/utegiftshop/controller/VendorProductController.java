@@ -77,7 +77,7 @@ public class VendorProductController {
 
             // 8. Trả về URL với timestamp để tránh cache
             // ✅ QUAN TRỌNG: Thêm ?t=timestamp vào URL
-            String imageUrl = "/images/" + newFilename + "?t=" + System.currentTimeMillis();
+            String imageUrl = "/images/" + newFilename;
             
             Map<String, String> response = new HashMap<>();
             response.put("imageUrl", imageUrl);
