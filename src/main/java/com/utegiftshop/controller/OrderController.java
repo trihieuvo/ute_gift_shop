@@ -28,12 +28,14 @@ import com.utegiftshop.entity.CartItem;
 import com.utegiftshop.entity.Order;
 import com.utegiftshop.entity.OrderDetail;
 import com.utegiftshop.entity.Product;
+import com.utegiftshop.entity.ShippingMethod;
 import com.utegiftshop.entity.User;
 import com.utegiftshop.repository.AddressRepository;
 import com.utegiftshop.repository.CartItemRepository;
 import com.utegiftshop.repository.OrderDetailRepository;
 import com.utegiftshop.repository.OrderRepository;
 import com.utegiftshop.repository.ProductRepository;
+import com.utegiftshop.repository.ShippingMethodRepository;
 import com.utegiftshop.repository.UserRepository;
 import com.utegiftshop.security.service.UserDetailsImpl;
 
@@ -47,6 +49,7 @@ public class OrderController {
     @Autowired private AddressRepository addressRepository;
     @Autowired private ProductRepository productRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private ShippingMethodRepository shippingMethodRepository;
 
     private UserDetailsImpl getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -71,6 +74,10 @@ public class OrderController {
         Address address = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new RuntimeException("Địa chỉ không hợp lệ hoặc không tồn tại. ID: " + request.getAddressId()));
 
+        ShippingMethod shippingMethod = shippingMethodRepository.findById(request.getShippingMethodId())
+                .orElseThrow(() -> new RuntimeException("Đơn vị vận chuyển không hợp lệ."));
+        BigDecimal shippingFee = shippingMethod.getFee();
+
         if (!address.getUser().getId().equals(userId)) {
              throw new SecurityException("Địa chỉ không thuộc về người dùng này.");
         }
@@ -79,7 +86,10 @@ public class OrderController {
         order.setUser(user);
         order.setShippingAddress(address.getFullAddress());
         order.setPaymentMethod(request.getPaymentMethod());
+        order.setShippingMethod(shippingMethod);
+        order.setShippingFee(shippingFee);
 
+        BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderDetail> orderDetails = new ArrayList<>();
         Map<Long, Product> productCache = new HashMap<>();
@@ -94,7 +104,7 @@ public class OrderController {
             if (product.getStockQuantity() < item.getQuantity()) {
                 throw new RuntimeException("Sản phẩm '" + product.getName() + "' không đủ số lượng trong kho.");
             }
-
+            
             OrderDetail detail = new OrderDetail();
             detail.setOrder(order);
             detail.setProduct(product);
@@ -110,12 +120,13 @@ public class OrderController {
             
 
             orderDetails.add(detail);
+            subtotal = subtotal.add(product.getPrice().multiply(new BigDecimal(item.getQuantity())));
 
             totalAmount = totalAmount.add(product.getPrice().multiply(new BigDecimal(item.getQuantity())));
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
         }
-
-        order.setTotalAmount(totalAmount);
+        BigDecimal finalTotalAmount = subtotal.add(shippingFee);
+        order.setTotalAmount(finalTotalAmount);
         order.setOrderDetails(orderDetails);
 
         String paymentCode = null;
@@ -136,7 +147,7 @@ public class OrderController {
         responseBody.put("orderId", savedOrder.getId());
         responseBody.put("paymentMethod", savedOrder.getPaymentMethod());
         responseBody.put("paymentCode", paymentCode);
-        responseBody.put("totalAmount", totalAmount);
+        responseBody.put("totalAmount", finalTotalAmount);
         return ResponseEntity.ok(responseBody);
     }
 

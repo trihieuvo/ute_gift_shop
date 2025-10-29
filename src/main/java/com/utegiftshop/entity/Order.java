@@ -76,6 +76,13 @@ public class Order {
 
     @Column(name = "is_cod_reconciled", nullable = false, columnDefinition = "boolean default false")
     private boolean isCodReconciled = false; // Đã đối soát tiền COD hay chưa
+    
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "shipping_method_id")
+    private ShippingMethod shippingMethod;
+
+    @Column(name = "shipping_fee", precision = 12, scale = 2)
+    private BigDecimal shippingFee;
 
     @JsonManagedReference
     @OneToMany(mappedBy = "order", fetch = FetchType.EAGER, cascade = CascadeType.ALL)

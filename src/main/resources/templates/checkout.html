@@ -115,7 +115,14 @@
                     </button>
                 </div>
             </div>
-
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-truck me-2"></i>Chọn đơn vị vận chuyển</h5>
+                </div>
+                <div class="card-body" id="shipping-methods-container">
+                    <p class="text-center p-3 text-muted">Đang tải các đơn vị vận chuyển...</p>
+                </div>
+            </div>
            
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
@@ -157,8 +164,7 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Phí vận chuyển:</span>
-                            <strong>Miễn phí</strong>
-                        </li>
+                            <strong id="summary-shipping-fee">0 đ</strong> </li>
                         <li class="list-group-item d-flex justify-content-between bg-light">
                             <strong class="text-danger">Tổng cộng:</strong>
                             <strong id="summary-total" class="text-danger fs-5">0 đ</strong>
@@ -214,14 +220,18 @@
         const placeOrderButton = document.getElementById('placeOrderBtn');
         let currentTotalAmount = 0;
         let addAddressModalInstance = null;
+        let shippingMethods = [];
+        let selectedShippingFee = 0;
+        let subtotalAmount = 0;
 
-        // === DOMContentLoaded (Giữ nguyên) ===
+        // === DOMContentLoaded ===
         document.addEventListener('DOMContentLoaded', () => {
              if (!token) {
                 window.location.href = window.location.origin + '/login';
                 return;
             }
             fetchAddresses();
+            fetchShippingMethods();
             fetchOrderSummary();
              const modalElement = document.getElementById('addAddressModalCheckout');
              if (modalElement) {
@@ -229,6 +239,50 @@
              }
         });
 
+        async function fetchShippingMethods() {
+            const container = document.getElementById('shipping-methods-container');
+            try {
+                const response = await fetch('/api/shipping-methods', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!response.ok) throw new Error('Không thể tải đơn vị vận chuyển');
+                shippingMethods = await response.json();
+                container.innerHTML = '';
+
+                if (shippingMethods.length > 0) {
+                    shippingMethods.forEach((method, index) => {
+                        const isChecked = index === 0; // Tự động chọn cái đầu tiên
+                        if (isChecked) {
+                            selectedShippingFee = method.fee;
+                        }
+                        container.innerHTML += `
+                            <div class="payment-method-item form-check mb-2 ${isChecked ? 'selected' : ''}" onclick="selectShippingItem(this)">
+                                <input class="form-check-input" type="radio" name="shippingMethod" id="ship-${method.id}" value="${method.id}" data-fee="${method.fee}" ${isChecked ? 'checked' : ''} onchange="updateSummary()">
+                                <label class="form-check-label w-100" for="ship-${method.id}">
+                                    <div><strong>${method.name}</strong></div>
+                                    <div class="text-muted small">Phí: ${method.fee.toLocaleString('vi-VN')} đ</div>
+                                </label>
+                            </div>
+                        `;
+                    });
+                    updateSummary(); // Cập nhật tổng tiền lần đầu
+                } else {
+                    container.innerHTML = '<p class="text-danger">Không có đơn vị vận chuyển nào.</p>';
+                    placeOrderButton.disabled = true;
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="text-danger">${error.message}</p>`;
+                placeOrderButton.disabled = true;
+            }
+        }
+        function selectShippingItem(selectedDiv) {
+            document.querySelectorAll('#shipping-methods-container .payment-method-item').forEach(item => item.classList.remove('selected'));
+            selectedDiv.classList.add('selected');
+            const radioInside = selectedDiv.querySelector('input[type="radio"]');
+            if (radioInside) {
+                radioInside.checked = true;
+                // Cập nhật lại summary khi có thay đổi
+                updateSummary();
+            }
+        }
         // === fetchAddresses (Đã sửa logic chọn mặc định) ===
         async function fetchAddresses() {
             if (!addressListContainer) return;
@@ -306,12 +360,12 @@
         }
 
         // === selectPaymentItem (Giữ nguyên) ===
-        function selectPaymentItem(selectedDiv) {
-            document.querySelectorAll('.payment-method-item').forEach(item => item.classList.remove('selected'));
-            selectedDiv.classList.add('selected');
-            const radioInside = selectedDiv.querySelector('input[type="radio"]');
-            if (radioInside) radioInside.checked = true;
-        }
+            function selectPaymentItem(selectedDiv) {
+                document.querySelectorAll('.payment-method-item').forEach(item => item.classList.remove('selected'));
+                selectedDiv.classList.add('selected');
+                const radioInside = selectedDiv.querySelector('input[type="radio"]');
+                if (radioInside) radioInside.checked = true;
+            }
 
         // === fetchOrderSummary (Giữ nguyên) ===
         async function fetchOrderSummary() {
@@ -350,6 +404,8 @@
                 const formattedTotal = total.toLocaleString('vi-VN') + ' đ';
                 summarySubtotalEl.textContent = formattedTotal;
                 summaryTotalEl.textContent = formattedTotal;
+                subtotalAmount = total; // `total` ở đây là tổng tiền hàng
+                updateSummary(); // Gọi hàm cập nhật tổng quan
                 if(placeOrderButton) placeOrderButton.disabled = false;
             } catch(error){
                  console.error("Lỗi khi tải tóm tắt đơn hàng:", error);
@@ -359,14 +415,32 @@
                  if(placeOrderButton) placeOrderButton.disabled = true;
             }
         }
+        function updateSummary() {
+            const selectedShippingRadio = document.querySelector('input[name="shippingMethod"]:checked');
+            if (selectedShippingRadio) {
+                selectedShippingFee = parseFloat(selectedShippingRadio.dataset.fee) || 0;
+            }
+
+            const total = subtotalAmount + selectedShippingFee;
+
+            summarySubtotalEl.textContent = subtotalAmount.toLocaleString('vi-VN') + ' đ';
+            document.getElementById('summary-shipping-fee').textContent = selectedShippingFee.toLocaleString('vi-VN') + ' đ';
+            summaryTotalEl.textContent = total.toLocaleString('vi-VN') + ' đ';
+        }
 
         // === placeOrder (Giữ nguyên) ===
         async function placeOrder() {
             const selectedAddress = document.querySelector('input[name="address"]:checked');
             const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+            const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
 
             if (!selectedAddress) { Swal.fire('Thiếu thông tin', 'Vui lòng chọn hoặc thêm địa chỉ giao hàng.', 'warning'); return; }
             if (!selectedPayment){ Swal.fire('Thiếu thông tin', 'Vui lòng chọn phương thức thanh toán.', 'warning'); return; }
+            if (!selectedAddress) { /* ... */ }
+            if (!selectedShipping) { 
+                Swal.fire('Thiếu thông tin', 'Vui lòng chọn đơn vị vận chuyển.', 'warning');
+                return;
+            }
             if (!placeOrderButton) return;
 
             placeOrderButton.disabled = true;
@@ -378,7 +452,8 @@
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         addressId: selectedAddress.value,
-                        paymentMethod: selectedPayment.value
+                        paymentMethod: selectedPayment.value,
+                        shippingMethodId: parseInt(selectedShipping.value)
                     })
                 });
 

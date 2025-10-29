@@ -73,7 +73,8 @@
                     </div>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Ngày đặt:</strong> <span id="order-date"></span></li>
-                        <li class="list-group-item"><strong>Phương thức TT:</strong> <span id="order-payment"></span></li>
+                        <li class="list-group-item"><strong>Phương thức thanh toán:</strong> <span id="order-payment"></span></li>
+                        <li class="list-group-item"><strong>Đơn vị vận chuyển:</strong><br><span id="order-shipping"></span></li>
                         <li class="list-group-item"><strong>Địa chỉ nhận hàng:</strong><br><span id="recipient-address"></span></li>
                     </ul>
                 </div>
@@ -152,6 +153,12 @@
             document.getElementById('order-total').textContent = order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') + ' đ' : 'N/A';
             document.getElementById('order-current-status-badge').innerHTML = getStatusBadge(order.status);
 
+            const shippingInfoEl = document.getElementById('order-shipping');
+            if (order.shippingMethod && order.shippingFee != null) {
+                shippingInfoEl.innerHTML = `${order.shippingMethod.name} - <strong>${order.shippingFee.toLocaleString('vi-VN')} đ</strong>`;
+            } else {
+                shippingInfoEl.textContent = 'Chưa có thông tin';
+            }
             const productList = document.getElementById('product-list');
             productList.innerHTML = '';
             
