@@ -15,11 +15,11 @@
         /* CSS cho sidebar danh mục - UPDATED */
         .category-sidebar { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1); position: sticky; top: 90px; z-index: 100; }
         .category-sidebar .nav-link, .category-sidebar .dropdown-item { color: #333; cursor: pointer; font-weight: 500; }
-        .category-sidebar .nav-item .nav-link:hover, 
+        .category-sidebar .nav-item .nav-link:hover,
         .category-sidebar .nav-item .nav-link.active:hover,
-        .category-sidebar .dropdown-item:hover { 
-            color: #0d6efd; 
-            background-color: #f8f9fa; 
+        .category-sidebar .dropdown-item:hover {
+            color: #0d6efd;
+            background-color: #f8f9fa;
         }
         .category-sidebar .nav-link.active, .category-sidebar .dropdown-item.active { color: #fff; background-color: #0d6efd; border-radius: 0.25rem; }
         .category-sidebar .dropdown-menu { border: none; box-shadow: 0 4px 6px rgba(0,0,0,.1); padding: 0.5rem 0; }
@@ -43,7 +43,7 @@
             transition: opacity 0.15s ease, visibility 0s linear 0.15s;
             pointer-events: none;
         }
-        
+
         /* Tạo vùng cầu nối invisible */
         .category-sidebar .nav-item.dropdown::after {
             content: '';
@@ -54,7 +54,7 @@
             height: 100%;
             z-index: 1002;
         }
-        
+
         /* Hiển thị menu con khi hover */
         .category-sidebar .nav-item.dropdown:hover > .dropdown-menu,
         .category-sidebar .dropdown-menu:hover {
@@ -71,7 +71,7 @@
              justify-content: space-between;
              align-items: center;
         }
-        
+
         .category-sidebar .nav-link.dropdown-toggle::after {
             content: '›';
             border: none;
@@ -80,7 +80,7 @@
         }
         /* --- KẾT THÚC CSS HOVER --- */
 
-        /* CSS cho đánh giá */
+        /* === CSS CHO ĐÁNH GIÁ (ĐƯỢC THÊM VÀO) === */
         .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
         .star-rating input[type="radio"] { display: none; }
         .star-rating label { font-size: 2rem; color: #ddd; cursor: pointer; transition: color 0.2s; }
@@ -103,6 +103,7 @@
         .vendor-reply strong { color: #0a58ca; }
         .vendor-reply p { margin-bottom: 0.25rem; font-size: 0.9rem; }
         .vendor-reply .reply-time { font-size: 0.75rem; color: #6c757d; display: block; margin-top: 0.25rem; }
+        /* === KẾT THÚC CSS ĐÁNH GIÁ === */
     </style>
 </head>
 <body>
@@ -130,7 +131,6 @@
                 <div class="col-12">
                     <h3 class="mb-4">Đánh giá sản phẩm</h3>
 
-                    <!-- Form viết/sửa đánh giá -->
                     <div id="review-form-container" class="card card-body mb-4 d-none">
                         <h5 id="review-form-title">Viết đánh giá của bạn</h5>
                         <form id="review-form">
@@ -155,12 +155,10 @@
                         </form>
                     </div>
 
-                    <!-- Thông báo điều kiện đánh giá -->
                     <div id="review-eligibility-message" class="alert alert-info d-none"></div>
 
-                    <!-- Danh sách đánh giá -->
                     <div id="review-list-container"></div>
-                </div>
+                    </div>
             </div>
         </div>
     </div>
@@ -171,13 +169,15 @@
         /*<![CDATA[*/
         const productId = /*[[${productId}]]*/ '0';
         const token = localStorage.getItem('jwtToken');
-        let currentUserId = null;
+        // let currentUserId = null; // Sẽ lấy từ globalUserInfo
         let allReviewsData = [];
+        let currentProductData = null;
         /*]]>*/
 
         // === DOM ELEMENTS ===
         const productDetailContainer = document.getElementById('product-detail-container');
         const categoryMenu = document.getElementById('category-menu');
+        // === BIẾN JS CHO ĐÁNH GIÁ (ĐƯỢC THÊM VÀO) ===
         const reviewFormContainer = document.getElementById('review-form-container');
         const reviewEligibilityMsg = document.getElementById('review-eligibility-message');
         const reviewListContainer = document.getElementById('review-list-container');
@@ -189,33 +189,19 @@
         const orderDetailIdInput = document.getElementById('review-order-detail-id');
         const reviewCommentInput = document.getElementById('review-comment');
         const ratingInputs = document.querySelectorAll('input[name="rating"]');
+        // === KẾT THÚC BIẾN JS ĐÁNH GIÁ ===
 
         // === INITIALIZATION ===
         document.addEventListener('DOMContentLoaded', async () => {
-            await fetchCurrentUserId();
+            // Không cần gọi fetchCurrentUserId riêng, sẽ chờ global auth
             fetchProductDetails();
             fetchAndDisplayCategories();
             fetchAndRenderReviews();
-            checkReviewEligibility();
+            checkReviewEligibility(); // Hàm này sẽ tự đợi auth
 
-            reviewForm.addEventListener('submit', handleReviewSubmit);
+            if(reviewForm) reviewForm.addEventListener('submit', handleReviewSubmit);
         });
 
-        async function fetchCurrentUserId() {
-            if (!token) return;
-            try {
-                const response = await fetch('/api/reviews/me', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.authenticated) {
-                        currentUserId = data.userId;
-                        console.log("Current User ID:", currentUserId);
-                    }
-                }
-            } catch (e) {
-                console.error("Error fetching current user ID:", e);
-            }
-        }
 
         // ===============================================
         // SECTION 1: PRODUCT DETAILS & CORE ACTIONS
@@ -224,8 +210,8 @@
              try {
                  const response = await fetch(`/api/products/${productId}`);
                  if (!response.ok) throw new Error('Không tìm thấy sản phẩm');
-                 const product = await response.json();
-                 renderProductDetails(product);
+                 currentProductData = await response.json(); // Lưu vào biến global
+                 renderProductDetails(currentProductData);
              } catch (error) {
                  productDetailContainer.innerHTML = `<p class="text-danger text-center">${error.message}</p>`;
              }
@@ -234,39 +220,56 @@
          function renderProductDetails(product) {
              document.title = product.name;
              let galleryHtml = '<p>Không có hình ảnh.</p>';
-             if (product.images && product.images.length > 0) {
-                 const mainImage = product.images[0].imageUrl;
-                 const thumbnails = product.images.map((img, index) => `
-                     <img src="${img.imageUrl}" alt="Thumbnail ${index+1}" class="thumbnail-img ${index === 0 ? 'active' : ''}" onclick="changeMainImage(this, '${img.imageUrl}')">
+             // Sửa lỗi: dùng product.imageUrls (từ DTO)
+             if (product.imageUrls && product.imageUrls.length > 0) {
+                 const mainImage = product.imageUrls[0];
+                 const thumbnails = product.imageUrls.map((url, index) => `
+                     <img src="${url}" alt="Thumbnail ${index+1}" class="thumbnail-img ${index === 0 ? 'active' : ''}" onclick="changeMainImage(this, '${url}')">
                  `).join('');
                  galleryHtml = `
                      <img src="${mainImage}" id="main-product-image" class="product-gallery-main" alt="Ảnh chính">
                      <div class="product-gallery-thumbnails">${thumbnails}</div>
                  `;
              }
+
+             // Thêm nút chat
+             let chatButtonHtml = '';
+             if (product.shop && product.shop.userId) {
+                 chatButtonHtml = `
+                     <button class="btn btn-outline-secondary"
+                             onclick="startChatWithVendor(${product.shop.userId}, '${escapeHtml(product.shop.name)}')">
+                         <i class="bi bi-chat-dots-fill"></i> Trò chuyện với người bán
+                     </button>
+                 `;
+             }
+
              productDetailContainer.innerHTML = `
                  <div class="row">
                      <div class="col-md-6">${galleryHtml}</div>
                      <div class="col-md-6">
-                         <h2>${product.name}</h2>
+                         <h2>${escapeHtml(product.name)}</h2>
+                         <p class="text-muted small">
+                             Được bán bởi: <strong>${escapeHtml(product.shop ? product.shop.name : 'N/A')}</strong>
+                         </p>
                          <h3 class="text-danger">${product.price.toLocaleString('vi-VN')} đ</h3>
-                         <p class="text-muted">Tình trạng: <strong>Còn hàng</strong></p>
+                         <p class="text-muted">Tình trạng: <strong>Còn ${product.stockQuantity || 0} sản phẩm</strong></p>
                          <hr>
-                         <p>${product.description || 'Chưa có mô tả cho sản phẩm này.'}</p>
+                         <p>${escapeHtml(product.description) || 'Chưa có mô tả cho sản phẩm này.'}</p>
                          <hr>
-                         <div class="d-flex align-items-center gap-3">
-                             <label for="quantity">Số lượng:</label>
-                             <input type="number" id="quantity" class="form-control" value="1" min="1" style="width: 80px;">
+                         <div class="d-flex align-items-center gap-3 flex-wrap">
+                             <label for="quantity" class="form-label mb-0">Số lượng:</label>
+                             <input type="number" id="quantity" class="form-control" value="1" min="1" max="${product.stockQuantity || 1}" style="width: 80px;">
                              <button class="btn btn-primary" onclick="addToCart()">
                                  <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
                              </button>
+                             ${chatButtonHtml}
                          </div>
                      </div>
                  </div>
              `;
          }
 
-         function changeMainImage(thumbnailElement, newSrc) {
+        function changeMainImage(thumbnailElement, newSrc) {
              const mainImage = document.getElementById('main-product-image');
              if (mainImage) mainImage.src = newSrc;
              document.querySelectorAll('.thumbnail-img').forEach(img => img.classList.remove('active'));
@@ -298,8 +301,63 @@
              }
          }
 
+        // HÀM BẮT ĐẦU CHAT VỚI VENDOR (Đã sửa)
+        window.startChatWithVendor = async function(vendorUserId, vendorName) {
+            const localToken = localStorage.getItem('jwtToken');
+            if (!localToken) {
+                 Swal.fire('Vui lòng đăng nhập', 'Bạn cần đăng nhập để trò chuyện.', 'info');
+                 return;
+            }
+
+            // Chờ xác thực global (từ _app_layout) hoàn tất
+            if (typeof window.waitForAuthCheck !== 'function') {
+                 Swal.fire('Lỗi', 'Hàm xác thực chưa sẵn sàng. Vui lòng thử lại.', 'error');
+                 return;
+            }
+            if (!window.isAuthCheckComplete) {
+                console.log("startChatWithVendor: Waiting for global auth check...");
+                Swal.fire({ title: 'Đang xác thực...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                try {
+                    await window.waitForAuthCheck();
+                    Swal.close();
+                } catch (err) {
+                    Swal.close();
+                    Swal.fire('Lỗi', 'Xác thực quá lâu, vui lòng tải lại trang.', 'error');
+                    return;
+                }
+            }
+
+            if (!window.globalUserInfo) {
+                Swal.fire('Lỗi', 'Không thể xác định người dùng. Vui lòng đăng nhập lại.', 'error');
+                return;
+            }
+            
+            const localCurrentUserId = window.globalUserInfo.id;
+
+            if (localCurrentUserId === vendorUserId) {
+                 Swal.fire('Thông báo', 'Bạn không thể tự trò chuyện với chính mình.', 'info');
+                 return;
+            }
+
+            // Tạo conversationId theo chuẩn: vendor_{vendorId}_customer_{customerId}
+            const conversationId = `vendor_${vendorUserId}_customer_${localCurrentUserId}`;
+
+            const partner = {
+                id: vendorUserId,
+                name: vendorName
+            };
+
+            // Gọi hàm global từ _app_layout.html
+            if (typeof openChatWindowFromExternal === 'function') {
+                openChatWindowFromExternal(conversationId, partner);
+            } else {
+                Swal.fire('Lỗi', 'Không thể mở cửa sổ chat. Vui lòng tải lại trang.', 'error');
+            }
+        }
+
+
         // ===============================================
-        // SECTION 2: CATEGORY SIDEBAR - UPDATED WITH HOVER LOGIC
+        // SECTION 2: CATEGORY SIDEBAR
         // ===============================================
         async function fetchAndDisplayCategories() {
             try {
@@ -307,72 +365,28 @@
                 if (!response.ok) throw new Error('Lỗi khi tải danh mục');
                 const categories = await response.json();
                 categoryMenu.innerHTML = '';
-
-                // Render "Tất cả sản phẩm"
-                categoryMenu.innerHTML += `
-                    <li class="nav-item">
-                        <a class="nav-link" onclick="filterProductsByCategory(null)">
-                            Tất cả sản phẩm
-                        </a>
-                    </li>`;
-
-                // Render categories and subcategories with hover support
+                categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link" onclick="filterProductsByCategory(null)">Tất cả sản phẩm</a></li>`;
                 categories.forEach(category => {
                     let childrenHtml = '';
-
                     if (category.children && category.children.length > 0) {
-                        childrenHtml = category.children.map(child => `
-                            <li>
-                                <a class="dropdown-item" onclick="filterProductsByCategory(${child.id})">
-                                    ${escapeHtml(child.name)}
-                                </a>
-                            </li>`).join('');
+                        childrenHtml = category.children.map(child => `<li><a class="dropdown-item" onclick="filterProductsByCategory(${child.id})">${escapeHtml(child.name)}</a></li>`).join('');
                     }
-
                     if (childrenHtml) {
-                        // Render as dropdown with hover
-                        categoryMenu.innerHTML += `
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" aria-expanded="false">
-                                     ${escapeHtml(category.name)}
-                                </a>
-                                <ul class="dropdown-menu">
-                                    ${childrenHtml}
-                                </ul>
-                            </li>`;
+                        categoryMenu.innerHTML += `<li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" aria-expanded="false">${escapeHtml(category.name)}</a><ul class="dropdown-menu">${childrenHtml}</ul></li>`;
                     } else {
-                        // Render as simple link
-                        categoryMenu.innerHTML += `
-                            <li class="nav-item">
-                                <a class="nav-link" onclick="filterProductsByCategory(${category.id})">
-                                    ${escapeHtml(category.name)}
-                                </a>
-                            </li>`;
+                        categoryMenu.innerHTML += `<li class="nav-item"><a class="nav-link" onclick="filterProductsByCategory(${category.id})">${escapeHtml(category.name)}</a></li>`;
                     }
                 });
-
             } catch (error) {
                 console.error("Lỗi tải danh mục:", error);
                 categoryMenu.innerHTML = '<p class="text-danger small">Không thể tải danh mục.</p>';
             }
         }
-
-        function filterProductsByCategory(categoryId) { 
-            window.location.href = `/home${categoryId ? '?category=' + categoryId : ''}`; 
-        }
-
-        function escapeHtml(unsafe) {
-            if (!unsafe) return '';
-            return unsafe
-                 .replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
-        }
+        function filterProductsByCategory(categoryId) { window.location.href = `/home${categoryId ? '?category=' + categoryId : ''}`; }
+        function escapeHtml(unsafe) { if (!unsafe) return ''; return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
         // ===============================================
-        // SECTION 3: REVIEWS
+        // SECTION 3: REVIEWS (ĐƯỢC THÊM VÀO)
         // ===============================================
         async function fetchAndRenderReviews() {
             reviewListContainer.innerHTML = '<p>Đang tải đánh giá...</p>';
@@ -386,21 +400,27 @@
                     return;
                 }
 
+                // Chờ global auth check
+                if (!window.isAuthCheckComplete) {
+                     try { await window.waitForAuthCheck(); } catch(e) { console.warn("Auth check timed out for reviews"); }
+                }
+                const localCurrentUserId = window.globalUserInfo?.id;
+
                 reviewListContainer.innerHTML = '';
                 allReviewsData.forEach(review => {
-                    reviewListContainer.innerHTML += renderSingleReview(review);
+                    reviewListContainer.innerHTML += renderSingleReview(review, localCurrentUserId);
                 });
             } catch(e) {
                 reviewListContainer.innerHTML = '<p class="text-danger">Lỗi khi tải đánh giá.</p>';
             }
         }
 
-        function renderSingleReview(review) {
+        function renderSingleReview(review, localCurrentUserId) {
             let starsHtml = Array(5).fill(0).map((_, i) =>
                 `<i class="bi ${i < review.rating ? 'bi-star-fill' : 'bi-star'}"></i>`
             ).join('');
 
-            const isAuthor = currentUserId && review.userId === currentUserId;
+            const isAuthor = localCurrentUserId && review.userId === localCurrentUserId;
             const isEdited = !!review.updatedAt;
 
             const editButtonHtml = isAuthor ?
@@ -411,7 +431,7 @@
             const vendorReplyHtml = (review.vendorReply && review.vendorReply.trim() !== '') ? `
                 <div class="vendor-reply">
                     <strong><i class="bi bi-shop-window"></i> Phản hồi từ cửa hàng:</strong>
-                    <p>${review.vendorReply.replace(/\n/g, '<br>')}</p>
+                    <p>${escapeHtml(review.vendorReply).replace(/\n/g, '<br>')}</p>
                     <span class="reply-time"><i class="bi bi-clock"></i> ${review.repliedAtFormatted || 'N/A'}</span>
                 </div>
             ` : '';
@@ -420,7 +440,7 @@
                  <div class="review-item" id="review-${review.id}">
                      <div class="review-header">
                          <div class="review-user-info">
-                             <strong class="text-dark">${review.userFullName}</strong>
+                             <strong class="text-dark">${escapeHtml(review.userFullName)}</strong>
                              <div class="review-meta">
                                  <span><i class="bi bi-clock"></i> ${review.createdAt}</span>
                                  ${isEdited ? `<span>(Đã sửa lúc: ${review.updatedAt})</span>` : ''}
@@ -431,7 +451,7 @@
                          </div>
                      </div>
                      <div class="review-stars mb-2">${starsHtml}</div>
-                     <p class="mb-2">${review.comment || ''}</p>
+                     <p class="mb-2">${escapeHtml(review.comment) || ''}</p>
                      ${vendorReplyHtml}
                  </div>
              `;
@@ -440,13 +460,27 @@
         async function checkReviewEligibility() {
              reviewFormContainer.classList.add('d-none');
              reviewEligibilityMsg.classList.add('d-none');
-             if (!token) {
+
+             // Chờ auth check
+             if (!window.isAuthCheckComplete) {
+                 try { await window.waitForAuthCheck(); }
+                 catch (e) {
+                     reviewEligibilityMsg.textContent = "Lỗi xác thực, không thể kiểm tra.";
+                     reviewEligibilityMsg.classList.remove('d-none');
+                     return;
+                 }
+             }
+             const localToken = localStorage.getItem('jwtToken');
+             const localCurrentUserId = window.globalUserInfo?.id;
+
+             if (!localToken || !localCurrentUserId) {
                  reviewEligibilityMsg.textContent = 'Bạn cần đăng nhập để có thể đánh giá sản phẩm.';
                  reviewEligibilityMsg.classList.remove('d-none');
                  return;
              }
+
              try {
-                 const response = await fetch(`/api/reviews/eligibility/${productId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                 const response = await fetch(`/api/reviews/eligibility/${productId}`, { headers: { 'Authorization': `Bearer ${localToken}` } });
                  const data = await response.json();
 
                  reviewEligibilityMsg.textContent = data.message;
@@ -470,16 +504,13 @@
                 Swal.fire('Lỗi', 'Không tìm thấy dữ liệu đánh giá để sửa.', 'error');
                 return;
             }
-
             reviewFormContainer.classList.remove('d-none');
             reviewFormContainer.classList.add('editing');
             reviewFormTitle.textContent = "Chỉnh sửa đánh giá của bạn";
             reviewIdToEditInput.value = reviewId;
-
             ratingInputs.forEach(input => {
                 input.checked = (parseInt(input.value) === reviewToEdit.rating);
             });
-
             reviewCommentInput.value = reviewToEdit.comment || '';
             submitReviewBtn.textContent = "Lưu thay đổi";
             cancelEditBtn.classList.remove('d-none');
@@ -492,7 +523,7 @@
         }
 
         function resetReviewForm() {
-            reviewForm.reset();
+            if(reviewForm) reviewForm.reset();
             reviewFormContainer.classList.remove('editing');
             reviewFormTitle.textContent = "Viết đánh giá của bạn";
             reviewIdToEditInput.value = '';
@@ -508,39 +539,33 @@
                 Swal.fire('Lỗi', 'Vui lòng chọn số sao.', 'warning');
                 return;
             }
-
+            const localToken = localStorage.getItem('jwtToken'); // Lấy token
             const reviewIdToEdit = reviewIdToEditInput.value;
             const isEditing = !!reviewIdToEdit;
-
             const requestBody = {
                 rating: parseInt(ratingChecked.value),
                 comment: reviewCommentInput.value.trim()
             };
-
             if (!isEditing) {
                 requestBody.productId = parseInt(productId);
                 requestBody.orderDetailId = parseInt(orderDetailIdInput.value);
             }
-
             const url = isEditing ? `/api/reviews/${reviewIdToEdit}` : '/api/reviews';
             const method = isEditing ? 'PUT' : 'POST';
-
             try {
                 const response = await fetch(url, {
                     method: method,
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${localToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody)
                 });
-
                 const result = await response.json();
-
-                if (response.ok) {
+                if (response.ok || response.status === 201) {
                     Swal.fire('Thành công', isEditing ? 'Đã cập nhật đánh giá!' : 'Cảm ơn bạn đã gửi đánh giá!', 'success');
                     resetReviewForm();
                     reviewFormContainer.classList.add('d-none');
                     reviewEligibilityMsg.textContent = 'Bạn đã đánh giá sản phẩm này.';
                     reviewEligibilityMsg.classList.remove('d-none');
-                    fetchAndRenderReviews();
+                    await fetchAndRenderReviews();
                 } else {
                     Swal.fire('Lỗi', result.message || (isEditing ? 'Không thể cập nhật.' : 'Không thể gửi.'), 'error');
                 }
@@ -549,6 +574,7 @@
                 Swal.fire('Lỗi', 'Lỗi mạng, vui lòng thử lại.', 'error');
             }
         }
+        /*]]>*/
     </script>
 </th:block>
 
