@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional; // THÊM IMPORT
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.utegiftshop.dto.request.CategoryDto;
-import com.utegiftshop.dto.response.ProductDetailDto; // THÊM IMPORT DTO MỚI
 import com.utegiftshop.entity.Category;
 import com.utegiftshop.entity.Product;
 import com.utegiftshop.repository.CategoryRepository;
@@ -98,27 +96,15 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-    // === PHƯƠNG THỨC ĐÃ CẬP NHẬT ===
+    // Phương thức getProductById và getCategories giữ nguyên
     @GetMapping("/products/{id}")
-    @Transactional(readOnly = true) // Thêm @Transactional để load LAZY fields
-    public ResponseEntity<?> getProductById(@PathVariable Long id) {
-        
+    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+        // *** SỬA: Chỉ trả về nếu sản phẩm active ***
         return productRepository.findById(id)
-                .filter(Product::isActive) // Lọc sản phẩm active
-                .map(product -> {
-                    // Tải các trường LAZY
-                    product.getShop().getName(); // Tải shop
-                    product.getShop().getUser().getId(); // Tải user của shop
-                    product.getCategory().getName(); // Tải category
-                    
-                    // Tạo DTO mới để trả về
-                    ProductDetailDto dto = new ProductDetailDto(product);
-                    return ResponseEntity.ok(dto);
-                })
+                .filter(Product::isActive) // Thêm bộ lọc ở đây
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    // === KẾT THÚC CẬP NHẬT ===
-
 
     @GetMapping("/categories")
     public ResponseEntity<List<CategoryDto>> getCategories() {

@@ -156,7 +156,7 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new ReviewDto(freshReview));
     }
 
-    // --- API CẬP NHẬT ĐÁNH GIÁ (SỬ DUNG DTO MỚI) ---
+    // --- API CẬP NHẬT ĐÁNH GIÁ (SỬ DỤNG DTO MỚI) ---
     @PutMapping("/{reviewId}")
     @Transactional
     public ResponseEntity<?> updateReview(
@@ -191,3 +191,4 @@ public class ReviewController {
         return ResponseEntity.ok(new ReviewDto(freshReview));
     }
 }
+

@@ -24,7 +24,7 @@ public class ChatController {
     @Autowired
     private UserRepository userRepository;
 
-    // Lấy danh sách conversations (Dùng cho cả User và Vendor)
+    // Lấy danh sách conversations của vendor
     @GetMapping("/conversations")
     public ResponseEntity<?> getConversations(@AuthenticationPrincipal UserDetails userDetails) {
         try {
@@ -72,7 +72,7 @@ public class ChatController {
                 // Đếm tin nhắn chưa đọc trong conversation này
                 long unreadCount = messages.stream()
                     .filter(m -> m.getReceiverId().equals(currentUser.getId()) 
-                              && (m.getIsRead() == null || !m.getIsRead())) // Check cả null
+                              && !m.getIsRead())
                     .count();
                 
                 Map<String, Object> conversation = new HashMap<>();
@@ -119,28 +119,8 @@ public class ChatController {
                 return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
             }
             
-            // Lấy User ID hiện tại
-            User currentUser = userRepository.findByEmail(userDetails.getUsername())
-                 .orElseThrow(() -> new RuntimeException("User not found"));
-            Long currentUserId = currentUser.getId();
-
-            // Lấy tin nhắn
             List<ChatMessage> messages = chatMessageRepository
                 .findByConversationIdOrderByCreatedAtAsc(conversationId);
-                
-            // === LOGIC MỚI: ĐÁNH DẤU ĐÃ ĐỌC ===
-            List<ChatMessage> messagesToUpdate = new ArrayList<>();
-            messages.stream()
-                .filter(m -> m.getReceiverId().equals(currentUserId) && (m.getIsRead() == null || !m.getIsRead()))
-                .forEach(m -> {
-                    m.setIsRead(true);
-                    messagesToUpdate.add(m);
-                });
-            
-            if (!messagesToUpdate.isEmpty()) {
-                chatMessageRepository.saveAll(messagesToUpdate);
-            }
-            // === KẾT THÚC LOGIC MỚI ===
             
             // Chuyển đổi sang DTO đơn giản
             List<Map<String, Object>> messageList = messages.stream()
@@ -150,7 +130,6 @@ public class ChatController {
                     map.put("senderId", msg.getSenderId());
                     map.put("receiverId", msg.getReceiverId());
                     map.put("content", msg.getContent());
-                    map.put("senderRole", msg.getSenderRole()); // Gửi cả vai trò
                     map.put("timestamp", msg.getCreatedAt() != null ? msg.getCreatedAt() : msg.getTimestamp());
                     map.put("isRead", msg.getIsRead());
                     return map;
@@ -165,5 +144,40 @@ public class ChatController {
         }
     }
 
-    // Bỏ API /markAsRead vì đã gộp logic vào /getMessages
+    // Đánh dấu tin nhắn đã đọc
+    @PutMapping("/messages/read")
+    public ResponseEntity<?> markAsRead(
+            @RequestParam Long receiverId, 
+            @RequestParam String conversationId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            if (userDetails == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+            
+            User currentUser = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            // Kiểm tra quyền
+            if (!currentUser.getId().equals(receiverId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+            }
+            
+            List<ChatMessage> messages = chatMessageRepository
+                .findByConversationIdOrderByCreatedAtAsc(conversationId);
+            
+            messages.stream()
+                .filter(m -> m.getReceiverId().equals(receiverId) && !m.getIsRead())
+                .forEach(m -> {
+                    m.setIsRead(true);
+                    chatMessageRepository.save(m);
+                });
+            
+            return ResponseEntity.ok(Map.of("success", true, "message", "Đã đánh dấu đọc"));
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Lỗi đánh dấu đọc: " + e.getMessage()));
+        }
+    }
 }
