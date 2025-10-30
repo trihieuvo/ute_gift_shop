@@ -413,8 +413,27 @@
                      body: JSON.stringify({ productId: parseInt(productId), quantity: quantity })
                  });
                  if (response.ok) { // Success
-                     Swal.fire('Thành công!', 'Đã thêm sản phẩm vào giỏ hàng.', 'success');
-                     if (typeof updateCartCount === 'function') updateCartCount(); // Update cart count in navbar (from layout)
+                     // Cập nhật số lượng giỏ hàng trên navbar ngay lập tức
+                     if (typeof updateCartCount === 'function') updateCartCount(); 
+
+                     // Hiển thị popup hỏi người dùng
+                     Swal.fire({
+                         title: 'Thành công!',
+                         text: 'Đã thêm sản phẩm vào giỏ hàng.',
+                         icon: 'success',
+                         showCancelButton: true, // Hiển thị nút "Hủy"
+                         confirmButtonColor: '#28a745', // Màu xanh lá cho nút "Thanh toán"
+                         cancelButtonColor: '#0d6efd',  // Màu xanh dương cho nút "Xem tiếp"
+                         confirmButtonText: 'Tới giỏ hàng & Thanh toán',
+                         cancelButtonText: 'Tiếp tục mua sắm'
+                     }).then((result) => {
+                         if (result.isConfirmed) {
+                             // Nếu người dùng đồng ý, chuyển hướng đến trang thanh toán
+                             window.location.href = '/checkout'; // Chuyển đến trang thanh toán
+                         }
+                         // Nếu người dùng nhấn "Tiếp tục mua sắm", không làm gì cả (popup tự đóng)
+                     });
+
                  } else { // Error from API
                      const error = await response.text();
                      Swal.fire('Lỗi!', `Không thể thêm: ${error}`, 'error');
