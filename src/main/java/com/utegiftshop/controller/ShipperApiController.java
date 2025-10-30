@@ -189,16 +189,7 @@ public class ShipperApiController {
             case "DELIVERED":
                 if (!"DELIVERING".equals(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể xác nhận đã giao hàng từ trạng thái Đang giao hàng.");
                 
-                // === BỎ QUA YÊU CẦU POD ===
-                // if (!StringUtils.hasText(request.getProofOfDeliveryImageUrl())) {
-                //     return ResponseEntity.badRequest().body("Vui lòng cung cấp URL bằng chứng giao hàng (POD).");
-                // }
-                // Vẫn lưu nếu frontend gửi lên
-                if (StringUtils.hasText(request.getProofOfDeliveryImageUrl())) {
-                    order.setProofOfDeliveryImageUrl(request.getProofOfDeliveryImageUrl());
-                }
-                // === KẾT THÚC THAY ĐỔI ===
-                
+
                 break;
             case "RETURN_PENDING": // THAY ĐỔI: Trạng thái mới
                  if (!"DELIVERING".equals(currentStatus)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Chỉ có thể báo giao hàng thất bại từ trạng thái Đang giao hàng.");

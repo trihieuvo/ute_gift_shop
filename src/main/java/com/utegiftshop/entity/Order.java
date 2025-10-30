@@ -50,9 +50,6 @@ public class Order {
     @Column(name = "payment_code", length = 50, unique = true)
     private String paymentCode; // Dùng để dò giao dịch trên SePay (chỉ dùng cho SEPAY_QR)
 
-    // === CÁC TRƯỜNG CHO CỔNG THANH TOÁN (GIỮ LẠI ĐỂ LƯU THÔNG TIN GIAO DỊCH) ===
-    // @Column(name = "payment_status", length = 20) // <<<----- XÓA DÒNG NÀY
-    // private String paymentStatus; // PENDING, SUCCESS, FAILED <<<----- XÓA DÒNG NÀY
 
     @Column(name = "payment_trans_id", length = 50)
     private String paymentTransId; // Mã giao dịch của cổng thanh toán (nếu có)
@@ -71,8 +68,6 @@ public class Order {
     @Column(name = "delivery_note", columnDefinition = "TEXT")
     private String deliveryNote;
 
-    @Column(name = "proof_of_delivery_image_url", columnDefinition = "TEXT")
-    private String proofOfDeliveryImageUrl;
 
     @Column(name = "is_cod_reconciled", nullable = false, columnDefinition = "boolean default false")
     private boolean isCodReconciled = false; // Đã đối soát tiền COD hay chưa
