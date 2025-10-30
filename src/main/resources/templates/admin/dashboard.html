@@ -59,18 +59,18 @@
       <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
           <h1 class="h2"><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
           <button class="btn btn-outline-secondary btn-sm" onclick="fetchDashboardData()">
-              <i class="bi bi-arrow-clockwise"></i> Tải lại
+            <i class="bi bi-arrow-clockwise"></i> Tải lại
           </button>
       </div>
 
       <div class="card filter-card mb-4">
         <div class="card-body">
           <div class="row align-items-end gx-2">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="start-date" class="form-label small">Từ ngày</label>
               <input type="date" class="form-control form-control-sm" id="start-date" />
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="end-date" class="form-label small">Đến ngày</label>
               <input type="date" class="form-control form-control-sm" id="end-date" />
             </div>
@@ -85,6 +85,11 @@
             <div class="col-md-2">
                 <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFilters()">
                     <i class="bi bi-x-lg"></i> Xóa lọc
+                </button>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-success btn-sm w-100" id="export-excel-btn">
+                    <i class="bi bi-file-earmark-excel"></i> Xuất Excel
                 </button>
             </div>
           </div>
@@ -146,12 +151,15 @@
     <th:block layout:fragment="scripts_body">
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+      <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
       <script>
         const token = localStorage.getItem("jwtToken");
         const startDateInput = document.getElementById("start-date");
         const endDateInput = document.getElementById("end-date");
         let revenueChartInstance = null;
 
+        // Hàm helper format tiền tệ
         const formatVND = (amount) => {
           if (amount === null || isNaN(amount)) return '0 đ';
           return new Intl.NumberFormat("vi-VN", {
@@ -161,14 +169,17 @@
           }).format(amount);
         };
 
+        // Chạy hàm khi trang tải xong
         document.addEventListener("DOMContentLoaded", fetchDashboardData);
 
+        // Hàm xóa lọc
         function clearFilters() {
             startDateInput.value = '';
             endDateInput.value = '';
             fetchDashboardData();
         }
 
+        // Hàm chính: Lấy dữ liệu cho thẻ và biểu đồ
         async function fetchDashboardData() {
           const startDate = startDateInput.value;
           const endDate = endDateInput.value;
@@ -177,13 +188,13 @@
           if (endDate) params.append("endDate", endDate);
           const urlParams = "?" + params.toString();
 
-          // Reset UI to loading state
+          // Reset UI về trạng thái loading
           document.getElementById("total-commission-revenue").textContent = '...';
           document.getElementById("total-orders").textContent = '...';
           document.getElementById("total-users").textContent = '...';
           document.getElementById("total-shops").textContent = '...';
 
-          // 1. Fetch dashboard stats
+          // 1. Fetch dữ liệu 4 thẻ
           try {
             const response = await fetch(`/api/v1/admin/stats/dashboard${urlParams}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -203,7 +214,7 @@
             document.getElementById("total-shops").textContent = 'Lỗi';
           }
 
-          // 2. Fetch chart data
+          // 2. Fetch dữ liệu biểu đồ
           try {
             const response = await fetch(`/api/v1/admin/stats/revenue-chart${urlParams}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -213,10 +224,11 @@
             renderRevenueChart(monthlyData);
           } catch (err) {
             console.error("Lỗi tải dữ liệu biểu đồ:", err);
-            if (revenueChartInstance) revenueChartInstance.destroy(); // Clear old chart on error
+            if (revenueChartInstance) revenueChartInstance.destroy();
           }
         }
 
+        // Hàm vẽ biểu đồ
         function renderRevenueChart(data) {
           const ctx = document.getElementById("revenueChart").getContext("2d");
           if (revenueChartInstance) {
@@ -242,14 +254,14 @@
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                      callbacks: {
-                          label: function (context) {
-                              return 'Doanh thu: ' + formatVND(context.parsed.y);
-                          }
-                      }
-                  }
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return 'Doanh thu: ' + formatVND(context.parsed.y);
+                        }
+                    }
+                }
               },
               scales: {
                 y: {
@@ -264,6 +276,117 @@
             },
           });
         }
+
+        // === (NÂNG CẤP) Code cho Nút Xuất Excel ===
+
+        // Helper function để gọi API
+        async function fetchApiData(url) {
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return []; // Trả về mảng rỗng nếu lỗi
+                return await response.json();
+            } catch (err) {
+                console.error(`Lỗi khi tải dữ liệu từ ${url}:`, err);
+                return []; // Trả về mảng rỗng nếu lỗi
+            }
+        }
+
+        // Gắn sự kiện click cho nút
+        document.getElementById('export-excel-btn').addEventListener('click', () => {
+            // Hiển thị loading cho người dùng
+            const btn = document.getElementById('export-excel-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xuất...';
+            
+            exportStatsToExcel().finally(() => {
+                // Trả lại trạng thái nút
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-file-earmark-excel"></i> Xuất Excel';
+            });
+        });
+
+        async function exportStatsToExcel() {
+            console.log("Đang chuẩn bị dữ liệu Excel...");
+
+            // 1. Lấy dữ liệu 4 thẻ
+            const overviewData = [
+                {"Chỉ số": "Doanh thu Nền tảng (Hoa hồng)", "Giá trị": document.getElementById("total-commission-revenue").textContent},
+                {"Chỉ số": "Đơn hàng Đã giao", "Giá trị": document.getElementById("total-orders").textContent},
+                {"Chỉ số": "Người dùng Mới", "Giá trị": document.getElementById("total-users").textContent},
+                {"Chỉ số": "Shop Hoạt động", "Giá trị": document.getElementById("total-shops").textContent}
+            ];
+            
+            // 2. Lấy dữ liệu biểu đồ
+            let chartDataArray = [{"Giai đoạn": "Chưa tải", "Doanh thu": 0}];
+            if (revenueChartInstance) {
+                chartDataArray = revenueChartInstance.data.labels.map((label, index) => ({
+                    "Giai đoạn": label,
+                    "Doanh thu": revenueChartInstance.data.datasets[0].data[index]
+                }));
+            }
+
+            // --- (MỚI) Tải thêm dữ liệu từ các API khác ---
+            // Sử dụng Promise.all để tải song song cho nhanh
+            const [usersData, pendingShopsData, categoriesData] = await Promise.all([
+                fetchApiData('/api/v1/admin/users'),
+                fetchApiData('/api/v1/admin/shops/pending'),
+                fetchApiData('/api/categories')
+            ]);
+            
+            // (MỚI) Xử lý dữ liệu User (loại bỏ mật khẩu)
+            const cleanedUsers = usersData.map(user => ({
+                "ID": user.id,
+                "Họ Tên": user.fullName,
+                "Email": user.email,
+                "SĐT": user.phoneNumber,
+                "Vai trò": user.role ? user.role.name : 'N/A',
+                "Trạng thái": user.active ? 'Hoạt động' : 'Khóa'
+            }));
+
+            // (MỚI) Xử lý dữ liệu Shop
+            const cleanedShops = pendingShopsData.map(shop => ({
+                "ID Shop": shop.id,
+                "Tên Shop": shop.name,
+                "Email Chủ Shop": shop.user ? shop.user.email : 'N/A',
+                "Ngày ĐK": new Date(shop.createdAt).toLocaleDateString('vi-VN'),
+                "Trạng thái": shop.status
+            }));
+
+            // 3. Tạo các "worksheet" (trang tính)
+            const ws_overview = XLSX.utils.json_to_sheet(overviewData, { skipHeader: true });
+            const ws_chart_data = XLSX.utils.json_to_sheet(chartDataArray);
+            const ws_users = XLSX.utils.json_to_sheet(cleanedUsers); // (Sheet mới)
+            const ws_shops = XLSX.utils.json_to_sheet(cleanedShops); // (Sheet mới)
+            const ws_categories = XLSX.utils.json_to_sheet(categoriesData); // (Sheet mới)
+
+            // Tùy chỉnh độ rộng cột (ví dụ)
+            ws_overview['!cols'] = [{ wch: 35 }, { wch: 15 }];
+            ws_chart_data['!cols'] = [{ wch: 20 }, { wch: 20 }];
+            ws_users['!cols'] = [{ wch: 5 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 10 }, { wch: 10 }];
+            ws_shops['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 10 }];
+            
+            // 4. Tạo "workbook" (file excel)
+            const wb = XLSX.utils.book_new();
+            
+            // 5. Thêm các sheet vào workbook
+            XLSX.utils.book_append_sheet(wb, ws_overview, "Tổng Quan");
+            XLSX.utils.book_append_sheet(wb, ws_chart_data, "Chi Tiết Doanh Thu");
+            XLSX.utils.book_append_sheet(wb, ws_users, "Danh Sách User");
+            XLSX.utils.book_append_sheet(wb, ws_shops, "Shop Chờ Duyệt");
+            XLSX.utils.book_append_sheet(wb, ws_categories, "Danh Mục");
+
+            // 6. Tạo và tải file về
+            const startDate = startDateInput.value || 'all-time';
+            const endDate = endDateInput.value || 'today';
+            const filename = `ThongKe_${startDate}_den_${endDate}.xlsx`;
+            
+            XLSX.writeFile(wb, filename);
+            
+            console.log("Xuất file Excel thành công!");
+        }
+
       </script>
     </th:block>
   </body>
