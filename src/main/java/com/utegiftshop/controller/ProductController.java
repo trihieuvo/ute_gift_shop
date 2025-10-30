@@ -5,25 +5,24 @@ package com.utegiftshop.controller;
  import java.util.HashSet;
  import java.util.List;
  import java.util.Map;
- import java.util.Optional; // Đảm bảo có import Optional
+ import java.util.Optional;
  import java.util.Set;
  import java.util.stream.Collectors;
 
  import org.springframework.beans.factory.annotation.Autowired;
  import org.springframework.http.ResponseEntity;
- import org.springframework.transaction.annotation.Transactional; // ✅ Thêm import này
+ import org.springframework.transaction.annotation.Transactional;
  import org.springframework.web.bind.annotation.GetMapping;
  import org.springframework.web.bind.annotation.PathVariable;
  import org.springframework.web.bind.annotation.RequestMapping;
  import org.springframework.web.bind.annotation.RequestParam;
  import org.springframework.web.bind.annotation.RestController;
-import com.utegiftshop.dto.response.ProductDetailDto;
- import com.utegiftshop.dto.request.CategoryDto; // Giữ lại nếu bạn có fetch category
+ import com.utegiftshop.dto.response.ProductDetailDto;
+ import com.utegiftshop.dto.request.CategoryDto;
  import com.utegiftshop.entity.Category;
  import com.utegiftshop.entity.Product;
  import com.utegiftshop.repository.CategoryRepository;
  import com.utegiftshop.repository.ProductRepository;
- // Giả sử bạn không cần các import liên quan đến lọc sản phẩm ở đây nữa
 
  @RestController
  @RequestMapping("/api")
@@ -33,12 +32,13 @@ import com.utegiftshop.dto.response.ProductDetailDto;
      private ProductRepository productRepository;
 
      @Autowired
-     private CategoryRepository categoryRepository; // Giữ lại nếu cần
+     private CategoryRepository categoryRepository;
 
      // ========================================================================
-     // API LẤY DANH SÁCH SẢN PHẨM (getAllProducts) - Giữ nguyên logic lọc cũ
+     // API LẤY DANH SÁCH SẢN PHẨM (getAllProducts) - ĐÃ SỬA LỖI LOGIC LỌC
      // ========================================================================
-     // Helper method giữ nguyên
+     
+     // Helper method (giữ nguyên)
      private void getAllSubCategoryIds(Integer parentId, Map<Integer, List<Category>> parentToChildrenMap, Set<Integer> allIds) {
          allIds.add(parentId);
          List<Category> children = parentToChildrenMap.get(parentId);
@@ -58,13 +58,19 @@ import com.utegiftshop.dto.response.ProductDetailDto;
 
          List<Product> products;
 
+         // 1. Ưu tiên tìm kiếm theo từ khóa (nếu có)
          if (keyword != null && !keyword.isEmpty()) {
              products = productRepository.findByNameContainingIgnoreCaseAndIsActiveTrue(keyword);
              return ResponseEntity.ok(products);
          }
 
+         // 2. Lọc theo danh mục và giá
          boolean hasCategoryFilter = categoryId != null;
-         boolean hasPriceFilter = (minPrice != null && maxPrice != null && minPrice.compareTo(BigDecimal.ZERO) >= 0 && maxPrice.compareTo(minPrice) >= 0);
+         
+         // SỬA LẠI LOGIC KIỂM TRA GIÁ
+         boolean hasMinPrice = (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) >= 0);
+         // (maxPrice có thể là null nếu người dùng chọn "Trên 1tr")
+         boolean hasMaxPrice = (maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) >= 0 && (!hasMinPrice || maxPrice.compareTo(minPrice) >= 0));
 
          List<Integer> categoryIdList = null;
          if (hasCategoryFilter) {
@@ -77,15 +83,32 @@ import com.utegiftshop.dto.response.ProductDetailDto;
              categoryIdList = new ArrayList<>(categoryIdsToSearch);
          }
 
-         if (hasCategoryFilter && hasPriceFilter) {
-             products = productRepository.findByCategoryIdInAndPriceBetweenAndIsActiveTrue(categoryIdList, minPrice, maxPrice);
-         } else if (hasCategoryFilter) {
-             products = productRepository.findByCategoryIdInAndIsActiveTrue(categoryIdList);
-         } else if (hasPriceFilter) {
-             products = productRepository.findByPriceBetweenAndIsActiveTrue(minPrice, maxPrice);
+         // --- Bắt đầu logic lọc MỚI và ĐÚNG ---
+         if (hasCategoryFilter) {
+             if (hasMinPrice && hasMaxPrice) {
+                 // Lọc theo Category, MinPrice, MaxPrice
+                 products = productRepository.findByCategoryIdInAndPriceBetweenAndIsActiveTrue(categoryIdList, minPrice, maxPrice);
+             } else if (hasMinPrice) {
+                 // Lọc theo Category và MinPrice (trường hợp "Trên 1.000.000đ")
+                 products = productRepository.findByCategoryIdInAndPriceGreaterThanEqualAndIsActiveTrue(categoryIdList, minPrice);
+             } else { // (hasMaxPrice không thể xảy ra một mình theo logic JS)
+                 // Chỉ lọc theo Category
+                 products = productRepository.findByCategoryIdInAndIsActiveTrue(categoryIdList);
+             }
          } else {
-             products = productRepository.findByIsActiveTrue();
+             // Không lọc theo Category
+             if (hasMinPrice && hasMaxPrice) {
+                 // Lọc theo MinPrice, MaxPrice
+                 products = productRepository.findByPriceBetweenAndIsActiveTrue(minPrice, maxPrice);
+             } else if (hasMinPrice) {
+                 // Chỉ lọc theo MinPrice (trường hợp "Trên 1.000.000đ")
+                 products = productRepository.findByPriceGreaterThanEqualAndIsActiveTrue(minPrice);
+             } else {
+                 // Không có bất kỳ bộ lọc giá/category nào
+                 products = productRepository.findByIsActiveTrue();
+             }
          }
+         // --- Kết thúc logic lọc mới ---
 
          return ResponseEntity.ok(products);
      }
@@ -93,24 +116,17 @@ import com.utegiftshop.dto.response.ProductDetailDto;
 
      @GetMapping("/products/{id}")
      @Transactional(readOnly = true)
-     public ResponseEntity<?> getProductById(@PathVariable Long id) { // <<< Sửa thành ResponseEntity<?>
+     public ResponseEntity<?> getProductById(@PathVariable Long id) {
          Optional<Product> productOpt = productRepository.findById(id);
 
          if (productOpt.isPresent()) {
              Product product = productOpt.get();
-
-             // Chỉ trả về nếu sản phẩm đang active
              if (!product.isActive()) {
-                 System.out.println("Product ID " + id + " is not active. Returning 404.");
                  return ResponseEntity.notFound().build();
              }
-
-             // Tạo và trả về DTO thay vì Entity
-             ProductDetailDto dto = new ProductDetailDto(product); // <<< TẠO DTO
-             System.out.println("Returning product detail DTO for ID " + id);
-             return ResponseEntity.ok(dto); // <<< TRẢ VỀ DTO
+             ProductDetailDto dto = new ProductDetailDto(product);
+             return ResponseEntity.ok(dto);
          } else {
-             System.out.println("Product ID " + id + " not found in repository. Returning 404.");
              return ResponseEntity.notFound().build();
          }
      }
@@ -122,7 +138,6 @@ import com.utegiftshop.dto.response.ProductDetailDto;
      @GetMapping("/categories")
      public ResponseEntity<List<CategoryDto>> getCategories() {
         List<Category> allCategories = categoryRepository.findAll();
-        // Logic tạo cây danh mục (giữ nguyên từ file bạn cung cấp)
          Map<Integer, CategoryDto> dtoMap = allCategories.stream()
                  .collect(Collectors.toMap(Category::getId, CategoryDto::new));
          List<CategoryDto> rootCategories = new ArrayList<>();

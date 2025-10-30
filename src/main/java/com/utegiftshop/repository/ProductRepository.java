@@ -5,53 +5,55 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query; // <-- THÊM IMPORT NÀY
-import org.springframework.stereotype.Repository; // <-- THÊM IMPORT NÀY
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param; // <-- THÊM IMPORT NÀY
+import org.springframework.stereotype.Repository;
 
 import com.utegiftshop.entity.Product;
 
-@Repository // <-- THÊM ANNOTATION NÀY
-public interface ProductRepository extends JpaRepository<Product, Long> { // <-- SỬA LẠI CHO ĐÚNG
+@Repository
+public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // --- Giữ nguyên các phương thức cho Vendor ---
     List<Product> findByShopId(Long shopId);
     Optional<Product> findByIdAndShopId(Long productId, Long shopId);
 
     // === CÁC THAY ĐỔI CHO TRANG HOME (API /api/products) ===
+    // (Các hàm cũ đã được thay thế bằng các hàm @Query có JOIN FETCH)
 
     // 1. Tìm TẤT CẢ sản phẩm ĐANG HOẠT ĐỘNG
-    List<Product> findByIsActiveTrue(); // Mới: Chỉ lấy sản phẩm active
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE p.isActive = true")
+    List<Product> findByIsActiveTrue();
 
     // 2. Tìm theo Danh mục (bao gồm cả con) VÀ ĐANG HOẠT ĐỘNG
-    List<Product> findByCategoryIdInAndIsActiveTrue(List<Integer> categoryIds); // Sửa: Thêm AndIsActiveTrue
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE p.category.id IN :categoryIds AND p.isActive = true")
+    List<Product> findByCategoryIdInAndIsActiveTrue(@Param("categoryIds") List<Integer> categoryIds);
 
     // 3. Tìm theo Khoảng giá VÀ ĐANG HOẠT ĐỘNG
-    List<Product> findByPriceBetweenAndIsActiveTrue(BigDecimal minPrice, BigDecimal maxPrice); // Sửa: Thêm AndIsActiveTrue
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE p.price BETWEEN :minPrice AND :maxPrice AND p.isActive = true")
+    List<Product> findByPriceBetweenAndIsActiveTrue(@Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice);
+
+    // 3b. (MỚI) Tìm theo giá TỐI THIỂU (cho "Trên 1tr")
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE p.price >= :minPrice AND p.isActive = true")
+    List<Product> findByPriceGreaterThanEqualAndIsActiveTrue(@Param("minPrice") BigDecimal minPrice);
 
     // 4. Tìm theo Danh mục VÀ Khoảng giá VÀ ĐANG HOẠT ĐỘNG
-    List<Product> findByCategoryIdInAndPriceBetweenAndIsActiveTrue(List<Integer> categoryIds, BigDecimal minPrice, BigDecimal maxPrice); // Sửa: Thêm AndIsActiveTrue
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE p.category.id IN :categoryIds AND p.price BETWEEN :minPrice AND :maxPrice AND p.isActive = true")
+    List<Product> findByCategoryIdInAndPriceBetweenAndIsActiveTrue(@Param("categoryIds") List<Integer> categoryIds, @Param("minPrice") BigDecimal minPrice, @Param("maxPrice") BigDecimal maxPrice);
+
+    // 4b. (MỚI) Tìm theo Danh mục VÀ Giá Tối thiểu
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE p.category.id IN :categoryIds AND p.price >= :minPrice AND p.isActive = true")
+    List<Product> findByCategoryIdInAndPriceGreaterThanEqualAndIsActiveTrue(@Param("categoryIds") List<Integer> categoryIds, @Param("minPrice") BigDecimal minPrice);
 
     // 5. Tìm kiếm theo Tên VÀ ĐANG HOẠT ĐỘNG
-    List<Product> findByNameContainingIgnoreCaseAndIsActiveTrue(String name); // Sửa: Thêm AndIsActiveTrue
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.shop s LEFT JOIN FETCH s.user WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%')) AND p.isActive = true")
+    List<Product> findByNameContainingIgnoreCaseAndIsActiveTrue(@Param("name") String name);
 
-    // === BỔ SUNG: Dùng @Query để linh hoạt hơn (Cách khác, có thể thay thế các hàm trên) ===
-    // Ví dụ: Lấy tất cả active
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.shop WHERE p.isActive = true")
-    List<Product> findAllActiveWithDetails();
 
-    // Ví dụ: Lọc theo categoryId (list), price range và active
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.shop " +
-           "WHERE p.isActive = true " +
-           "AND (:categoryIds IS NULL OR p.category.id IN :categoryIds) " +
-           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
-           "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
-    List<Product> findActiveProductsFiltered(List<Integer> categoryIds, BigDecimal minPrice, BigDecimal maxPrice);
-
-     // Ví dụ: Tìm kiếm theo keyword và active
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.shop " +
-           "WHERE p.isActive = true AND LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<Product> searchActiveProductsByName(String keyword);
-
-       @Query("SELECT p FROM Product p JOIN FETCH p.shop s JOIN FETCH s.user")
+    // === Dùng cho Admin (Đã sửa từ lần trước) ===
+    @Query("SELECT p FROM Product p JOIN FETCH p.shop s JOIN FETCH s.user")
     List<Product> findAllWithShop();
+
+    // === CÁC HÀM QUERY KHÁC (NẾU CÓ) ĐỂ TRỐNG ĐỂ TÙY BIẾN ===
+    // (Bỏ các hàm query cũ không có JOIN FETCH)
 }
