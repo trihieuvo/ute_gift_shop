@@ -29,7 +29,8 @@
             text-align: right;
             min-width: 100px;
         }
-        #delivery-note-group, #pod-upload-group {
+        /* ID pod-upload-group vẫn được giữ lại, nhưng thẻ div chứa nó sẽ có class d-none */
+        #delivery-note-group {
             display: none;
         }
     </style>
@@ -110,7 +111,7 @@
                                 <label for="delivery-note" class="form-label">Lý do thất bại / Ghi chú:</label>
                                 <textarea class="form-control" id="delivery-note" rows="3" placeholder="VD: Khách hẹn giao lại, Khách không nghe máy..."></textarea>
                             </div>
-                            <div class="mb-3" id="pod-upload-group">
+                            <div class="mb-3 d-none" id="pod-upload-group">
                                 <label for="pod-url" class="form-label">URL Ảnh bằng chứng giao hàng (POD):</label>
                                 <input type="text" class="form-control" id="pod-url" placeholder="Dán link ảnh đã upload (VD: imgur.com/...)">
                             </div>
@@ -146,7 +147,7 @@
         const btnFailed = document.getElementById('btn-failed');
         const finalStatusMsg = document.getElementById('final-status-msg');
         const noteGroup = document.getElementById('delivery-note-group');
-        const podGroup = document.getElementById('pod-upload-group');
+        const podGroup = document.getElementById('pod-upload-group'); // Vẫn giữ tham chiếu
         const confirmGroup = document.getElementById('confirm-action-group');
         const btnConfirmUpdate = document.getElementById('btn-confirm-update');
         const actionButtons = document.getElementById('action-buttons');
@@ -271,7 +272,7 @@
         function showUpdateOptions(newStatus) {
             actionButtons.classList.add('d-none');
             if (newStatus === 'DELIVERED') {
-                podGroup.style.display = 'block';
+                // podGroup.style.display = 'block'; // <-- THAY ĐỔI: BÌNH LUẬN DÒNG NÀY
                 noteGroup.style.display = 'none';
             } else if (newStatus === 'RETURN_PENDING') {
                 podGroup.style.display = 'none';
@@ -284,26 +285,29 @@
         function cancelUpdateOptions() {
             actionButtons.classList.remove('d-none');
             confirmGroup.classList.add('d-none');
-            podGroup.style.display = 'none';
+            podGroup.style.display = 'none'; // Đảm bảo podGroup luôn bị ẩn
             noteGroup.style.display = 'none';
             document.getElementById('delivery-note').value = '';
-            document.getElementById('pod-url').value = '';
+            document.getElementById('pod-url').value = ''; // Vẫn reset giá trị
         }
 
         async function handleUpdateStatus(newStatus) {
             const note = document.getElementById('delivery-note').value;
-            const podUrl = document.getElementById('pod-url').value;
+            // const podUrl = document.getElementById('pod-url').value; // <-- THAY ĐỔI: BÌNH LUẬN DÒNG NÀY
+            const podUrl = null; // <-- THAY ĐỔI: GÁN CỨNG LÀ NULL
 
             if (newStatus === 'RETURN_PENDING' && !note) {
                 Swal.fire('Thiếu thông tin', 'Vui lòng nhập lý do giao hàng thất bại.', 'warning');
                 return;
             }
+            /* <-- THAY ĐỔI: BÌNH LUẬN KHỐI KIỂM TRA POD
             if (newStatus === 'DELIVERED' && !podUrl) {
                 Swal.fire('Thiếu thông tin', 'Vui lòng cung cấp URL bằng chứng giao hàng (POD).', 'warning');
                 return;
             }
+            */
 
-            const body = { newStatus, note, proofOfDeliveryImageUrl: podUrl };
+            const body = { newStatus, note, proofOfDeliveryImageUrl: podUrl }; // podUrl bây giờ sẽ là null
 
             btnConfirmUpdate.disabled = true;
             btnConfirmUpdate.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
