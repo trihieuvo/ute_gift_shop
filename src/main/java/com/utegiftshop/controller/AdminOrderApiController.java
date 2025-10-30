@@ -114,9 +114,11 @@ public class AdminOrderApiController {
         // Cập nhật Shipper ID
         order.setShipper(shipper); 
         // Admin gán -> Đơn hàng chuyển sang trạng thái "Đang giao" (DELIVERING) nếu đang là 'CONFIRMED'
-        if (order.getStatus().equals("CONFIRMED") || order.getStatus().equals("NEW")) {
-             order.setStatus("DELIVERING"); 
-        }
+        if ("NEW".equals(order.getStatus()) ||
+                "CONFIRMED".equals(order.getStatus()) ||
+                "READY_FOR_SHIPMENT".equals(order.getStatus())) {
+                 order.setStatus("DELIVERING");
+            }
         
         orderRepository.save(order);
         return ResponseEntity.ok().build();

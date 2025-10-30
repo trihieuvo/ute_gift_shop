@@ -3,6 +3,12 @@ package com.utegiftshop.controller;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+// THÊM CÁC IMPORT NÀY
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.TemporalAdjusters;
+// KẾT THÚC THÊM IMPORT
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +48,8 @@ public class VendorStatsController {
 
     private static final int LOW_STOCK_THRESHOLD = 5;
 
+    // Hàm helper này không cần @Transactional
     private Shop getAuthenticatedShop(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        // ... (Giữ nguyên phần này)
         if (userDetails == null) throw new RuntimeException("Xác thực lỗi.");
         Long userId = userDetails.getId();
         return shopRepository.findByUserId(userId)
@@ -53,87 +59,34 @@ public class VendorStatsController {
                  });
     }
 
+    /**
+     * API này (public) KHÔNG NÊN CÓ @Transactional.
+     * Nó sẽ gọi hàm private bên dưới (có @Transactional) để thực hiện truy vấn.
+     */
     @GetMapping(value = "/stats", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Transactional(readOnly = true)
     public ResponseEntity<?> getDashboardStats(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        // Đổi tên biến cho rõ ràng hơn (tùy chọn)
-        BigDecimal totalRevenue = BigDecimal.ZERO;
-        Long newOrdersCount = 0L;
-        Long lowStockCount = 0L;
-
+        
+        Shop shop;
         try {
-            Shop shop = getAuthenticatedShop(userDetails);
-            Long shopId = shop.getId();
-            logger.info("[getDashboardStats] Calculating stats for Shop ID: {}", shopId);
-
-            // 1. Đếm đơn hàng mới (Giữ nguyên)
-            String newOrdersJpql = "SELECT COALESCE(COUNT(DISTINCT o.id), 0) FROM Order o " +
-                                   "JOIN o.orderDetails od " +
-                                   "JOIN od.product p " +
-                                   "WHERE p.shop.id = :shopId AND o.status = 'NEW'";
-            newOrdersCount = entityManager.createQuery(newOrdersJpql, Long.class)
-                                          .setParameter("shopId", shopId)
-                                          .getSingleResult();
-            logger.info("[getDashboardStats] New Orders Count: {}", newOrdersCount);
-
-            // --- TÍNH TỔNG DOANH THU (ALL TIME) ---
-            // Chỉ cần lọc theo shopId và status 'DELIVERED', bỏ điều kiện ngày
-            String totalRevenueJpql = "SELECT COALESCE(SUM(od.price * od.quantity), 0.0) FROM OrderDetail od " +
-                                      "JOIN od.order o " +
-                                      "JOIN od.product p " +
-                                      "WHERE p.shop.id = :shopId " +
-                                      "AND o.status = 'DELIVERED'"; // Bỏ phần AND o.orderDate BETWEEN ...
-
-            try {
-                // Vẫn mong đợi kết quả là BigDecimal
-                totalRevenue = entityManager.createQuery(totalRevenueJpql, BigDecimal.class)
-                                            .setParameter("shopId", shopId)
-                                            // Không cần setParameter cho ngày nữa
-                                            .getSingleResult();
-                if (totalRevenue == null) {
-                    totalRevenue = BigDecimal.ZERO;
-                }
-            } catch (NoResultException e) {
-                logger.warn("[getDashboardStats] No delivered orders found at all for Shop ID: {}", shopId);
-                totalRevenue = BigDecimal.ZERO;
-            } catch (Exception e) {
-                 logger.error("[getDashboardStats] Error calculating total revenue for Shop ID {}: {}", shopId, e.getMessage());
-                 totalRevenue = BigDecimal.ZERO;
-            }
-
-            logger.info("[getDashboardStats] Total Revenue Calculated: {}", totalRevenue);
-            // --- KẾT THÚC TÍNH TỔNG DOANH THU ---
-
-            // 3. Đếm sản phẩm sắp hết (Giữ nguyên)
-            String lowStockJpql = "SELECT COALESCE(COUNT(p.id), 0) FROM Product p " +
-                                  "WHERE p.shop.id = :shopId AND p.stockQuantity <= :threshold";
-            lowStockCount = entityManager.createQuery(lowStockJpql, Long.class)
-                                         .setParameter("shopId", shopId)
-                                         .setParameter("threshold", LOW_STOCK_THRESHOLD)
-                                         .getSingleResult();
-            logger.info("[getDashboardStats] Low Stock Count (<= {}): {}", LOW_STOCK_THRESHOLD, lowStockCount);
-
-            // 4. Create DTO and return
-            // Đảm bảo tên biến trong DTO khớp (todayRevenue -> totalRevenue nếu bạn đổi tên DTO)
-            // Nếu DTO vẫn là VendorDashboardStatsDto(long newOrdersCount, BigDecimal todayRevenue, long lowStockCount)
-            // thì bạn truyền totalRevenue vào vị trí thứ 2
-            VendorDashboardStatsDto statsDto = new VendorDashboardStatsDto(
-                newOrdersCount,
-                totalRevenue, // Truyền tổng doanh thu vào đây
-                lowStockCount
-            );
-            return ResponseEntity.ok(statsDto);
-
+            // 1. Kiểm tra Shop (và lỗi) BÊN NGOÀI transaction
+            shop = getAuthenticatedShop(userDetails);
         } catch (RuntimeException shopNotFoundEx) {
-             // ... (Giữ nguyên phần xử lý lỗi này)
+             // 2. Nếu không tìm thấy shop, trả về lỗi 404 (NOT_FOUND) một cách an toàn
              logger.error("[getDashboardStats] Error: {}", shopNotFoundEx.getMessage());
               Map<String, String> errorBody = new HashMap<>();
               errorBody.put("message", shopNotFoundEx.getMessage());
-             return ResponseEntity.status(HttpStatus.NOT_FOUND)
+             return ResponseEntity.status(HttpStatus.NOT_FOUND) // Sử dụng 404
                                   .contentType(MediaType.APPLICATION_JSON)
                                   .body(errorBody);
+        }
+
+        try {
+            // 3. Shop hợp lệ, GỌI hàm private CÓ @Transactional
+            VendorDashboardStatsDto statsDto = getTransactionalStats(shop.getId());
+             return ResponseEntity.ok(statsDto);
+             
         } catch (Exception e) {
-            // ... (Giữ nguyên phần xử lý lỗi này)
+            // 4. Bắt các lỗi khác (nếu có) từ hàm truy vấn
             logger.error("[getDashboardStats] Unexpected error while fetching stats:", e);
              Map<String, String> errorBody = new HashMap<>();
              errorBody.put("message", "Lỗi máy chủ khi tính thống kê: " + e.getMessage());
@@ -141,5 +94,90 @@ public class VendorStatsController {
                                   .contentType(MediaType.APPLICATION_JSON)
                                   .body(errorBody);
         }
+    }
+
+    /**
+     * Private transactional method to calculate dashboard stats
+     * FIXED: Xử lý commissionRate NULL và Lọc doanh thu theo NĂM NAY
+     */
+    @Transactional(readOnly = true)
+    public VendorDashboardStatsDto getTransactionalStats(Long shopId) { // Đổi tên hàm để tránh xung đột
+        logger.info("[getTransactionalStats] Calculating stats for Shop ID: {}", shopId);
+        Long newOrdersCount = 0L;
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        Long lowStockCount = 0L;
+
+        // 1. Count new orders (Không thay đổi)
+        String newOrdersJpql = "SELECT COALESCE(COUNT(DISTINCT o.id), 0) FROM Order o " +
+                               "JOIN o.orderDetails od " +
+                               "JOIN od.product p " +
+                               "WHERE p.shop.id = :shopId AND o.status = 'NEW'";
+        try {
+            newOrdersCount = entityManager.createQuery(newOrdersJpql, Long.class)
+                                          .setParameter("shopId", shopId)
+                                          .getSingleResult();
+            logger.info("[getTransactionalStats] New Orders Count: {}", newOrdersCount);
+        } catch (Exception e) {
+            logger.error("[getTransactionalStats] Error counting new orders: {}", e.getMessage(), e);
+            newOrdersCount = 0L;
+        }
+
+        // --- 2. TÍNH TỔNG DOANH THU RÒNG (TRONG NĂM NAY) ---
+        
+        // **THÊM MỚI**: Xác định khoảng thời gian của năm nay
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp startOfYear = Timestamp.valueOf(now.with(TemporalAdjusters.firstDayOfYear()).toLocalDate().atStartOfDay());
+        Timestamp endOfYear = Timestamp.valueOf(now.with(TemporalAdjusters.lastDayOfYear()).toLocalDate().atTime(LocalTime.MAX));
+        
+        // **CẬP NHẬT**: Thêm bộ lọc ngày (AND o.orderDate BETWEEN :startDate AND :endDate)
+        String totalRevenueJpql = "SELECT COALESCE(SUM( " +
+                                  "(od.price * od.quantity) * (1.0 - (COALESCE(od.commissionRate, 0.0) / 100.0)) " +
+                                  "), 0.0) FROM OrderDetail od " +
+                                  "JOIN od.order o " +
+                                  "JOIN od.product p " +
+                                  "WHERE p.shop.id = :shopId " +
+                                  "AND o.status = 'DELIVERED' " +
+                                  "AND o.orderDate BETWEEN :startDate AND :endDate"; // <-- Thêm dòng này
+
+        try {
+            // **CẬP NHẬT**: Truy vấn về Double và thêm tham số ngày
+            Double result = entityManager.createQuery(totalRevenueJpql, Double.class)
+                                        .setParameter("shopId", shopId)
+                                        .setParameter("startDate", startOfYear) // <-- Thêm tham số
+                                        .setParameter("endDate", endOfYear)     // <-- Thêm tham số
+                                        .getSingleResult();
+            
+            totalRevenue = BigDecimal.valueOf(result != null ? result : 0.0);
+            
+            logger.info("[getTransactionalStats] Total NET Revenue (This Year) Calculated: {}", totalRevenue);
+        } catch (NoResultException e) {
+            logger.warn("[getTransactionalStats] No delivered orders found (This Year) for Shop ID: {}", shopId);
+            totalRevenue = BigDecimal.ZERO;
+        } catch (Exception e) {
+            logger.error("[getTransactionalStats] Error calculating revenue (This Year): {}", e.getMessage(), e);
+            totalRevenue = BigDecimal.ZERO;
+        }
+        // --- KẾT THÚC TÍNH DOANH THU RÒNG ---
+
+        // 3. Count low stock products (Không thay đổi)
+        String lowStockJpql = "SELECT COALESCE(COUNT(p.id), 0) FROM Product p " +
+                              "WHERE p.shop.id = :shopId AND p.stockQuantity <= :threshold";
+        try {
+            lowStockCount = entityManager.createQuery(lowStockJpql, Long.class)
+                                         .setParameter("shopId", shopId)
+                                         .setParameter("threshold", LOW_STOCK_THRESHOLD)
+                                         .getSingleResult();
+            logger.info("[getTransactionalStats] Low Stock Count (<= {}): {}", LOW_STOCK_THRESHOLD, lowStockCount);
+        } catch (Exception e) {
+            logger.error("[getTransactionalStats] Error counting low stock: {}", e.getMessage(), e);
+            lowStockCount = 0L;
+        }
+
+        // 4. Create and return DTO
+        return new VendorDashboardStatsDto(
+            newOrdersCount,
+            totalRevenue, // Đây là doanh thu RÒNG (trong năm nay)
+            lowStockCount
+        );
     }
 }
