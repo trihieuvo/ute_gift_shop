@@ -1,12 +1,18 @@
 package com.utegiftshop.controller;
 
-import com.utegiftshop.entity.Product;
-import com.utegiftshop.repository.ProductRepository;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.utegiftshop.entity.Product;
+import com.utegiftshop.repository.ProductRepository;
 
 @RestController
 @RequestMapping("/api/v1/admin/products")
@@ -22,7 +28,11 @@ public class AdminProductApiController {
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
         // Trả về trực tiếp Entity vì Product thường không có liên kết vòng lặp phức tạp
-        List<Product> products = productRepository.findAll();
+        // SỬA DÒNG NÀY:
+        // List<Product> products = productRepository.findAll();
+        
+        // THÀNH DÒNG NÀY:
+        List<Product> products = productRepository.findAllWithShop();
         return ResponseEntity.ok(products);
     }
 

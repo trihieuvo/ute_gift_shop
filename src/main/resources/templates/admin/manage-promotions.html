@@ -190,20 +190,15 @@
 
             promotions.forEach((promo) => {
               const actionButtons = `
-                <button class.="btn btn-warning btn-sm" onclick="handleEdit('${
-                  promo.id
-                }', '${promo.code}', ${promo.discountPercent}, ${
-                promo.quantity
-              }, ${promo.minOrderValue || 0}, '${promo.startDate}', '${
-                promo.endDate
-              }')">
-                  <i class="bi bi-pencil-square"></i> Sửa
-                </button>
-                <button class.="btn btn-danger btn-sm" onclick="handleDelete(${
-                  promo.id
-                })">
-                  <i class="bi bi-trash-fill"></i> Xóa
-                </button>`;
+  <button class="btn btn-outline-primary btn-sm" 
+          onclick="handleEdit('${promo.id}', '${promo.code}', ${promo.discountPercent}, ${promo.quantity}, ${promo.minOrderValue || 0}, '${promo.startDate}', '${promo.endDate}')">
+    <i class="bi bi-pencil-square"></i>
+  </button>
+  <button class="btn btn-outline-danger btn-sm" 
+          onclick="handleDelete(${promo.id})">
+    <i class="bi bi-trash-fill"></i>
+  </button>
+`;
 
               tbody.innerHTML += `
                 <tr id="row-${promo.id}">
