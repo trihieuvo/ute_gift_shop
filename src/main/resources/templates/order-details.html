@@ -154,8 +154,9 @@
             document.getElementById('order-current-status-badge').innerHTML = getStatusBadge(order.status);
 
             const shippingInfoEl = document.getElementById('order-shipping');
-            if (order.shippingMethod && order.shippingFee != null) {
-                shippingInfoEl.innerHTML = `${order.shippingMethod.name} - <strong>${order.shippingFee.toLocaleString('vi-VN')} đ</strong>`;
+          
+            if (order.shippingMethod && order.shippingMethod.fee != null) {
+                shippingInfoEl.innerHTML = `${order.shippingMethod.name} - <strong>${order.shippingMethod.fee.toLocaleString('vi-VN')} đ</strong>`;
             } else {
                 shippingInfoEl.textContent = 'Chưa có thông tin';
             }
