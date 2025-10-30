@@ -1,5 +1,5 @@
 package com.utegiftshop.entity;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- THÊM DÒNG NÀY
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,13 +13,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "categories")
 @Getter
 @Setter
 @NoArgsConstructor
 public class Category {
-    @Id
+    @Id@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 

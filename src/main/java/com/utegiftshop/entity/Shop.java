@@ -2,7 +2,7 @@ package com.utegiftshop.entity;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- THÊM DÒNG NÀY
 import jakarta.persistence.Column; // Sử dụng jakarta.persistence thay vì javax.persistence
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -17,6 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "shops")
 @Getter

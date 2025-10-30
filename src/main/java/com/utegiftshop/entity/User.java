@@ -12,9 +12,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- THÊM DÒNG NÀY
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "users")
 @Getter

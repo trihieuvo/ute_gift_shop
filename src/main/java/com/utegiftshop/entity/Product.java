@@ -6,7 +6,7 @@ import java.util.List; // THÊM IMPORT NÀY
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference; // THÊM IMPORT NÀY
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType; // THÊM IMPORT NÀY
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "products")
 @Getter
