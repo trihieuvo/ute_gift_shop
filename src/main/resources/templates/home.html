@@ -393,18 +393,21 @@
 
                     const parentActiveClass = (isParentActive || (currentFilters.categoryId != null && category.id == currentFilters.categoryId)) ? 'active' : '';
 
-                    if (childrenHtml) {
-                        // Render as dropdown
-                        categoryMenu.innerHTML += `
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle ${parentActiveClass}" href="#" role="button" aria-expanded="false">
-                                     ${escapeHtml(category.name)}
-                                </a>
-                                <ul class="dropdown-menu">
-                                    ${childrenHtml}
-                                </ul>
-                            </li>`;
-                    } else {
+                        if (childrenHtml) {
+                                // Render as dropdown
+                            categoryMenu.innerHTML += `
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle ${parentActiveClass}" 
+                                    href="#" 
+                                    role="button" 
+                                    aria-expanded="false"
+                                    onclick="handleCategoryClick(${category.id}, this, '${escapeHtml(category.name)}')"> ${escapeHtml(category.name)}
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        ${childrenHtml}
+                                    </ul>
+                                </li>`;
+                        } else {
                         // Render as simple link
                         categoryMenu.innerHTML += `
                             <li class="nav-item">
