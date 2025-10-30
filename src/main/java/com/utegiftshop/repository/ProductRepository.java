@@ -52,8 +52,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> { // <--
            "WHERE p.isActive = true AND LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Product> searchActiveProductsByName(String keyword);
 
-    // Hàm này lấy TẤT CẢ product VÀ "JOIN FETCH" (tải ngay) thông tin Shop
-    @Query("SELECT p FROM Product p JOIN FETCH p.shop")
+       @Query("SELECT p FROM Product p JOIN FETCH p.shop s JOIN FETCH s.user")
     List<Product> findAllWithShop();
-
 }
