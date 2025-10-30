@@ -1,4 +1,3 @@
-
 # 🎁 UTE Gift Shop - Website Thương mại Điện tử Đa Nhà cung cấp
 
 Đây là dự án website thương mại điện tử (e-commerce) được xây dựng trên nền tảng Spring Boot, mô phỏng một sàn giao dịch cho phép nhiều nhà cung cấp (Vendor) đăng bán sản phẩm, với các vai trò quản lý (Admin) và vận chuyển (Shipper) riêng biệt.
@@ -187,4 +186,18 @@ Dự án được xây dựng với 5 vai trò (Guest, Customer, Vendor, Shipper
 
 ---
 
+## 🤝 Đóng Góp
 
+Đóng góp là điều làm cho cộng đồng open source trở nên tuyệt vời. Bất kỳ đóng góp nào của bạn đều được **đánh giá cao**.
+
+1.  Fork dự án
+2.  Tạo Feature Branch của bạn (`git checkout -b feature/AmazingFeature`)
+3.  Commit các thay đổi của bạn (`git commit -m 'Add some AmazingFeature'`)
+4.  Push lên Branch (`git push origin feature/AmazingFeature`)
+5.  Mở một Pull Request
+
+---
+
+## 📝 Giấy Phép
+
+Dự án này được cấp phép theo Giấy phép MIT.
