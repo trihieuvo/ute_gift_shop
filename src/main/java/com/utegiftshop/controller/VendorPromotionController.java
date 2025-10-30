@@ -42,10 +42,24 @@ public class VendorPromotionController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getShopPromotions(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<?> getShopPromotions(
+            @RequestParam(required = false) String code, // <-- ADDED
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
         try {
             Shop shop = getAuthenticatedShop(userDetails);
-            List<Promotion> promotions = promotionRepository.findByShopIdOrderByIdDesc(shop.getId());
+            List<Promotion> promotions;
+
+            // === MODIFIED: Logic to filter by code ===
+            if (code != null && !code.trim().isEmpty()) {
+                logger.info("Fetching promotions for shop {} with code like '{}'", shop.getId(), code);
+                promotions = promotionRepository.findByShopIdAndCodeContainingIgnoreCaseOrderByIdDesc(shop.getId(), code.trim());
+            } else {
+                logger.info("Fetching all promotions for shop {}", shop.getId());
+                promotions = promotionRepository.findByShopIdOrderByIdDesc(shop.getId());
+            }
+            // === END MODIFIED ===
+
             List<PromotionDto> dtos = promotions.stream().map(PromotionDto::new).collect(Collectors.toList());
             return ResponseEntity.ok(dtos);
         } catch (RuntimeException e) {

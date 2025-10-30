@@ -6,6 +6,7 @@
 <head>
     <title>Thống kê Doanh thu</title>
     <style>
+        /* CSS Styles (giữ nguyên không thay đổi) */
         .stats-card {
             border-radius: 1rem;
             transition: all 0.3s ease;
@@ -196,11 +197,16 @@
                 <h1 class="h2"><i class="bi bi-graph-up-arrow me-2"></i>Thống kê Doanh thu</h1>
                 <p class="subtitle mb-0">Tổng quan hiệu quả kinh doanh của bạn</p>
             </div>
-            <button class="btn btn-light" onclick="fetchRevenueStats()">
-                <i class="bi bi-arrow-clockwise"></i> Tải lại
-            </button>
+            <div>
+                <button class="btn btn-success" id="export-excel-btn">
+                    <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+                </button>
+                <button class="btn btn-light ms-2" onclick="fetchRevenueStats()">
+                    <i class="bi bi-arrow-clockwise"></i> Tải lại
+                </button>
+            </div>
         </div>
-    </div>
+        </div>
 
     <div id="loadingIndicator" class="text-center py-5">
         <div class="spinner-border text-primary" role="status">
@@ -328,7 +334,9 @@
 
 <th:block layout:fragment="scripts_body">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
+        // === (Existing code...) ===
         const token = localStorage.getItem('jwtToken');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const errorMessage = document.getElementById('errorMessage');
@@ -350,8 +358,10 @@
             const now = new Date();
             return now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         }
+        
+        // ... (existing functions: fetchDailyChartData, fetchMonthlyChartData, generateFallbackDailyData, generateFallbackMonthlyData, initChart, switchChart, fetchRevenueStats) ...
+        // (Keeping existing functions as they are)
 
-        // Lấy dữ liệu thực từ API cho biểu đồ 7 ngày
         async function fetchDailyChartData(days = 7) {
             try {
                 const response = await fetch(`/api/vendor/stats/revenue/daily?days=${days}`, {
@@ -367,12 +377,9 @@
                 return { labels, data: revenues };
             } catch (error) {
                 console.error('Error fetching daily chart data:', error);
-                // Fallback về dữ liệu mẫu nếu API lỗi
                 return generateFallbackDailyData();
             }
         }
-
-        // Lấy dữ liệu thực từ API cho biểu đồ 12 tháng
         async function fetchMonthlyChartData(months = 12) {
             try {
                 const response = await fetch(`/api/vendor/stats/revenue/monthly?months=${months}`, {
@@ -388,50 +395,37 @@
                 return { labels, data: revenues };
             } catch (error) {
                 console.error('Error fetching monthly chart data:', error);
-                // Fallback về dữ liệu mẫu nếu API lỗi
                 return generateFallbackMonthlyData();
             }
         }
-
-        // Fallback: Tạo dữ liệu mẫu nếu API lỗi (7 ngày)
         function generateFallbackDailyData() {
             const labels = [];
             const data = [];
             const today = new Date();
-            
             for (let i = 6; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(date.getDate() - i);
                 labels.push(date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }));
-                data.push(0); // Dữ liệu rỗng khi không có API
+                data.push(0);
             }
-            
             return { labels, data };
         }
-
-        // Fallback: Tạo dữ liệu mẫu nếu API lỗi (12 tháng)
         function generateFallbackMonthlyData() {
             const labels = [];
             const data = [];
             const today = new Date();
-            
             for (let i = 11; i >= 0; i--) {
                 const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
                 labels.push(date.toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' }));
-                data.push(0); // Dữ liệu rỗng khi không có API
+                data.push(0);
             }
-            
             return { labels, data };
         }
-
-        // Khởi tạo biểu đồ
         function initChart(labels, data, label) {
             const ctx = document.getElementById('revenueChart');
-            
             if (revenueChart) {
                 revenueChart.destroy();
             }
-
             revenueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -455,14 +449,10 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    return formatter.format(context.parsed.y);
-                                }
+                                label: function(context) { return formatter.format(context.parsed.y); }
                             },
                             backgroundColor: 'rgba(0, 0, 0, 0.8)',
                             padding: 12,
@@ -481,31 +471,19 @@
                                     }).format(value) + ' ₫';
                                 }
                             },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
                         },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
+                        x: { grid: { display: false } }
                     }
                 }
             });
         }
-
-        // Chuyển đổi giữa các loại biểu đồ
         window.switchChart = async function(type) {
             currentChartType = type;
-            
-            // Cập nhật tab active
             document.querySelectorAll('.chart-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             event.target.closest('.chart-tab').classList.add('active');
-
-            // Gọi API để lấy dữ liệu thực
             let chartData;
             if (type === 'daily') {
                 chartData = await fetchDailyChartData(7);
@@ -515,24 +493,19 @@
                 initChart(chartData.labels, chartData.data, 'Doanh thu (₫)');
             }
         };
-
         async function fetchRevenueStats() {
             if (!token) {
                 window.location.href = '/login';
                 return;
             }
-
             loadingIndicator.classList.remove('d-none');
             errorMessage.classList.add('d-none');
             revenueCards.classList.add('d-none');
-            
             dailyRevenueEl.innerHTML = '<div class="loading-placeholder"><span class="spinner-border spinner-border-sm" role="status"></span></div>';
             monthlyRevenueEl.innerHTML = '<div class="loading-placeholder"><span class="spinner-border spinner-border-sm" role="status"></span></div>';
             yearlyRevenueEl.innerHTML = '<div class="loading-placeholder"><span class="spinner-border spinner-border-sm" role="status"></span></div>';
-
             const apiUrl = '/api/vendor/stats/revenue';
             console.log(`Fetching revenue stats from: ${apiUrl}`);
-
             try {
                 const response = await fetch(apiUrl, {
                     method: 'GET',
@@ -541,7 +514,6 @@
                         'Accept': 'application/json'
                     }
                 });
-
                 if (!response.ok) {
                     let errorMsg = `Lỗi ${response.status}`;
                     try {
@@ -552,35 +524,26 @@
                     }
                     throw new Error(errorMsg);
                 }
-
                 const revenueData = await response.json();
                 console.log("Revenue data received:", revenueData);
-
                 const daily = revenueData.daily ?? 0;
                 const monthly = revenueData.monthly ?? 0;
                 const yearly = revenueData.yearly ?? 0;
-
                 dailyRevenueEl.textContent = formatter.format(daily);
                 monthlyRevenueEl.textContent = formatter.format(monthly);
                 yearlyRevenueEl.textContent = formatter.format(yearly);
-
                 const currentTime = getCurrentTime();
                 document.getElementById('update-time-daily').textContent = currentTime;
                 document.getElementById('update-time-monthly').textContent = currentTime;
                 document.getElementById('update-time-yearly').textContent = currentTime;
-
                 const avgDaily = monthly / 30;
                 const avgMonthly = yearly / 12;
                 document.getElementById('avg-daily').textContent = formatter.format(avgDaily);
                 document.getElementById('avg-monthly').textContent = formatter.format(avgMonthly);
-
                 loadingIndicator.classList.add('d-none');
                 revenueCards.classList.remove('d-none');
-
-                // Khởi tạo biểu đồ với dữ liệu thực từ API
                 const chartData = await fetchDailyChartData(7);
                 initChart(chartData.labels, chartData.data, 'Doanh thu (₫)');
-
             } catch (error) {
                 console.error("Error fetching revenue stats:", error);
                 loadingIndicator.classList.add('d-none');
@@ -591,6 +554,86 @@
                 yearlyRevenueEl.textContent = 'Lỗi';
             }
         }
+        
+        // === ADDED: Excel Export Functions ===
+
+        // Helper function to fetch API data for Excel
+        async function fetchApiData(url) {
+            try {
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!response.ok) return []; // Return empty array on error
+                return await response.json();
+            } catch (err) {
+                console.error(`Lỗi khi tải dữ liệu từ ${url}:`, err);
+                return [];
+            }
+        }
+
+        // Gắn sự kiện click cho nút
+        document.getElementById('export-excel-btn').addEventListener('click', () => {
+            const btn = document.getElementById('export-excel-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xuất...';
+
+            exportVendorStatsToExcel().finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-file-earmark-excel"></i> Xuất Excel';
+            });
+        });
+
+        // Main Excel Export Function
+        async function exportVendorStatsToExcel() {
+            console.log("Đang chuẩn bị dữ liệu Excel cho Vendor...");
+
+            // 1. Fetch all data concurrently
+            const [overviewData, dailyData, monthlyData] = await Promise.all([
+                fetchApiData('/api/vendor/stats/revenue'),
+                fetchApiData('/api/vendor/stats/revenue/daily?days=30'), // Lấy 30 ngày cho chi tiết
+                fetchApiData('/api/vendor/stats/revenue/monthly?months=12') // Lấy 12 tháng
+            ]);
+
+            // 2. Prepare data for sheets
+            // Sheet 1: Tổng quan
+            const overviewSheetData = [
+                {"Chỉ số": "Doanh thu Hôm nay", "Giá trị": overviewData.daily ? formatter.format(overviewData.daily) : '0 đ'},
+                {"Chỉ số": "Doanh thu Tháng này", "Giá trị": overviewData.monthly ? formatter.format(overviewData.monthly) : '0 đ'},
+                {"Chỉ số": "Doanh thu Năm nay", "Giá trị": overviewData.yearly ? formatter.format(overviewData.yearly) : '0 đ'}
+            ];
+
+            // Sheet 2: Doanh thu hàng ngày (30 ngày)
+            const dailySheetData = dailyData.map(item => ({
+                "Ngày": item.formattedDate || item.date,
+                "Doanh thu (VNĐ)": item.revenue
+            }));
+
+            // Sheet 3: Doanh thu hàng tháng (12 tháng)
+            const monthlySheetData = monthlyData.map(item => ({
+                "Tháng": item.formattedMonth || `${item.month}/${item.year}`,
+                "Doanh thu (VNĐ)": item.revenue
+            }));
+
+            // 3. Create worksheets
+            const ws_overview = XLSX.utils.json_to_sheet(overviewSheetData);
+            const ws_daily = XLSX.utils.json_to_sheet(dailySheetData);
+            const ws_monthly = XLSX.utils.json_to_sheet(monthlySheetData);
+
+            // 4. Set column widths
+            ws_overview['!cols'] = [{ wch: 25 }, { wch: 20 }];
+            ws_daily['!cols'] = [{ wch: 15 }, { wch: 20 }];
+            ws_monthly['!cols'] = [{ wch: 15 }, { wch: 20 }];
+
+            // 5. Create workbook and append sheets
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws_overview, "Tổng quan Doanh thu");
+            XLSX.utils.book_append_sheet(wb, ws_daily, "Doanh thu 30 ngày");
+            XLSX.utils.book_append_sheet(wb, ws_monthly, "Doanh thu 12 tháng");
+
+            // 6. Write and download file
+            const filename = `DoanhThu_Shop_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            console.log("Xuất file Excel thành công!");
+        }
+        // === END ADDED ===
 
         document.addEventListener('DOMContentLoaded', fetchRevenueStats);
     </script>

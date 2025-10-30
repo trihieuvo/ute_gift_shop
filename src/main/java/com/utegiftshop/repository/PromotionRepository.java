@@ -13,6 +13,10 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
 
     // Tìm tất cả khuyến mãi của một shop, sắp xếp theo ID giảm dần (mới nhất trước)
     List<Promotion> findByShopIdOrderByIdDesc(Long shopId);
+    
+    // === ADDED: Tìm theo mã code (không phân biệt hoa thường) ===
+    List<Promotion> findByShopIdAndCodeContainingIgnoreCaseOrderByIdDesc(Long shopId, String code);
+    // === END ADDED ===
 
     // Tìm một khuyến mãi cụ thể theo ID và shop ID (để kiểm tra quyền sở hữu)
     Optional<Promotion> findByIdAndShopId(Integer promotionId, Long shopId);

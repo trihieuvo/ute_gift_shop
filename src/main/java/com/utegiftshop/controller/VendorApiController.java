@@ -1,7 +1,8 @@
-	package com.utegiftshop.controller;
+package com.utegiftshop.controller;
 	
 	import java.sql.Timestamp;
 	import java.util.ArrayList;
+    import java.util.HashMap; // <-- ADDED
 	import java.util.Collections;
 	import java.util.List;
 	import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 	import org.springframework.web.bind.annotation.RequestMapping;
+    import org.springframework.web.bind.annotation.RequestParam; // <-- ADDED
 	import org.springframework.web.bind.annotation.RestController;
 
 	import com.utegiftshop.dto.request.CategoryDto;
@@ -39,8 +41,8 @@ import com.utegiftshop.security.service.UserDetailsImpl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import org.springframework.web.bind.annotation.DeleteMapping; // Thêm import này
-import org.springframework.dao.DataIntegrityViolationException; // Thêm import này để xử lý ràng buộc
+import org.springframework.web.bind.annotation.DeleteMapping; 
+import org.springframework.dao.DataIntegrityViolationException; 
 import java.util.Map;
 	
 	@RestController
@@ -73,15 +75,46 @@ import java.util.Map;
 	    // =============================================
 	    @GetMapping(value = "/products", produces = MediaType.APPLICATION_JSON_VALUE)
 	    @Transactional(readOnly = true)
-	    public ResponseEntity<?> getMyProducts() {
+	    public ResponseEntity<?> getMyProducts(
+            @RequestParam(required = false) String keyword,         // <-- ADDED
+            @RequestParam(required = false) Integer categoryId      // <-- ADDED
+        ) {
 	        try {
 	            Shop shop = getAuthenticatedShop();
 	            logger.info("Fetching products for Shop ID: {}", shop.getId());
-	            String jpql = "SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.shop.id = :shopId ORDER BY p.createdAt DESC";
-	            TypedQuery<Product> query = entityManager.createQuery(jpql, Product.class);
-	            query.setParameter("shopId", shop.getId());
+
+                // --- MODIFIED JPQL AND PARAMETER LOGIC ---
+                // Base query
+                StringBuilder jpqlBuilder = new StringBuilder("SELECT p FROM Product p LEFT JOIN FETCH p.category WHERE p.shop.id = :shopId");
+                Map<String, Object> parameters = new HashMap<>();
+                parameters.put("shopId", shop.getId());
+
+                // Add keyword filter
+                if (keyword != null && !keyword.trim().isEmpty()) {
+                    jpqlBuilder.append(" AND LOWER(p.name) LIKE LOWER(:keyword)");
+                    parameters.put("keyword", "%" + keyword.trim() + "%");
+                    logger.info("Filtering by keyword: {}", keyword);
+                }
+
+                // Add category filter
+                if (categoryId != null) {
+                    jpqlBuilder.append(" AND p.category.id = :categoryId");
+                    parameters.put("categoryId", categoryId);
+                    logger.info("Filtering by categoryId: {}", categoryId);
+                }
+
+                jpqlBuilder.append(" ORDER BY p.createdAt DESC");
+                // --- END MODIFICATION ---
+
+                TypedQuery<Product> query = entityManager.createQuery(jpqlBuilder.toString(), Product.class);
+                
+                // Set all parameters
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+
 	            List<Product> products = query.getResultList();
-	            logger.info("Found {} products for Shop ID: {}", products.size(), shop.getId());
+	            logger.info("Found {} products for Shop ID: {} with filters", products.size(), shop.getId());
 	            List<ProductVendorDto> dtos = products.stream().map(ProductVendorDto::new).collect(Collectors.toList());
 	            return ResponseEntity.ok(dtos);
 	        } catch (RuntimeException e) { /* ... return 404 ... */ logger.error("Error getting vendor products: {}", e.getMessage()); return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body("{\"message\": \"" + e.getMessage() + "\"}"); }

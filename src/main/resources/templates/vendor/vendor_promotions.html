@@ -5,7 +5,6 @@
       layout:decorate="~{layouts/_vendor_layout}">
 <head>
     <title>Quản lý Khuyến mãi</title>
-    <!-- CSS tùy chỉnh -->
     <style>
         .table th { font-weight: 600; }
         .modal-body { max-height: 80vh; overflow-y: auto; }
@@ -21,7 +20,6 @@
 <body>
 
 <div layout:fragment="content">
-    <!-- ----- Header + Add Button ----- -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">Quản lý Khuyến mãi</h1>
         <button class="btn btn-primary" onclick="openAddModal()">
@@ -29,10 +27,31 @@
         </button>
     </div>
 
-    <!-- ----- Promotions Table ----- -->
     <div class="card shadow-sm">
         <div class="card-header bg-light py-3">
-            <h5 class="mb-0">Danh sách mã khuyến mãi</h5>
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                     <h5 class="mb-0">Danh sách mã khuyến mãi</h5>
+                </div>
+                <div class="col-md-8">
+                    <div class="d-flex justify-content-end gap-2">
+                        <div style="max-width: 200px;">
+                            <select class="form-select form-select-sm" id="promotion-status-filter">
+                                <option value="ALL">Tất cả trạng thái</option>
+                                <option value="ACTIVE">Đang diễn ra</option>
+                                <option value="UPCOMING">Sắp diễn ra</option>
+                                <option value="EXPIRED">Đã kết thúc</option>
+                            </select>
+                        </div>
+                        <div style="max-width: 300px;">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control form-control-sm" id="promotion-search-input" placeholder="Tìm theo mã code...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -50,7 +69,6 @@
                     </tr>
                     </thead>
                     <tbody id="promotion-list-body">
-                        <!-- Loading Row -->
                         <tr id="loading-row">
                             <td colspan="8" class="text-center p-5">
                                 <div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
@@ -64,7 +82,6 @@
     </div>
 
 
-    <!-- ----- Add/Edit Promotion Modal ----- -->
     <div class="modal fade" id="promotionModal" tabindex="-1" aria-labelledby="promotionModalLabel" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
@@ -116,17 +133,19 @@
         </div>
     </div>
 
-</div> <!-- End Fragment -->
-
-
-<th:block layout:fragment="scripts_body">
+</div> <th:block layout:fragment="scripts_body">
     <script>
         // === Globals ===
         const token = localStorage.getItem('jwtToken');
         const promotionListBody = document.getElementById('promotion-list-body');
         const loadingRow = document.getElementById('loading-row');
         let promotionModalInstance = null;
-        let currentPromotions = [];
+        let currentPromotions = []; // Lưu trữ danh sách đầy đủ từ API (đã lọc theo code)
+        
+        // === MODIFIED: Filter variables ===
+        let searchDebounce = null;
+        let searchInput = null;
+        let promotionStatusFilter = null; // <-- NEW
 
         // --- Form Elements ---
         const promotionForm = document.getElementById('promotionForm');
@@ -147,7 +166,27 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (!token) { window.location.href = '/login'; return; }
             if (!initializeModal()) return;
-            fetchPromotions();
+
+            // === MODIFIED: Search and Filter listeners ===
+            searchInput = document.getElementById('promotion-search-input');
+            promotionStatusFilter = document.getElementById('promotion-status-filter'); // <-- NEW
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(searchDebounce);
+                    // fetchPromotions sẽ gọi API
+                    searchDebounce = setTimeout(fetchPromotions, 400); 
+                });
+            }
+            if (promotionStatusFilter) {
+                // Khi đổi status filter, chỉ cần render lại danh sách hiện tại
+                promotionStatusFilter.addEventListener('change', () => {
+                    renderPromotionTable(currentPromotions); 
+                });
+            }
+            // === END MODIFIED ===
+
+            fetchPromotions(); // Initial fetch
             if (promotionForm) promotionForm.addEventListener('submit', handleFormSubmit);
             if (promoStartDateInput && promoEndDateInput) {
                 promoStartDateInput.addEventListener('change', validateDates);
@@ -200,38 +239,95 @@
             promotionListBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger p-5">Lỗi: ${message}</td></tr>`;
         }
 
-        // --- Fetch Promotions ---
+        // --- Fetch Promotions (MODIFIED) ---
+        // Hàm này gọi API (đã lọc theo code) và lưu kết quả vào currentPromotions
         async function fetchPromotions() {
             showLoading();
+            
+            const code = searchInput ? searchInput.value.trim() : '';
+            const params = new URLSearchParams();
+            if (code) {
+                params.append('code', code);
+            }
+            const url = `/api/vendor/promotions${code ? '?' + params.toString() : ''}`;
+            
             try {
-                const response = await fetch('/api/vendor/promotions', { headers: { 'Authorization': `Bearer ${token}` } });
+                const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ message: response.statusText }));
                     throw new Error(`(${response.status}) ${errorData.message}`);
                 }
-                currentPromotions = await response.json();
-                renderPromotionTable(currentPromotions);
+                currentPromotions = await response.json(); // <-- Lưu vào biến global
+                renderPromotionTable(currentPromotions); // <-- Gọi render
             } catch (error) {
                 console.error("Fetch promotions error:", error);
+                currentPromotions = []; // Xóa danh sách cũ nếu lỗi
                 renderError(error.message);
             }
         }
+        
+        // === ADDED: Helper function to get status key ===
+        function getPromoStatusKey(promo, now) {
+            let startDateMs = 0, endDateMs = 0;
+            try { startDateMs = new Date(promo.startDate).getTime(); } catch(e) { /* ignore */ }
+            try { endDateMs = new Date(promo.endDate).getTime(); } catch(e) { /* ignore */ }
 
-        // --- Render Promotion Table (PHIÊN BẢN SỬA LỖI VÀ AN TOÀN HƠN) ---
+            if (startDateMs <= 0 || endDateMs <= 0 || startDateMs >= endDateMs) {
+                return 'ERROR'; // Lỗi ngày
+            }
+            if (now < startDateMs) return 'UPCOMING';
+            if (now >= startDateMs && now <= endDateMs) return 'ACTIVE';
+            return 'EXPIRED'; // now > endDateMs
+        }
+        // === END ADDED ===
+
+
+        // --- Render Promotion Table (MODIFIED) ---
+        // Hàm này nhận danh sách (đã lọc theo code) và lọc thêm theo TRẠNG THÁI
         function renderPromotionTable(promotions) {
             if(loadingRow) loadingRow.remove();
             if(!promotionListBody) return;
 
             promotionListBody.innerHTML = '';
+            
+            // === ADDED: Lấy giá trị bộ lọc trạng thái ===
+            const statusFilter = promotionStatusFilter ? promotionStatusFilter.value : 'ALL';
+            const now = Date.now();
+            // === END ADDED ===
 
-            if (!promotions || !Array.isArray(promotions) || promotions.length === 0) {
-                promotionListBody.innerHTML = `<tr><td colspan="8" class="text-center p-5 text-muted">Chưa có mã khuyến mãi nào.</td></tr>`;
+            // === ADDED: Lọc theo trạng thái (client-side) ===
+            const filteredPromotions = promotions.filter(promo => {
+                if (statusFilter === 'ALL') return true;
+                
+                const statusKey = getPromoStatusKey(promo, now);
+                
+                if (statusFilter === 'ACTIVE' && statusKey === 'ACTIVE') return true;
+                if (statusFilter === 'UPCOMING' && statusKey === 'UPCOMING') return true;
+                if (statusFilter === 'EXPIRED' && (statusKey === 'EXPIRED' || statusKey === 'ERROR')) return true;
+                
+                return false;
+            });
+            // === END ADDED ===
+
+            // === MODIFIED: Xử lý thông báo rỗng ===
+            if (!filteredPromotions || filteredPromotions.length === 0) {
+                const code = searchInput ? searchInput.value.trim() : '';
+                let message = 'Chưa có mã khuyến mãi nào.';
+                if (promotions.length > 0) {
+                    // Có data nhưng bị filter ẩn hết
+                    message = `Không có mã nào ở trạng thái "${promotionStatusFilter.options[promotionStatusFilter.selectedIndex].text}".`;
+                } else if (code) {
+                    // Không có data và có tìm kiếm
+                    message = `Không tìm thấy mã nào khớp với "${escapeHtml(code)}".`;
+                }
+                
+                promotionListBody.innerHTML = `<tr><td colspan="8" class="text-center p-5 text-muted">${message}</td></tr>`;
                 return;
             }
+            // === END MODIFIED ===
 
-            const now = Date.now();
-
-            promotions.forEach(promo => {
+            // Render danh sách *đã lọc*
+            filteredPromotions.forEach(promo => {
                 let startDateMs = 0, endDateMs = 0;
                 let startDateFormatted = 'N/A', endDateFormatted = 'N/A';
 
@@ -241,13 +337,8 @@
                         startDateMs = d.getTime();
                         if (!isNaN(startDateMs)) {
                             startDateFormatted = d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
-                        } else {
-                            startDateMs = 0;
-                        }
-                    } catch (e) {
-                        console.error(`Lỗi phân tích ngày bắt đầu của promo ${promo.id}:`, e);
-                        startDateMs = 0;
-                    }
+                        } else { startDateMs = 0; }
+                    } catch (e) { startDateMs = 0; }
                 }
 
                 if (promo.endDate) {
@@ -256,36 +347,33 @@
                          endDateMs = d.getTime();
                          if (!isNaN(endDateMs)) {
                              endDateFormatted = d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
-                         } else {
-                             endDateMs = 0;
-                         }
-                     } catch (e) {
-                         console.error(`Lỗi phân tích ngày kết thúc của promo ${promo.id}:`, e);
-                         endDateMs = 0;
-                     }
+                         } else { endDateMs = 0; }
+                     } catch (e) { endDateMs = 0; }
                 }
 
+                // --- MODIFIED: Sử dụng helper function ---
+                const statusKey = getPromoStatusKey(promo, now);
                 let statusText = '', statusClass = '', rowClass = '';
-                if (startDateMs <= 0 || endDateMs <= 0 || startDateMs >= endDateMs) {
-                    statusText = 'Lỗi ngày';
-                    statusClass = 'bg-danger';
-                    rowClass = 'expired';
-                } else if (now < startDateMs) {
-                    statusText = 'Sắp diễn ra';
-                    statusClass = 'bg-info text-dark';
-                } else if (now >= startDateMs && now <= endDateMs) {
-                    statusText = 'Đang diễn ra';
-                    statusClass = 'bg-success';
-                } else {
-                    statusText = 'Đã kết thúc';
-                    statusClass = 'bg-secondary';
-                    rowClass = 'expired';
+
+                switch(statusKey) {
+                    case 'ACTIVE':
+                        statusText = 'Đang diễn ra'; statusClass = 'bg-success';
+                        break;
+                    case 'UPCOMING':
+                        statusText = 'Sắp diễn ra'; statusClass = 'bg-info text-dark';
+                        break;
+                    case 'EXPIRED':
+                        statusText = 'Đã kết thúc'; statusClass = 'bg-secondary'; rowClass = 'expired';
+                        break;
+                    default: // 'ERROR'
+                        statusText = 'Lỗi ngày'; statusClass = 'bg-danger'; rowClass = 'expired';
                 }
+                // --- END MODIFIED ---
 
                 const minOrderFormatted = promo.minOrderValue != null && promo.minOrderValue > 0 ? formatter.format(promo.minOrderValue) : '-';
                 const discountDisplay = promo.discountPercent != null ? `${promo.discountPercent}%` : '0%';
                 const quantityDisplay = promo.quantity ?? 'N/A';
-                const codeDisplay = promo.code || 'N/A';
+                const codeDisplay = escapeHtml(promo.code || 'N/A');
 
                 const rowHTML = `
                     <tr class="${rowClass}">
@@ -303,7 +391,18 @@
                     </tr>`;
                 promotionListBody.insertAdjacentHTML('beforeend', rowHTML);
             });
-            console.log(`Rendered ${promotions.length} promotions.`);
+            console.log(`Rendered ${filteredPromotions.length} promotions.`);
+        }
+        
+        // --- Escape HTML helper ---
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
         }
 
         // --- Open Add Modal ---
@@ -415,7 +514,7 @@
             if (!promoToDelete) { Swal.fire('Lỗi', 'Không tìm thấy khuyến mãi để xóa.', 'error'); return; }
             const result = await Swal.fire({
                 title: `Xác nhận xóa?`,
-                html: `Bạn có chắc muốn xóa mã <strong>"${promoToDelete.code}"</strong>?<br>Hành động này không thể hoàn tác!`,
+                html: `Bạn có chắc muốn xóa mã <strong>"${escapeHtml(promoToDelete.code)}"</strong>?<br>Hành động này không thể hoàn tác!`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -433,7 +532,7 @@
                         const errorData = await response.json().catch(() => ({ message: response.statusText }));
                         throw new Error(`(${response.status}) ${errorData.message}`);
                     }
-                    Swal.fire('Đã xóa!', `Khuyến mãi "${promoToDelete.code}" đã được xóa.`, 'success');
+                    Swal.fire('Đã xóa!', `Khuyến mãi "${escapeHtml(promoToDelete.code)}" đã được xóa.`, 'success');
                     fetchPromotions();
                 } catch (error) {
                     console.error(`Error deleting promotion ${id}:`, error);

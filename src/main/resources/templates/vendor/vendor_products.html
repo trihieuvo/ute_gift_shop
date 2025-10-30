@@ -88,6 +88,25 @@
         </button>
     </div>
 
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="product-filter-search" class="form-label">Tìm theo tên</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="product-filter-search" placeholder="Nhập tên sản phẩm...">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="product-filter-category" class="form-label">Lọc theo danh mục</label>
+                    <select class="form-select" id="product-filter-category">
+                        <option value="">Tất cả danh mục</option>
+                        </select>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="card shadow-sm">
         <div class="card-body">
              <div class="table-responsive">
@@ -192,7 +211,7 @@
     let modalTitle;
     let productIdInput;
     let productNameInput;
-    let productCategorySelect;
+    let productCategorySelect; // Modal category
     let productPriceInput;
     let productStockInput;
     let productImageFileInput;
@@ -201,6 +220,11 @@
     let formatter;
     let saveProductButton;
     let imagePreviewDiv;
+    // === ADDED: Filter variables ===
+    let productFilterSearch;
+    let productFilterCategory;
+    let searchDebounce;
+
 
     // ==================== INITIALIZATION ====================
     document.addEventListener('DOMContentLoaded', () => {
@@ -213,7 +237,7 @@
         modalTitle = document.getElementById('productModalLabel');
         productIdInput = document.getElementById('productId');
         productNameInput = document.getElementById('productName');
-        productCategorySelect = document.getElementById('productCategory');
+        productCategorySelect = document.getElementById('productCategory'); // Modal category
         productPriceInput = document.getElementById('productPrice');
         productStockInput = document.getElementById('productStock');
         productImageFileInput = document.getElementById('productImageFile');
@@ -221,6 +245,11 @@
         productIsActiveInput = document.getElementById('productIsActive');
         saveProductButton = document.getElementById('saveProductButton');
         imagePreviewDiv = document.getElementById('imagePreview');
+
+        // === ADDED: Get filter elements ===
+        productFilterSearch = document.getElementById('product-filter-search');
+        productFilterCategory = document.getElementById('product-filter-category');
+        // ================================
 
         if (!productListBody || !productModalEl) {
             console.error('❌ Critical DOM elements not found! Check HTML IDs.');
@@ -231,18 +260,42 @@
         formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 
         fetchProducts();
-        fetchCategories();
+        fetchCategories(); // This will now populate both dropdowns
 
         productForm.addEventListener('submit', handleFormSubmit);
         productImageFileInput.addEventListener('change', handleImagePreview);
+
+        // === ADDED: Event listeners for filters ===
+        productFilterSearch.addEventListener('input', () => {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                fetchProducts();
+            }, 500); // 500ms debounce
+        });
+
+        productFilterCategory.addEventListener('change', fetchProducts);
+        // ======================================
     });
 
-    // ==================== FETCH PRODUCTS ====================
-    // SỬA LỖI: Bổ sung lại hàm bị thiếu
+    // ==================== FETCH PRODUCTS (MODIFIED) ====================
     async function fetchProducts() {
         productListBody.innerHTML = `<tr><td colspan="7" class="text-center p-5"><div class="spinner-border spinner-border-sm"></div><span class="ms-2 text-muted">Đang tải...</span></td></tr>`;
+        
+        // === MODIFIED: Read filter values and build URL ===
+        const keyword = productFilterSearch.value;
+        const categoryId = productFilterCategory.value;
+
+        const params = new URLSearchParams();
+        if (keyword) params.append('keyword', keyword);
+        if (categoryId) params.append('categoryId', categoryId);
+        
+        const queryString = params.toString();
+        const url = `/api/vendor/products${queryString ? '?' + queryString : ''}`;
+        console.log("Fetching products from:", url);
+        // === END MODIFICATION ===
+
         try {
-            const response = await fetch('/api/vendor/products', {
+            const response = await fetch(url, { // Use new URL
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) {
@@ -257,11 +310,11 @@
     }
 
     // ==================== RENDER PRODUCT TABLE ====================
-    // SỬA LỖI: Bổ sung lại hàm bị thiếu
+    // (No changes needed)
     function renderProductTable(productsDtoList) {
         productListBody.innerHTML = '';
         if (!productsDtoList || productsDtoList.length === 0) {
-            productListBody.innerHTML = `<tr><td colspan="7" class="text-center p-5 text-muted">Chưa có sản phẩm nào.</td></tr>`;
+            productListBody.innerHTML = `<tr><td colspan="7" class="text-center p-5 text-muted">Không tìm thấy sản phẩm nào.</td></tr>`;
             return;
         }
 
@@ -309,9 +362,12 @@
         });
     }
 
-    // ==================== FETCH CATEGORIES ====================
-    // SỬA LỖI: Bổ sung lại hàm bị thiếu
+    // ==================== FETCH CATEGORIES (MODIFIED) ====================
     async function fetchCategories() {
+       // === MODIFIED: Get filter dropdown ===
+       const filterSelect = document.getElementById('product-filter-category');
+       // ====================================
+       
        try {
             const response = await fetch('/api/vendor/categories', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -319,31 +375,36 @@
             if (!response.ok) throw new Error('Lỗi tải danh mục');
             
             const categories = await response.json();
+
+            // Clear both selects
             productCategorySelect.innerHTML = '<option value="" disabled selected>Chọn danh mục...</option>';
+            filterSelect.innerHTML = '<option value="">Tất cả danh mục</option>'; // Reset filter dropdown
+
             categories.forEach(cat => {
                 if(cat && cat.id && cat.name) {
-                    productCategorySelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                    const optionHtml = `<option value="${cat.id}">${cat.name}</option>`;
+                    productCategorySelect.innerHTML += optionHtml; // For modal
+                    filterSelect.innerHTML += optionHtml; // For filter
                 }
             });
         } catch (error) {
             console.error('Error fetching categories:', error);
             productCategorySelect.innerHTML = '<option value="">Lỗi tải danh mục</option>';
+            filterSelect.innerHTML = '<option value="">Lỗi tải danh mục</option>'; // Show error in filter too
         }
     }
 
     // ==================== CREATE PREVIEW ELEMENT ====================
+    // (No changes needed)
     function createPreviewElement(src, identifier, isExisting = false) {
         const wrapper = document.createElement('div');
         wrapper.classList.add('preview-img-wrapper');
         const originalUrl = identifier;
-
         wrapper.dataset[isExisting ? 'imageUrl' : 'fileName'] = originalUrl;
-
         const img = document.createElement('img');
         img.src = src;
         img.alt = isExisting ? 'Existing Image' : 'Preview';
         img.onerror = () => wrapper.remove();
-
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.classList.add('remove-image-btn');
@@ -358,13 +419,13 @@
                 productImageFileInput.files = dataTransfer.files;
             }
         };
-
         wrapper.appendChild(img);
         wrapper.appendChild(removeBtn);
         return wrapper;
     }
 
     // ==================== OPEN ADD MODAL ====================
+    // (No changes needed)
     window.openAddModal = function() {
         productForm.reset();
         productIdInput.value = '';
@@ -379,6 +440,7 @@
     };
 
     // ==================== OPEN EDIT MODAL ====================
+    // (No changes needed)
     window.openEditModal = async function(id) {
         productForm.reset();
         productIdInput.value = id;
@@ -389,23 +451,19 @@
              delete productImageFileInput.filesData;
         }
         productModal.show();
-
         try {
             const response = await fetch(`/api/vendor/products/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) {
                 throw new Error('Không thể tải dữ liệu sản phẩm.');
             }
-
             const product = await response.json();
             modalTitle.textContent = 'Cập nhật sản phẩm';
-
              productNameInput.value = product.name || '';
              productCategorySelect.value = (product.category && product.category.id) || '';
              productPriceInput.value = product.price || 0;
              productStockInput.value = product.stockQuantity || 0;
              productDescriptionInput.value = product.description || '';
              productIsActiveInput.checked = product.active !== false;
-
             if (product.images && Array.isArray(product.images) && product.images.length > 0) {
                  product.images.forEach(img => {
                     if (img && img.imageUrl) {
@@ -423,12 +481,12 @@
     };
 
     // ==================== HANDLE IMAGE PREVIEW (File Upload) ====================
+    // (No changes needed)
     function handleImagePreview(event) {
         const files = event.target.files;
         const existingFilePreviews = imagePreviewDiv.querySelectorAll('div[data-file-name]');
         existingFilePreviews.forEach(preview => preview.remove());
         delete productImageFileInput.filesData;
-
         if (files.length > 0) {
             const validFiles = Array.from(files).filter(file => {
                  if (!file.type.startsWith('image/')) return false;
@@ -438,9 +496,7 @@
                  }
                  return true;
              });
-
              if (validFiles.length === 0) return;
-
              validFiles.forEach(file => {
                  const reader = new FileReader();
                  reader.onload = function(e) {
@@ -449,7 +505,6 @@
                  };
                  reader.readAsDataURL(file);
              });
-
              productImageFileInput.filesData = validFiles;
              const dataTransfer = new DataTransfer();
              validFiles.forEach(file => dataTransfer.items.add(file));
@@ -458,22 +513,19 @@
     }
 
     // ==================== HANDLE FORM SUBMIT ====================
+    // (No changes needed)
     async function handleFormSubmit(event) {
         event.preventDefault();
         const productId = productIdInput.value;
         const isUpdating = !!productId;
-
         saveProductButton.disabled = true;
         saveProductButton.classList.add('btn-loading');
-
         let uploadErrorOccurred = false;
-
         try {
             const existingPreviews = imagePreviewDiv.querySelectorAll('div[data-image-url]');
             const existingUrls = Array.from(existingPreviews).map(preview => preview.dataset.imageUrl);
             const filesToUpload = productImageFileInput.filesData || [];
             let uploadedUrls = [];
-
             if (filesToUpload.length > 0) {
                 const uploadPromises = filesToUpload.map(file => {
                     const formData = new FormData();
@@ -494,7 +546,6 @@
                 const results = await Promise.all(uploadPromises);
                 uploadedUrls = results.filter(url => url !== null);
             }
-
             const finalImageUrls = [...uploadedUrls, ...existingUrls];
             if (finalImageUrls.length === 0) {
                  throw new Error('Sản phẩm phải có ít nhất một hình ảnh.');
@@ -502,7 +553,6 @@
             if (uploadErrorOccurred) {
                 Swal.fire('Cảnh báo', 'Một hoặc nhiều ảnh mới không thể tải lên.', 'warning');
             }
-
             const url = isUpdating ? `/api/vendor/products/${productId}` : '/api/vendor/products';
             const method = isUpdating ? 'PUT' : 'POST';
             const requestBody = {
@@ -514,22 +564,18 @@
                 description: productDescriptionInput.value || null,
                 active: productIsActiveInput.checked
             };
-
             if (!requestBody.name || !requestBody.categoryId || isNaN(requestBody.price) || isNaN(requestBody.stockQuantity)) {
                 throw new Error('Vui lòng điền đầy đủ các trường bắt buộc.');
             }
-
             const response = await fetch(url, {
                 method: method,
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             });
-
             if (!response.ok) {
                 const result = await response.json().catch(()=> ({message: `Lỗi ${response.status}`}));
                 throw new Error(result.message || 'Lưu sản phẩm thất bại');
             }
-
             productModal.hide();
             Swal.fire('Thành công!', isUpdating ? 'Cập nhật thành công.' : 'Thêm mới thành công.', 'success');
             fetchProducts();
@@ -542,7 +588,7 @@
     }
 
     // ==================== DELETE PRODUCT ====================
-    // SỬA LỖI: Bổ sung lại hàm bị thiếu
+    // (No changes needed)
     async function deleteProduct(id) {
        const result = await Swal.fire({
             title: `Bạn chắc chắn muốn xóa?`,
@@ -553,7 +599,6 @@
             cancelButtonText: 'Hủy bỏ',
             confirmButtonText: 'Đồng ý xóa'
         });
-
         if (result.isConfirmed) {
             try {
                 const response = await fetch(`/api/vendor/products/${id}`, {
