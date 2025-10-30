@@ -129,7 +129,7 @@
                     <h5 class="mb-0"><i class="bi bi-credit-card-fill me-2"></i>Chọn phương thức thanh toán</h5>
                 </div>
                 <div class="card-body" id="payment-methods-container">
-           
+                
                     <div class="payment-method-item form-check selected mb-2" onclick="selectPaymentItem(this)"> 
                         <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
                         <label class="form-check-label w-100" for="cod">
@@ -143,6 +143,25 @@
                            <i class="bi bi-qr-code me-1"></i> Thanh toán qua mã QR (Chuyển khoản - SePay)
                         </label>
                     </div>
+                </div>
+            </div>
+            
+
+            
+
+        </div>
+        <div class="card shadow-sm">
+        <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-tag-fill me-2"></i>Mã giảm giá</h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="promotion-code-input" placeholder="Nhập mã giảm giá...">
+                    <button class="btn btn-outline-secondary" type="button" id="apply-promo-btn" onclick="applyPromotion()">Áp dụng</button>
+                </div>
+                <div id="promo-status-message" class="mt-2 small"></div>
+                <div id="applicable-promos-container" class="mt-3">
+                    <small class="text-muted">Đang tìm mã giảm giá có thể áp dụng...</small>
                 </div>
             </div>
         </div>
@@ -164,7 +183,12 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Phí vận chuyển:</span>
-                            <strong id="summary-shipping-fee">0 đ</strong> </li>
+                            <strong id="summary-shipping-fee">0 đ</strong> 
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between" id="summary-discount-row" style="display: none;">
+                            <span>Giảm giá:</span>
+                            <strong id="summary-discount" class="text-danger">0 đ</strong>
+                        </li>
                         <li class="list-group-item d-flex justify-content-between bg-light">
                             <strong class="text-danger">Tổng cộng:</strong>
                             <strong id="summary-total" class="text-danger fs-5">0 đ</strong>
@@ -223,6 +247,7 @@
         let shippingMethods = [];
         let selectedShippingFee = 0;
         let subtotalAmount = 0;
+        let appliedPromotion = null;
 
         // === DOMContentLoaded ===
         document.addEventListener('DOMContentLoaded', () => {
@@ -233,11 +258,89 @@
             fetchAddresses();
             fetchShippingMethods();
             fetchOrderSummary();
+            fetchApplicablePromotions();
              const modalElement = document.getElementById('addAddressModalCheckout');
              if (modalElement) {
                  addAddressModalInstance = new bootstrap.Modal(modalElement);
              }
         });
+        async function fetchApplicablePromotions() {
+            const container = document.getElementById('applicable-promos-container');
+            if (!container) return;
+            try {
+                const response = await fetch('/api/promotions/applicable', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!response.ok) throw new Error('Không thể tải mã giảm giá');
+
+                const promotions = await response.json();
+                if (promotions.length > 0) {
+                    container.innerHTML = '<small class="text-muted">Mã giảm giá có thể dùng:</small><div class="d-flex flex-wrap gap-2 mt-2">';
+                    promotions.forEach(promo => {
+                        container.querySelector('div').innerHTML += `
+                            <button class="btn btn-outline-success btn-sm" onclick="document.getElementById('promotion-code-input').value='${promo.code}'; applyPromotion();">
+                                ${promo.code}
+                            </button>
+                        `;
+                    });
+                    container.innerHTML += '</div>';
+                } else {
+                    container.innerHTML = '<small class="text-muted">Không có mã giảm giá nào có thể áp dụng.</small>';
+                }
+            } catch (error) {
+                container.innerHTML = `<small class="text-danger">${error.message}</small>`;
+            }
+        }
+
+        // === HÀM MỚI: Xử lý khi nhấn nút "Áp dụng" ===
+    async function applyPromotion() {
+        const codeInput = document.getElementById('promotion-code-input');
+        const messageEl = document.getElementById('promo-status-message');
+        const applyBtn = document.getElementById('apply-promo-btn');
+        const code = codeInput.value.trim();
+
+        if (!code) {
+            appliedPromotion = null;
+            messageEl.innerHTML = '';
+            updateSummary();
+            return;
+        }
+
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        messageEl.className = 'mt-2 small';
+        messageEl.textContent = 'Đang kiểm tra...';
+
+        try {
+            // NOTE: Chúng ta sẽ giả lập việc kiểm tra ở client-side trước
+            // Một API riêng để validate code sẽ tốt hơn, nhưng để đơn giản, ta làm cách này
+            const response = await fetch('/api/promotions/applicable', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error('Lỗi máy chủ');
+
+            const promotions = await response.json();
+            const promotion = promotions.find(p => p.code.toUpperCase() === code.toUpperCase());
+
+            if (!promotion) {
+                throw new Error(`Mã "${code}" không hợp lệ hoặc đã hết hạn.`);
+            }
+            if (promotion.minOrderValue > subtotalAmount) {
+                 throw new Error(`Đơn hàng cần tối thiểu ${promotion.minOrderValue.toLocaleString('vi-VN')}đ để dùng mã này.`);
+            }
+
+            // Áp dụng thành công
+            appliedPromotion = promotion;
+            messageEl.className = 'mt-2 small text-success fw-bold';
+            messageEl.textContent = `Áp dụng thành công! Bạn được giảm ${promotion.discountPercent}%.`;
+            
+        } catch (error) {
+            appliedPromotion = null;
+            messageEl.className = 'mt-2 small text-danger';
+            messageEl.textContent = error.message;
+        } finally {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = 'Áp dụng';
+            updateSummary(); // Cập nhật lại tổng tiền
+        }
+    }
+
 
         async function fetchShippingMethods() {
             const container = document.getElementById('shipping-methods-container');
@@ -421,30 +524,37 @@
                 selectedShippingFee = parseFloat(selectedShippingRadio.dataset.fee) || 0;
             }
 
-            const total = subtotalAmount + selectedShippingFee;
+            let discountAmount = 0;
+            const discountRow = document.getElementById('summary-discount-row');
+            const discountEl = document.getElementById('summary-discount');
+
+            if (appliedPromotion) {
+                discountAmount = subtotalAmount * (appliedPromotion.discountPercent / 100);
+                discountEl.textContent = `- ${discountAmount.toLocaleString('vi-VN')} đ`;
+                discountRow.style.display = 'flex';
+            } else {
+                discountRow.style.display = 'none';
+            }
+
+            const total = subtotalAmount + selectedShippingFee - discountAmount;
 
             summarySubtotalEl.textContent = subtotalAmount.toLocaleString('vi-VN') + ' đ';
             document.getElementById('summary-shipping-fee').textContent = selectedShippingFee.toLocaleString('vi-VN') + ' đ';
             summaryTotalEl.textContent = total.toLocaleString('vi-VN') + ' đ';
         }
 
-        // === placeOrder (Giữ nguyên) ===
+        
         async function placeOrder() {
             const selectedAddress = document.querySelector('input[name="address"]:checked');
-            const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
-            const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
+        const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
+        const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
 
-            if (!selectedAddress) { Swal.fire('Thiếu thông tin', 'Vui lòng chọn hoặc thêm địa chỉ giao hàng.', 'warning'); return; }
-            if (!selectedPayment){ Swal.fire('Thiếu thông tin', 'Vui lòng chọn phương thức thanh toán.', 'warning'); return; }
-            if (!selectedAddress) { /* ... */ }
-            if (!selectedShipping) { 
-                Swal.fire('Thiếu thông tin', 'Vui lòng chọn đơn vị vận chuyển.', 'warning');
-                return;
-            }
-            if (!placeOrderButton) return;
+        if (!selectedAddress) { Swal.fire('Thiếu thông tin', 'Vui lòng chọn hoặc thêm địa chỉ giao hàng.', 'warning'); return; }
+        if (!selectedPayment){ Swal.fire('Thiếu thông tin', 'Vui lòng chọn phương thức thanh toán.', 'warning'); return; }
+        if (!selectedShipping) { Swal.fire('Thiếu thông tin', 'Vui lòng chọn đơn vị vận chuyển.', 'warning'); return; }
 
-            placeOrderButton.disabled = true;
-            placeOrderButton.classList.add('btn-loading');
+        placeOrderButton.disabled = true;
+        placeOrderButton.classList.add('btn-loading');
 
             try {
                 const response = await fetch('/api/orders/checkout', {
@@ -453,7 +563,8 @@
                     body: JSON.stringify({
                         addressId: selectedAddress.value,
                         paymentMethod: selectedPayment.value,
-                        shippingMethodId: parseInt(selectedShipping.value)
+                        shippingMethodId: parseInt(selectedShipping.value),
+                        promotionCode: appliedPromotion ? appliedPromotion.code : null 
                     })
                 });
 

@@ -1,12 +1,14 @@
 package com.utegiftshop.controller;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap; // <-- Đảm bảo import HashMap
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,11 +25,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.utegiftshop.dto.request.CheckoutRequest;
+import com.utegiftshop.dto.response.CustomerOrderDetailDto;
+import com.utegiftshop.dto.response.OrderHistoryDto;
 import com.utegiftshop.entity.Address;
 import com.utegiftshop.entity.CartItem;
 import com.utegiftshop.entity.Order;
 import com.utegiftshop.entity.OrderDetail;
 import com.utegiftshop.entity.Product;
+import com.utegiftshop.entity.Promotion;
 import com.utegiftshop.entity.ShippingMethod;
 import com.utegiftshop.entity.User;
 import com.utegiftshop.repository.AddressRepository;
@@ -35,6 +40,7 @@ import com.utegiftshop.repository.CartItemRepository;
 import com.utegiftshop.repository.OrderDetailRepository;
 import com.utegiftshop.repository.OrderRepository;
 import com.utegiftshop.repository.ProductRepository;
+import com.utegiftshop.repository.PromotionRepository;
 import com.utegiftshop.repository.ShippingMethodRepository;
 import com.utegiftshop.repository.UserRepository;
 import com.utegiftshop.security.service.UserDetailsImpl;
@@ -50,6 +56,7 @@ public class OrderController {
     @Autowired private ProductRepository productRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private ShippingMethodRepository shippingMethodRepository;
+    @Autowired private PromotionRepository promotionRepository; // Thêm mới
 
     private UserDetailsImpl getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -88,6 +95,7 @@ public class OrderController {
         order.setPaymentMethod(request.getPaymentMethod());
         order.setShippingMethod(shippingMethod);
         order.setShippingFee(shippingFee);
+        
 
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -125,8 +133,49 @@ public class OrderController {
             totalAmount = totalAmount.add(product.getPrice().multiply(new BigDecimal(item.getQuantity())));
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
         }
-        BigDecimal finalTotalAmount = subtotal.add(shippingFee);
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        Promotion appliedPromotion = null;
+        if (request.getPromotionCode() != null && !request.getPromotionCode().isEmpty()) {
+            appliedPromotion = promotionRepository.findByCode(request.getPromotionCode())
+                .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ."));
+            
+            // 1. Kiểm tra hiệu lực
+            Timestamp now = new Timestamp(System.currentTimeMillis());
+            if (appliedPromotion.getQuantity() <= 0 || appliedPromotion.getStartDate().after(now) || appliedPromotion.getEndDate().before(now)) {
+                throw new RuntimeException("Mã giảm giá đã hết lượt sử dụng hoặc đã hết hạn.");
+            }
+            
+            // 2. Kiểm tra giá trị đơn hàng tối thiểu
+            if (appliedPromotion.getMinOrderValue() != null && subtotal.compareTo(appliedPromotion.getMinOrderValue()) < 0) {
+                throw new RuntimeException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã này.");
+            }
+            
+            // 3. Kiểm tra mã của shop
+            if (appliedPromotion.getShop() != null) {
+                Long shopIdForPromo = appliedPromotion.getShop().getId();
+                boolean isApplicable = cartItems.stream()
+                    .anyMatch(item -> item.getProduct().getShop().getId().equals(shopIdForPromo));
+                if (!isApplicable) {
+                    throw new RuntimeException("Mã giảm giá này không áp dụng cho các sản phẩm trong giỏ hàng của bạn.");
+                }
+            }
+            
+            // 4. Tính toán số tiền giảm
+            discountAmount = subtotal.multiply(appliedPromotion.getDiscountPercent().divide(new BigDecimal("100")));
+            
+            // Giảm số lượng mã
+            appliedPromotion.setQuantity(appliedPromotion.getQuantity() - 1);
+            promotionRepository.save(appliedPromotion);
+        }
+        
+        
+        
+        
+    
+        BigDecimal finalTotalAmount = subtotal.add(shippingFee).subtract(discountAmount);
         order.setTotalAmount(finalTotalAmount);
+        order.setDiscountAmount(discountAmount); // Lưu số tiền giảm
+        order.setPromotion(appliedPromotion);   // Lư
         order.setOrderDetails(orderDetails);
 
         String paymentCode = null;
@@ -152,11 +201,19 @@ public class OrderController {
     }
 
     @GetMapping("/my-history")
-    public ResponseEntity<List<Order>> getOrderHistory() {
+    public ResponseEntity<List<OrderHistoryDto>> getOrderHistory() {
         Long userId = getCurrentUser().getId();
         List<Order> orders = orderRepository.findByUserId(userId);
+        
+        // Sắp xếp các đơn hàng
         orders.sort((o1, o2) -> o2.getOrderDate().compareTo(o1.getOrderDate()));
-        return ResponseEntity.ok(orders);
+
+        // THAY ĐỔI: Chuyển đổi từ List<Order> sang List<OrderHistoryDto>
+        List<OrderHistoryDto> orderHistoryDtos = orders.stream()
+                                                       .map(OrderHistoryDto::new)
+                                                       .collect(Collectors.toList());
+
+        return ResponseEntity.ok(orderHistoryDtos);
     }
 
     @GetMapping("/{orderId}")
@@ -167,8 +224,10 @@ public class OrderController {
 
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
-            order.getOrderDetails().size();
-            return ResponseEntity.ok(order);
+            // THAY ĐỔI 2: Tạo DTO từ entity
+            CustomerOrderDetailDto orderDetailDto = new CustomerOrderDetailDto(order);
+            // THAY ĐỔI 3: Trả về DTO
+            return ResponseEntity.ok(orderDetailDto);
         } else {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Không tìm thấy đơn hàng hoặc bạn không có quyền xem đơn hàng này."));

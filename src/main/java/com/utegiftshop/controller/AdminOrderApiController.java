@@ -3,6 +3,7 @@ package com.utegiftshop.controller;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.utegiftshop.dto.response.AdminOrderDto;
 import com.utegiftshop.entity.Order;
 import com.utegiftshop.entity.User;
 import com.utegiftshop.repository.OrderRepository;
@@ -34,7 +36,7 @@ public class AdminOrderApiController {
 
     // API 1: Lấy tất cả đơn hàng (ĐÃ THÊM BỘ LỌC)
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders(
+    public ResponseEntity<List<AdminOrderDto>> getAllOrders(
         @RequestParam(required = false) String startDate,
         @RequestParam(required = false) String endDate,
         @RequestParam(required = false) String status
@@ -74,7 +76,11 @@ public class AdminOrderApiController {
 
         // Sử dụng findAll(Specification) để lọc
         List<Order> orders = orderRepository.findAll(spec);
-        return ResponseEntity.ok(orders);
+        List<AdminOrderDto> orderDtos = orders.stream()
+                                              .map(AdminOrderDto::new)
+                                              .collect(Collectors.toList());
+
+        return ResponseEntity.ok(orderDtos); // <-- THAY ĐỔI 3: Trả về danh sách
     }
     // API 2: Lấy danh sách Shipper
     @GetMapping("/shippers")

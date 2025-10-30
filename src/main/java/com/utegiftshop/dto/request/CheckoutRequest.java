@@ -8,4 +8,5 @@ public class CheckoutRequest {
     private Long addressId;
     private String paymentMethod; // "COD", "VNPAY", etc.
     private Integer shippingMethodId;
+    private String promotionCode;
 }

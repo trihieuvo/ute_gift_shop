@@ -79,6 +79,13 @@ public class Order {
     @Column(name = "shipping_fee", precision = 12, scale = 2)
     private BigDecimal shippingFee;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "promotion_id")
+    private Promotion promotion; // Lưu lại khuyến mãi đã dùng
+
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    private BigDecimal discountAmount; // Số tiền đã được giảm
+    
     @JsonManagedReference
     @OneToMany(mappedBy = "order", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetails;
