@@ -10,39 +10,38 @@
 ---
 ## 📚 Mục Lục
 
-* [✨ Tính năng Nổi bật (Chi tiết)](#-tính-năng-nổi-bật-chi-tiết)  
-  * [👤 Khách hàng (Customer)](#-khách-hàng-customer)  
-  * [🏪 Nhà cung cấp (Vendor)](#-nhà-cung-cấp-vendor)  
-  * [🚚 Người vận chuyển (Shipper)](#-người-vận-chuyển-shipper)  
-  * [👑 Quản trị viên (Admin)](#-quản-trị-viên-admin)  
-* [🛠️ Công nghệ sử dụng](#️-công-nghệ-sử-dụng)  
-* [🏁 Bắt Đầu (Cài đặt)](#-bắt-đầu-cài-đặt)  
+* [✨ Tính năng Nổi bật ](#-tính-năng-nổi-bật)  
+  * [ Khách hàng (Customer)](#-khách-hàng-customer)  
+  * [ Nhà cung cấp (Vendor)](#-nhà-cung-cấp-vendor)  
+  * [ Người vận chuyển (Shipper)](#-người-vận-chuyển-shipper)  
+  * [ Quản trị viên (Admin)](#-quản-trị-viên-admin)  
+* [ Công nghệ sử dụng](#️-công-nghệ-sử-dụng)  
+* [ Bắt Đầu (Cài đặt)](#-bắt-đầu-cài-đặt)  
   * [Yêu Cầu](#yêu-cầu)  
   * [Cài Đặt](#cài-đặt)  
-* [🤝 Đóng Góp](#-đóng-góp)  
 
 ---
-## ✨ Tính năng Nổi bật (Chi tiết)
+## ✨ Tính năng nổi bật 
 
 Dự án được xây dựng với 5 vai trò (Guest, Customer, Vendor, Shipper, Admin), mỗi vai trò có một bộ chức năng chuyên biệt.
 
-### 👤 Khách hàng (Customer)
+### Khách hàng (Customer)
 
 * **Xác thực:** Đăng ký (kích hoạt qua OTP Email), Đăng nhập (JWT), Quên mật khẩu (OTP Email).  
 * **Đăng ký vai trò:**  
-  * Đăng ký trở thành Cửa hàng (Vendor).  
+  * Đăng ký trở thành người bán hàng (Vendor).  
   * Đăng ký trở thành Shipper.  
 * **Mua sắm:**  
   * Xem, tìm kiếm, và lọc sản phẩm (theo tên, danh mục, khoảng giá).  
   * Xem chi tiết sản phẩm, bao gồm nhiều hình ảnh và đánh giá.  
   * Quản lý giỏ hàng (thêm, sửa số lượng, xóa).  
 * **Thanh toán:**  
-  * Quy trình Checkout (chọn địa chỉ, đơn vị vận chuyển, phương thức thanh toán).  
-  * Hỗ trợ thanh toán: COD (Thu hộ khi nhận hàng) và QR Code (thông qua SePay).  
+  * Quy trình checkout (chọn địa chỉ, đơn vị vận chuyển, phương thức thanh toán).  
+  * Hỗ trợ thanh toán: COD (Thu hộ khi nhận hàng) và QR code (thông qua SePay).  
   * Áp dụng mã giảm giá: từ admin (sử dụng cho toàn bộ mặt hàng) hoặc từ shop (sử dụng cho mặt hàng của shop cụ thể).  
 * **Quản lý tài khoản:**  
   * Quản lý thông tin cá nhân (Họ tên, SĐT).  
-  * **Tải lên/cắt ảnh đại diện (Avatar upload & cropper).**  
+  * Tải lên/cắt ảnh đại diện (Avatar upload & cropper).  
   * Quản lý sổ địa chỉ (Thêm, sửa, xóa, đặt làm mặc định).  
 * **Đơn hàng:**  
   * Xem lịch sử đơn hàng.  
@@ -54,7 +53,7 @@ Dự án được xây dựng với 5 vai trò (Guest, Customer, Vendor, Shipper
   * Chat trực tiếp với Vendor (WebSocket).  
   * Chat với Trợ lý ảo (Gemini API).  
 
-### 🏪 Nhà cung cấp (Vendor)  
+### Nhà cung cấp (Vendor)  
 
 * **Quản lý Cửa hàng:**  
   * Cập nhật thông tin chi tiết cửa hàng (tên, mô tả, liên hệ, MXH).  
@@ -69,12 +68,12 @@ Dự án được xây dựng với 5 vai trò (Guest, Customer, Vendor, Shipper
   * Xem và **phản hồi** các đánh giá của khách hàng.  
   * Chat trực tiếp với Customer (WebSocket).  
 * **Marketing (Khuyến mãi):**  
-  * Tạo và quản lý **mã giảm giá riêng của Shop** (theo %, số lượng, ngày hết hạn).  
+  * Tạo và quản lý mã giảm giá riêng của shop (theo %, số lượng, ngày hết hạn).  
 * **Thống kê:**  
   * Xem Dashboard tổng quan (đơn mới, doanh thu, tồn kho thấp).  
-  * Xem **biểu đồ doanh thu** chi tiết (theo ngày, tháng).  
+  * Xem biểu đồ doanh thu chi tiết (theo ngày, tháng).  
 
-### 🚚 Người vận chuyển (Shipper)  
+### Người vận chuyển (Shipper)  
 
 * **Dashboard:** Xem thống kê nhanh (đơn đang xử lý, đã giao, thất bại, tiền COD đang giữ).  
 * **Quản lý Đơn hàng:**  
@@ -85,26 +84,26 @@ Dự án được xây dựng với 5 vai trò (Guest, Customer, Vendor, Shipper
   * Cập nhật trạng thái (Bắt đầu giao, Giao thành công, Giao thất bại/Chờ trả hàng).  
   * Bắt buộc nhập lý do khi giao hàng thất bại.  
 
-### 👑 Quản trị viên (Admin)  
+### Quản trị viên (Admin)  
 
 * **Dashboard (Thống kê):**  
-  * Xem **thống kê toàn hệ thống** (tổng doanh thu, **hoa hồng nền tảng**, người dùng mới, đơn hàng).  
+  * Xem thống kê toàn hệ thống (tổng doanh thu, hoa hồng nền tảng, người dùng mới, đơn hàng).  
   * Xem biểu đồ doanh thu/hoa hồng theo thời gian.  
 * **Quản lý Duyệt:**  
   * Duyệt hoặc Từ chối các yêu cầu đăng ký Vendor.  
   * Duyệt hoặc Từ chối các yêu cầu đăng ký Shipper.  
 * **Quản lý Cửa hàng:**  
   * Xem danh sách các cửa hàng đang hoạt động.  
-  * Thiết lập mức **phí hoa hồng (commission)** cho từng cửa hàng.  
+  * Thiết lập mức phí hoa hồng (commission) cho từng cửa hàng.  
 * **Quản lý Người dùng:**  
-  * Xem danh sách và **Khóa/Mở khóa** tài khoản người dùng (Customer, Vendor, Shipper).  
+  * Xem danh sách và Khóa/Mở khóa tài khoản người dùng (Customer, Vendor, Shipper).  
 * **Quản lý Đơn hàng:**  
   * Xem và lọc tất cả đơn hàng trên hệ thống.  
   * **Gán đơn hàng** (trạng thái "Sẵn sàng giao") cho Shipper cụ thể.  
 * **Quản lý Hệ thống:**  
   * CRUD (Thêm, Sửa, Xóa) Danh mục sản phẩm.  
   * CRUD Đơn vị vận chuyển và phí.  
-  * CRUD **Mã giảm giá toàn hệ thống**.  
+  * CRUD Mã giảm giá cho toàn web.  
 
 ---
 ## 🛠️ Công nghệ sử dụng  
@@ -118,15 +117,15 @@ Dự án được xây dựng với 5 vai trò (Guest, Customer, Vendor, Shipper
 * **Build:** Apache Maven  
 
 ---
-## 🏁 Bắt Đầu (Cài đặt)  
+## Bắt Đầu (Cài đặt)  
 
 Để chạy dự án này trên máy cục bộ của bạn, hãy làm theo các bước sau:
 
 ### Yêu Cầu
 
-* **Java JDK 21**
-* **Maven 3.9+**
-* Một CSDL **PostgreSQL** đang chạy.
+* Java JDK 21
+* Maven 3.9+
+* Một CSDL PostgreSQL đang chạy.
 * Một tài khoản Gmail có "Mật khẩu ứng dụng" (App Password) để gửi mail OTP.
 * API Key cho Google Gemini (để chạy Chatbot).
 
@@ -179,16 +178,7 @@ mvn spring-boot:run
 
 5.  Ứng dụng sẽ chạy tại `http://localhost:8080`.  
 
----
-## 🤝 Đóng Góp
 
-Đóng góp là điều làm cho cộng đồng open source trở nên tuyệt vời. Bất kỳ đóng góp nào của bạn đều được **đánh giá cao**.  
-
-1.  Fork dự án  
-2.  Tạo Feature Branch của bạn (`git checkout -b feature/AmazingFeature`)  
-3.  Commit các thay đổi của bạn (`git commit -m 'Add some AmazingFeature'`)  
-4.  Push lên Branch (`git push origin feature/AmazingFeature`)  
-5.  Mở một Pull Request  
 
 
 
