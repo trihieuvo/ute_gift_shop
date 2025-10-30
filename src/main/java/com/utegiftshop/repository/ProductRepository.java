@@ -4,16 +4,16 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param; // <-- THÊM IMPORT NÀY
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository; // <-- THÊM IMPORT NÀY
 
 import com.utegiftshop.entity.Product;
-
 @Repository
-public interface ProductRepository extends JpaRepository<Product, Long> {
-
+public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
     // --- Giữ nguyên các phương thức cho Vendor ---
     List<Product> findByShopId(Long shopId);
     Optional<Product> findByIdAndShopId(Long productId, Long shopId);
@@ -56,4 +56,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // === CÁC HÀM QUERY KHÁC (NẾU CÓ) ĐỂ TRỐNG ĐỂ TÙY BIẾN ===
     // (Bỏ các hàm query cũ không có JOIN FETCH)
+
+    // (THÊM HÀM MỚI NÀY)
+    // Hàm này cho phép chúng ta dùng JOIN FETCH cùng với Specification
+    @Query("SELECT p FROM Product p JOIN FETCH p.shop s JOIN FETCH p.category c")
+    List<Product> findAllWithShopAndCategory(Specification<Product> spec);
 }
