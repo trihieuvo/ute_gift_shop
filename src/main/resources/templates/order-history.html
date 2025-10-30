@@ -9,7 +9,7 @@
         /* Thêm CSS này */
         .action-buttons-cell {
             display: flex; /* Sử dụng flexbox */
-            flex-wrap: wrap; /* Cho phép xuống hàng nếu cần */
+            flex-wrap: nowrap; /* Cho phép xuống hàng nếu cần */
             gap: 0.25rem; /* Khoảng cách nhỏ giữa các nút */
             align-items: center; /* Căn giữa các nút theo chiều dọc */
             min-width: 200px; /* Đặt chiều rộng tối thiểu để tránh bị bóp quá nhiều */
@@ -24,21 +24,25 @@
 <div layout:fragment="content">
     <h1 class="mb-4">Lịch sử đơn hàng</h1>
 
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th scope="col">Mã ĐH</th>
-                <th scope="col">Ngày đặt</th>
-                <th scope="col">Địa chỉ</th>
-                <th scope="col">Tổng tiền</th>
-                <th scope="col">Trạng thái</th>
-                <th scope="col">Hành động</th>
-            </tr>
-        </thead>
-        <tbody id="orders-table-body">
-            <tr><td colspan="6" class="text-center p-5">Đang tải lịch sử đơn hàng...</td></tr>
-        </tbody>
-    </table>
+    <div class="card shadow-sm">
+        <div class="card-body p-0"> <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0"> 
+                    <thead class="table-light"> 
+                        <tr>
+                            <th scope="col" style="width: 5%;">Mã ĐH</th>
+                            <th scope="col" style="width: 15%; white-space: nowrap;">Ngày đặt</th>
+                            <th scope="col" style="width: 20%;">Địa chỉ</th>
+                            <th scope="col" style="width: 15%; white-space: nowrap;">Tổng tiền</th>
+                            <th scope="col" style="width: 15%;">Trạng thái</th>
+                            <th scope="col" style="width: 30%;">Hành động</th> </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        <tr><td colspan="6" class="text-center p-5">Đang tải lịch sử đơn hàng...</td></tr>
+                    </tbody>
+                </table>
+            </div> 
+        </div> 
+    </div> 
 </div>
 
 <th:block layout:fragment="scripts_body">
