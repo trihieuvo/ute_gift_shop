@@ -18,7 +18,11 @@ package com.utegiftshop.controller;
  import org.springframework.web.bind.annotation.RequestParam;
  import org.springframework.web.bind.annotation.RestController;
  import com.utegiftshop.dto.response.ProductDetailDto;
+ import com.utegiftshop.dto.response.CategoryBasicDto;
+ import com.utegiftshop.dto.response.ShopBasicDto;
+ import com.utegiftshop.dto.response.ProductImageDto;
  import com.utegiftshop.dto.request.CategoryDto;
+ import java.util.Collections;
  import com.utegiftshop.entity.Category;
  import com.utegiftshop.entity.Product;
  import com.utegiftshop.repository.CategoryRepository;
@@ -124,7 +128,20 @@ package com.utegiftshop.controller;
              if (!product.isActive()) {
                  return ResponseEntity.notFound().build();
              }
-             ProductDetailDto dto = new ProductDetailDto(product);
+             // ProductDetailDto dto = new ProductDetailDto(product);
+             ProductDetailDto dto = ProductDetailDto.builder()
+                     .id(product.getId())
+                     .name(product.getName())
+                     .description(product.getDescription())
+                     .price(product.getPrice())
+                     .stockQuantity(product.getStockQuantity())
+                     .isActive(product.isActive())
+                     .category(new CategoryBasicDto(product.getCategory()))
+                     .shop(new ShopBasicDto(product.getShop()))
+                     .images(product.getImages() != null && !product.getImages().isEmpty() ?
+                             product.getImages().stream().map(ProductImageDto::new).collect(Collectors.toList()) :
+                             Collections.emptyList())
+                     .build();
              return ResponseEntity.ok(dto);
          } else {
              return ResponseEntity.notFound().build();
